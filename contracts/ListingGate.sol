@@ -25,6 +25,15 @@ contract ListingGate is IListingGate, Ownable {
     /// @notice Token => Verified rozet suresi (suresiz = type(uint256).max)
     mapping(address => uint256) public verifiedUntil;
 
+    /// @notice Basvuru => PoV_Hash taahhudu (SHA-256, 0x-prefixed hex).
+    /// @dev PoV_Hash = SHA256("aegisforge-pov-v1" || canonical_payload || target_hash || salt || ts)
+    ///      Bu bir HASH TAHHUDUDUR - ZK-SNARK degil. Satici payload'u aciklamaz;
+    ///      alici bagimsiz olarak hash'i yeniden uretip eslestigini dogrular.
+    mapping(bytes32 => bytes32) public povCommitmentHash;
+
+    /// @notice Basvuru => taahhudun mint edildigi timestamp (hash domain'i).
+    mapping(bytes32 => uint256) public commitmentTimestamp;
+
     /// @notice Basvuru sayaci (gas verimli id uretimi)
     uint256 public applicationCount;
 
@@ -34,6 +43,7 @@ contract ListingGate is IListingGate, Ownable {
     event ApplicationSubmitted(bytes32 indexed applicationId, address indexed projectToken, string projectName);
     event AuditRecorded(bytes32 indexed applicationId, address indexed projectToken, bool passed, uint256 cleanScore);
     event OracleUpdated(address indexed oldOracle, address indexed newOracle);
+    event PovCommitmentSealed(bytes32 indexed applicationId, bytes32 indexed povHash, uint256 timestamp);
 
     constructor() Ownable(msg.sender) {}
 
@@ -106,6 +116,45 @@ contract ListingGate is IListingGate, Ownable {
     function isVerified(address projectToken) external view returns (bool) {
         if (listingStatus[projectToken] != ListingStatus.Verified) return false;
         return block.timestamp <= verifiedUntil[projectToken];
+    }
+
+    /// @notice AegisForge tarafindan cagrilir - PoV hash taahhudunu zincirde muhurler.
+    /// @dev AegisForge motoru off-chain'da payload'u gizli tutar ve yalnizca
+    ///      hash'i gonderir. Bu "satilmis sirlar" modelidir: alici odeme yapinca
+    ///      payload ve tuzu alir, hash'i YENIDEN uretir ve eslestigini dogrular.
+    ///      Taahhudun kendi basina bir ZK-SNARK olmadigini acikca belirtiyoruz.
+    function sealPovCommitment(
+        bytes32 applicationId,
+        bytes32 povHash,
+        uint256 timestamp
+    ) external onlyAegisForge {
+        require(povHash != bytes32(0), "PoV hash sifir olamaz");
+        require(timestamp > 0, "Timestamp sifir olamaz");
+
+        povCommitmentHash[applicationId] = povHash;
+        commitmentTimestamp[applicationId] = timestamp;
+
+        emit PovCommitmentSealed(applicationId, povHash, timestamp);
+    }
+
+    /// @notice Alici taraf dogrulama: odeme sonrasi payload ile hash'i eslestirir.
+    /// @dev Bu fonksiyon kamu malidir - herkes bagimsiz dogrulayabilir.
+    ///      SHA256("aegisforge-pov-v1" || canonical || target_hash || salt || ts)
+    ///      Solidity'de SHA-256 icin hash // preimage kontrolu yapariz (Rust tarafinda uretilen
+    ///      hash ile karsilastirir). Tuz gizli oldugu icin alici onu almadan eslestiremez.
+    function verifyPovCommitment(
+        bytes32 applicationId,
+        bytes32 povHash,
+        uint256 timestamp
+    ) external view returns (bool valid) {
+        bytes32 stored = povCommitmentHash[applicationId];
+        if (stored == bytes32(0)) return false;
+        return stored == povHash && commitmentTimestamp[applicationId] == timestamp;
+    }
+
+    /// @notice Taahhudun muhurlu olup olmadigini kamusal olarak sorgula.
+    function commitmentSealed(bytes32 applicationId) external view returns (bool) {
+        return povCommitmentHash[applicationId] != bytes32(0);
     }
 
     /// @inheritdoc IListingGate

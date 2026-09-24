@@ -106,4 +106,69 @@ contract ListingGateTest is Test {
         vm.expectRevert("Oracle sifir olamaz");
         gate.setAegisForgeOracle(address(0));
     }
+
+    /// @notice PoV hash taahhudunu muhurler ve dogrular
+    function testSealAndVerifyPovCommitment() public {
+        bytes32 appId = gate.applyForListing(projectToken, "TestToken");
+        bytes32 povHash = keccak256("aegisforge-pov-v1-payload-test");
+        uint256 ts = block.timestamp;
+
+        vm.prank(oracle);
+        gate.sealPovCommitment(appId, povHash, ts);
+
+        // Kamusal dogrulama
+        assertTrue(gate.verifyPovCommitment(appId, povHash, ts), "Gecerli taahhut dogrulanmali");
+        assertTrue(gate.commitmentSealed(appId), "Taahhut muhurlu");
+    }
+
+    /// @notice Yanlis hash ile dogrulama false donmeli
+    function testVerifyRejectsWrongHash() public {
+        bytes32 appId = gate.applyForListing(projectToken, "TestToken");
+        bytes32 povHash = keccak256("real-payload");
+        uint256 ts = block.timestamp;
+
+        vm.prank(oracle);
+        gate.sealPovCommitment(appId, povHash, ts);
+
+        bytes32 wrongHash = keccak256("forged-payload");
+        assertFalse(gate.verifyPovCommitment(appId, wrongHash, ts), "Yanlis hash reddedilmeli");
+    }
+
+    /// @notice Yanlis timestamp ile dogrulama false donmeli (hash domain'i)
+    function testVerifyRejectsWrongTimestamp() public {
+        bytes32 appId = gate.applyForListing(projectToken, "TestToken");
+        bytes32 povHash = keccak256("payload");
+        uint256 ts = block.timestamp;
+
+        vm.prank(oracle);
+        gate.sealPovCommitment(appId, povHash, ts);
+
+        // Ayni hash, farkli timestamp -> gecersiz (yeniden tarama farkli taahhut)
+        assertFalse(gate.verifyPovCommitment(appId, povHash, ts + 1), "Yanlis timestamp reddedilmeli");
+    }
+
+    /// @notice Muhursuz basvuru dogrulanamaz
+    function testVerifyUnsealedReturnsFalse() public {
+        bytes32 appId = gate.applyForListing(projectToken, "TestToken");
+
+        assertFalse(gate.verifyPovCommitment(appId, keccak256("x"), 1), "Muhursuz taahhut false");
+        assertFalse(gate.commitmentSealed(appId));
+    }
+
+    /// @notice Oracle disinda kimse muhurleyemez
+    function testRevertNonOracleSeal() public {
+        bytes32 appId = gate.applyForListing(projectToken, "TestToken");
+
+        vm.expectRevert("Yalnizca AegisForge oracle");
+        gate.sealPovCommitment(appId, keccak256("payload"), block.timestamp);
+    }
+
+    /// @notice Sifir PoV hash reddedilmeli
+    function testRevertZeroPovHash() public {
+        bytes32 appId = gate.applyForListing(projectToken, "TestToken");
+
+        vm.prank(oracle);
+        vm.expectRevert("PoV hash sifir olamaz");
+        gate.sealPovCommitment(appId, bytes32(0), block.timestamp);
+    }
 }
