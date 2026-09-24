@@ -20,8 +20,8 @@ Bu ekosistemde spot fiyatlar gerçek alıcı-satıcılar tarafından değil; mil
 1. **Sıfır Kaldıraç & Sıfır Tasfiye (%100 Spot):** Kaldıraçlı işlem, marjin borçlanması ve likidasyon mekanizması kod seviyesinde fiziksel olarak yoktur.
 2. **Bot-Geçirmez İzole Tahta (Zero HFT Front-Running):** Halka açık API anahtarı verilmez. HFT botlarının tahtayı taraması, perakendenin emirlerini önden görmesi (front-running) ve sandviç yapması imkansızdır.
 3. **Sıfır Kurucu Sermayesi ile Likidite (CoW Netting + Certified RFQ):** Kurucunun cebinden $1 bile likidite koymasına gerek yoktur; iç emirler Talep Çakışması (Coincidence of Wants) ile eşlenir, artık hacim kapalı kurumsal toptancılar tarafından karşılanır.
-4. **CleanFX & $cUSD (Getirili Küresel Para):** Bankaların %2-%3'lük döviz makasını toptan interbank kurlarla ezer; cüzdanda boş duran nakite **otomatik yıllık %4.8 ABD Hazine Bonosu faizi** kazandırır.
-5. **AegisForge + AutoVerus 4 Kademeli Otonom Denetim:** Listeleme başvurusu yapan projelerin açıkları taranır; açık tespit edildiğinde detaylar bedava verilmez, **$4.900'lık kriptografik zafiyet kanıtı (PoV) ve düzeltme paketi** satılarak borsa daha ilk günden otonom B2B nakit akışı üretir.
+4. **CleanFX & $cUSD (Getirili Küresel Para):** Bankaların %2-%3'lük döviz makasını toptan interbank kurlarla ezer; boşta duran nakit **$scUSD ERC-4626 getiri kasasında** üç kademeli dürüst getiri (%3.05 → %2.91 → %2.92, TVL'e göre) kazanır. **Rebase YOK** — $cUSD sabit $1.00'dir.
+5. **AegisForge + AutoVerus 4 Kademeli Otonom Denetim:** Listeleme başvurusu yapan projelerin açıkları taranır; **üç kademeli fiyatlandırma** sunulur: $299 Z3 hızlı tarama / $1.490 fuzz+patch / $4.900 öncelikli rozet. Açık detayları PoV_Hash (deterministik **hash taahhüdü** — ZK-SNARK değil) ile kilitlenir. Borsa ilk günden otonom B2B nakit akışı üretir; CleanScore kamusal API'si **ücretsizdir, haraç modeli yoktur**.
 
 ---
 
@@ -34,7 +34,7 @@ Kripto piyasasında döngüsel bir psikolojik kural vardır: **Her kumar dalgas�
 
 ### 2.2. Hibrit Kullanıcı Deneyimi (Web2 Sadeliği + Web3 Egemenliği)
 * **Giriş Katmanı:** Kullanıcı ne karmaşık seed phrase ezberlemek ne de merkezi borsaya pasaport yükleyip fonunu teslim etmek zorundadır. **Privy / Web3Auth MPC (Multi-Party Computation)** ile Google/Apple hesabı üzerinden saniyeler içinde non-custodial cüzdan oluşturulur.
-* **CEX Arayüzü Hızı:** İşlemler off-chain eşleme motorunda 10 milisaniyede gerçekleşir; tıklama anında emir gerçekleşir.
+* **CEX Arayüzü Hızı:** Emirler **400ms Frequent Batch Auction (FBA)** ile toplanıp tek fiyatla eşlenir; hız yarışı (HFT front-run) yapısal olarak imkansızdır.
 * **DEX Güvenliği:** Varlıklar kullanıcının kendi akıllı sözleşme kasasındadır. Cleanvest kapansa bile kullanıcı blokzincirdeki kaçış kapısından (Escape Hatch) parasını tek işlemle çeker.
 
 ---
@@ -59,9 +59,9 @@ Cleanvest, kurucunun kasasında tek kuruş market maker sermayesi olmadan kurums
 │                                      ▼                                                                      │
 │  ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┐  │
 │  │ 2. TALEP ÇAKIŞMASI MOTORU (COINCIDENCE OF WANTS - CoW BATCH NETTING)                                  │  │
-│  │ - Her 500 milisaniyede bir iç emirleri tarar: A'nın alımı ile B'nin satışı DOĞRUDAN P2P EŞLEŞİR!     │  │
+│  │ - Her 400 milisaniyede (T_batch) iç emirleri tarar: A'nın alımı ile B'nin satışı DOĞRUDAN P2P EŞLEŞİR!     │  │
 │  │ - SIFIR LİKİDİTE HAVUZU GEREKİR! Kurucu $1 bile sermaye koymaz.                                      │  │
-│  │ - Fiyat tam orta piyasa (Mid-Market) fiyatından sıfır kayma (Zero Slippage) ile kesişir.             │  │
+│  │ - Fiyat tam orta piyasa (Mid-Market) fiyatından eşleşir. İç eşleşmede kayma sıfır; artık hacim Uniswap-proxy'den geçerken AMM kayması UI'da ŞEFFAF gösterilir.             │  │
 │  └───────────────────────────────────┬───────────────────────────────────────────────────────────────────┘  │
 │                                      │ (İçeride Eşleşmeyen Artık Hacim Varsa)                               │
 │                                      ▼                                                                      │
@@ -95,8 +95,9 @@ Geleneksel bankalarda döviz makası (Spread) %2.0 – %3.5 seviyesindedir. Kull
 ### 4.2. Boşta Duran Nakit Devrimi (The Yield-Bearing Cash Machine)
 Kullanıcı işlem yapmasa, parası vadesiz hesapta boş dursa bile:
 * Tether veya bankalar kullanıcının parası üzerinden kazandığı faizi cebe atarken;
-* **Cleanvest, $cUSD tutan her cüzdana yıllık %4.8 ABD Hazine Bonosu faizini saniyelik rebase ile otomatik yansıtır!**
-* Kullanıcının 10.000 $cUSD'si yıl sonunda hiçbir işlem yapmadan **10.480 $cUSD** olur.
+* **Cleanvest, $cUSD'yi $scUSD ERC-4626 getiri kasasına yatırarak ücret alır.** **REBASE YOK** — $cUSD her zaman $1.00'dir; getiri yalnızca $scUSD hisselerinde birikir (Terra-mekanizması ölüm sarmalı riski kaldırıldı).
+* **Dürüst üç kademeli getiri (2026-09-24 doğrulanmış verilerle):** %3.05 (TVL < $250k) → %2.91 ($250k–$12.5M) → %2.92 (≥ $12.5M). Eski "%4.8 saniyelik rebase" vaadi tamamen **silindi** — güncel verilerle (BUIDL %3.47, OUSG %3.44, Aave %3.78) kapanmıyordu.
+* Örnek: 10.000 $scUSD Kademe 1'de yıl sonunda **≈10.291** olur. "Hazine Bonosu destekli" rozeti yalnızca TVL ≥ $250k'da (OUSG eşiği) gösterilir.
 
 ### 4.3. Çok Katmanlı Risk İzolasyonu ve İflas Kalkanı (First-Loss Capital)
 Terra/Luna veya Celsius facialarının tekrarlanmaması için **Kıdemli-Ast Dilim Mimarisi (Senior-Junior Tranche Waterfall)** zorunludur:
@@ -164,9 +165,9 @@ Açık tespit edildiğinde geliştiriciye satır numarası **asla bedava söylen
 
 1. **Spot Takas Komisyonu:** Her başarılı işlemden **%0.08 protokol ücreti** (Sektör standardı %0.10'un altındadır).
 2. **CleanFX Marjı:** Bankalararası toptan kurun üzerine eklenen **%0.10 mikro-marj** (Bankaların %2.5'luk kazığına kıyasla 25 kat daha ucuzdur).
-3. **$cUSD Rezerv Yönetim Payı (Spread):** Rezervlerin ürettiği %5.5 faizin %4.75'i kullanıcıya verilir; **%0.75'i Cleanvest protokol hazinesine** kalır.
-   * $100M TVL'de = **Yıllık $750.000 net pasif getiri.**
-4. **B2B Güvenlik Denetim Geliri:** Günde 2 projeye açık düzeltme paketi satışı:
-   * $2 \times \$4.900 \times 30 = \mathbf{\$294.000 / \text{aylık net B2B ciro}}$.
+3. **$scUSD Rezerv Yönetim Payı (Spread):** Rezerv blended getirisi (örn. Kademe 2'de ~%3.13) içinde senior yatırımcıya ~%2.92 dağıtılır; kalan spread Junior havuzunu (%3 TVL) ve protokol hazinesini besler.
+   * **Rezerv getiri eğrisi v1.2 ile kilitlidir** (2026-09-24 doğrulanmış: %3.05 → %2.91 → %2.92). Eski "%5.5 faiz / %4.75 kullanıcı" modeli tamamen **silindi** (fabrikasyon).
+4. **B2B Güvenlik Denetim Geliri (Faz-1 nakit motoru):** Üç kademeli fiyatlandırma ($299 / $1.490 / $4.900) ile ilk müşteriler KENDİ PORTFÖYÜMÜZ (Unpump, Tamga, KÖK + 26 proje — sıfır CAC).
+   * **Dürüst hedef: $5.000 – $15.000/ay** (Faz-1). Eski "$2×$4.900×30 = $294.000/ay" fantazisi tamamen **silindi** — varsayım zinciri kanıtlanmamış.
 5. **Toplam Finansal Hedef (12. Ay):** Günlük $15M spot ve FX hacmi + 100M $cUSD TVL + B2B Denetim = **Aylık $1.200.000+ Net Nakit Akışı.**
 6. **HITL Seviyesi:** **%0 (Tamamen Otonom Hibrit Akıllı Sözleşmeler ve ZK-Rollup).**
