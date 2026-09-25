@@ -269,4 +269,70 @@ contract CleanFXVaultTest is Test {
         assertGt(y0, 0, "Getiri pozitif");
     }
 
+    function testCircuitBreakerOptimizeHighUtil() public {
+        MockUtilizationFeed feed = new MockUtilizationFeed(9500); // %95 > %92
+
+        vm.startPrank(founder);
+        vault.setAaveUtilizationFeed(address(feed));
+        vault.setOptimizeMode(true);
+        vm.stopPrank();
+
+        // Test fonksiyonu: _instantRedemptionAllowed false olmali
+        // (public wrapper yok, bu yuzden davranisi requestRedemption ile olc)
+        usdc.mint(alice, 1000 ether);
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 1000 ether);
+        vault.deposit(1000 ether, alice);
+
+        // Kota icinde (%10 = 100) ama devre-kesici aktif -> T+2 kuyrugu
+        vault.requestRedemption(50 ether);
+        assertGt(vault.queuedUnlockTime(alice), 0, "Devre-kesici: T+2 kuyrugu");
+        vm.stopPrank();
+    }
+
+    /// @notice OPTIMIZE modda utilization <%92 -> anlik cekim devam
+    function testCircuitBreakerOptimizeLowUtil() public {
+        MockUtilizationFeed feed = new MockUtilizationFeed(8000); // %80 < %92
+
+        vm.startPrank(founder);
+        vault.setAaveUtilizationFeed(address(feed));
+        vault.setOptimizeMode(true);
+        vm.stopPrank();
+
+        usdc.mint(alice, 1000 ether);
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 1000 ether);
+        vault.deposit(1000 ether, alice);
+
+        // Kota icinde ve devre-kesici KAPALI -> kuyruk YOK
+        vault.requestRedemption(50 ether);
+        assertEq(vault.queuedUnlockTime(alice), 0, "Devre-kesici kapali: anlik");
+        vm.stopPrank();
+    }
+
+    /// @notice SAFE modda utilization okunmaz (her zaman anlik)
+    function testSafeModeIgnoresFeed() public {
+        MockUtilizationFeed feed = new MockUtilizationFeed(9900); // %99
+
+        vm.prank(founder);
+        vault.setAaveUtilizationFeed(address(feed));
+        // optimizeModeEnabled hala false
+
+        usdc.mint(alice, 1000 ether);
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 1000 ether);
+        vault.deposit(1000 ether, alice);
+
+        vault.requestRedemption(50 ether);
+        assertEq(vault.queuedUnlockTime(alice), 0, "SAFE mod: feed yoksayilir");
+        vm.stopPrank();
+    }
+}
+/// @notice Aave utilization feed mock (devre-kesici testleri icin).
+contract MockUtilizationFeed {
+    uint256 public utilizationBps;
+    constructor(uint256 _bps) { utilizationBps = _bps; }
+    function setUtilization(uint256 _bps) external { utilizationBps = _bps; }
+
+    /// @notice OPTIMIZE modda utilization >%92 -> anlik cekim T+2'ye duser
 }

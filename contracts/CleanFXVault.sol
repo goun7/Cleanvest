@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./interfaces/ICleanvestVault.sol";
+import "./interfaces/IUtilizationFeed.sol";
 
 /// @title CleanFXVault - $scUSD ERC-4626 Getiri Kasasi
 /// @author Cleanvest
@@ -121,14 +122,17 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
     }
 
     /// @notice Aave utilization devre-kesicisi (Optimize modda).
-    /// @dev utilization > %92 ise anlik cekimler T+2 kuyruguna duser.
+    /// @dev utilization > %92 (9200 bps) ise anlik cekimler T+2 kuyruguna duser.
+    ///      SAFE modda her zaman true (utilization okunmaz).
     function _instantRedemptionAllowed() internal view returns (bool) {
         if (!optimizeModeEnabled) return true; // Guvenli modda her zaman anlik
         if (aaveUtilizationFeed == address(0)) return false;
 
         // Feed'den utilization (bps) oku - harici Chainlink-style feed
-        // Bu noktada harici oracle entegrasyonu (ILERIDE)
-        return true; // TODO: feed baglaninca utilization > 9200 kontrolu ekle
+        uint256 utilization = IUtilizationFeed(aaveUtilizationFeed).utilizationBps();
+
+        // Devre-kesici: >%92 -> false (T+2 kuyrugu)
+        return utilization <= UTILIZATION_CB_BPS;
     }
 
     /// @notice Cikis kapisi - ASLA kilitlenmez, yalnizca geciktirilir.

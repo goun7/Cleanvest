@@ -6,11 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./interfaces/IReserveStrategy.sol";
-
-/// @notice Aave utilization feed arayuzu (bps cinsinden utilization).
-interface IUtilizationFeed {
-    function utilizationBps() external view returns (uint256);
-}
+import "./interfaces/IUtilizationFeed.sol";
 
 /// @title ReserveManager - Cleanvest 3 Kademeli Reserve Yoneticisi
 /// @author Cleanvest
