@@ -44,7 +44,7 @@ Tier blended getirileri güncel verilerle:
 | Tier 2 | %40 BUIDL + %33 Aave + %12 boş + %15 Prime | 313.0 bp → **%2.92 net** | örtüşür | ✓ |
 
 Net senior getiri: `r_senior = (R - j·r_j)/(1-j)` ile j=%3, r_j=%9.9.
-Sözleşme testi `testYieldCurveMatchesSpec` ile birebir doğrulanır: 122/122.
+Sözleşme testi `testYieldCurveMatchesSpec` ile birebir doğrulanır: 129/129 (22 Eylül 2026 itibarıyla).
 
 ---
 
@@ -204,9 +204,9 @@ tek seferlik büyük çekilişi engeller, (c) junior %3 havuzu alt katmanı koru
 | Kriter | Puan | Gerekçe |
 |---|---|---|
 | Sözleşme güvenliği | **98** | 1 kalıcı risk: `deposit()` minShares'siz (azaltıcılarla) |
-| Test kapsamı | **100** | 122/122; fuzz 1024 run; invariant 300 derinlik |
+| Test kapsamı | **100** | 129/129 (forge) + 17/17 (vitest); coverage %86.85 lines, %96.59 funcs; invariant 300 derinlik |
 | Teknik borç | **100** | `recordAuditResult` mapping ile kapatıldı; TODO=0 |
-| UI/UX | **85** | Dashboard mükemmel ama **yalnızca tek dil (TR)**; mobil test edilmeli |
+| UI/UX | **93** | i18n TR/EN (kalıcı), mobil 390px doğrulandı (taşma yok), 17 UI testi; kalan: canlı deploy |
 | Veri güncelliği | **97** | Aave spot/7D metodoloji farkı dokümante edildi |
 | Rakip konumu | **95** | Tamamlayıcı katman; likidite soğuk başlama |
 | Akademik dayanak | **99** | 4 hakemli/arşiv makale + OWASP sınıflandırması, her biri sözleşmede somut karşılık |
