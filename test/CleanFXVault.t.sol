@@ -327,7 +327,28 @@ contract CleanFXVaultTest is Test {
         assertEq(vault.queuedUnlockTime(alice), 0, "SAFE mod: feed yoksayilir");
         vm.stopPrank();
     }
+
+    /// @notice Getiri egrisi PROJE_KAGIDI.md L99 ile BIREBIR: %3.05/%2.91/%2.92
+    function testYieldCurveMatchesSpec() public {
+        // Tier0: TVL < $250k -> %3.05
+        assertEq(vault.currentSeniorYield(), 0.0305e18, "Tier0 = %3.05 (KAGIDI L99)");
+
+        // Tier1: $250k+ -> %2.91
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 250_000 ether);
+        vault.deposit(250_000 ether, alice);
+        vm.stopPrank();
+        assertEq(vault.currentSeniorYield(), 0.0291e18, "Tier1 = %2.91 (KAGIDI L99)");
+
+        // Tier2: $12.5M+ -> %2.92 (alice toplam 12.75M)
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 12_500_000 ether);
+        vault.deposit(12_500_000 ether, alice);
+        vm.stopPrank();
+        assertEq(vault.currentSeniorYield(), 0.0292e18, "Tier2 = %2.92 (KAGIDI L99)");
+    }
 }
+
 /// @notice Aave utilization feed mock (devre-kesici testleri icin).
 contract MockUtilizationFeed {
     uint256 public utilizationBps;
@@ -335,4 +356,5 @@ contract MockUtilizationFeed {
     function setUtilization(uint256 _bps) external { utilizationBps = _bps; }
 
     /// @notice OPTIMIZE modda utilization >%92 -> anlik cekim T+2'ye duser
+
 }

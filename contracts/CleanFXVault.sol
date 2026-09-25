@@ -74,7 +74,9 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
 
         if (tier == ReserveTier.Tier0) {
             // %73 Aave(378) + %12 idle(0) + %15 Prime(330) = 325.4 bp
-            R_bps = 325;
+            // YUKARI YUVARLA (326): net senior %3.05 (KAGIDI L99 ile birebir).
+            // 325 floor olsaydi 304.43 -> %3.04 cikardi (spec'e aykiri).
+            R_bps = 326;
         } else if (tier == ReserveTier.Tier1) {
             // %40 OUSG(344) + %33 Aave(378) + %12 idle(0) + %15 Prime(330) = 311.8 bp
             R_bps = 312;

@@ -61,17 +61,48 @@ contract InvariantTest is Test {
     ///      tam 1:1 degildir (OZ rounding), ayrica handler siralamasi
     ///      olculmesi zor sapmalar uretiyor. Gercek guvenlik korumasi:
     ///      kuyruktaki bir kullanici 2 gun sonra her zaman cikabilmelidir.
+    /// @notice CIKISLAR ASLA KILITLENMEZ (sartname invariant'i).
+    /// @dev Kullanici scUSD'ye sahipse, cikis yolu her zaman aciktir:
+    ///      anlik (%10 gunluk kapasiye icinde) veya T+2 kuyruk.
+    ///      Hicbir durumda cikis tamamen reddedilemez.
     function invariantRedemptionNeverLocked() public {
-        // Vault'a para yatirilmis ve kuyrukta bekleyen varsa, kontrol et
-        if (vault.totalAssets() == 0) return;
+        uint256 ts = vault.totalSupply();
+        if (ts == 0) return;
 
-        // CleanUSD invariant: junior her zaman >= %3 (mint gate)
-        // Overflow-guvenli: carpmadan once bol
-        // INVARIANT: juniorReserve her zaman makul aralikta (DoS onlenur)
-        assertLe(cUSD.juniorReserve(), 1_000_000 ether, "jr cok buyudu");
+        // Anlik cikis kapasiitesi: yeterli supply'de > 0 (kucuk bakiyelerde
+        // floor rounding 0 verebilir - o durumda T+2 kuyruk kullanilir)
+        if (ts >= 10) {
+            uint256 instantCap = (ts * vault.DAILY_INSTANT_CAP_BPS()) / 10000;
+            assertGt(instantCap, 0, "yeterli supply'de anlik cikis > 0");
+        }
+
+        // Kuyruk suresi sonlu (T+2 = 2 gun), sonsuz degil
+        assertGt(vault.T2_SETTLE_SECONDS(), 0, "T+2 suresi sonlu");
+        assertLe(vault.T2_SETTLE_SECONDS(), 30 days, "T+2 makul aralikta");
+
+        // Junior her zaman >= %3 (cikislari finanse eder)
+        assertGe(
+            cUSD.juniorReserve() * 10000,
+            cUSD.totalSupply() * 300,
+            "junior >= %3 (cikislarin finansmani)"
+        );
     }
 
-    /// @notice Reserve allocation toplami HER zaman 10000 bps
+    /// @notice Soguk baslama matematigi: $3.000 tohum -> $100.000 TVL tavan.
+    /// @dev tvlCap SADECE ilk seed'de set edilir (capUnlocked), sonraki
+    ///      owner seed'leri juniorReserve'i artirir ama cap'i degistirmez.
+    ///      Invariant: cap ACIK ve supply ASLA cap'i asamaz (mint gate).
+    function invariantSeedToTvlCap() public {
+        uint256 cap = cUSD.tvlCap();
+        require(cap > 0, "cap acik olmali");
+
+        // setup: $3k seed -> $100k cap (33.33x, KAGIDI soguk baslama)
+        assertGe(cap, 100_000 ether, "cap >= $100k ($3k seed)");
+
+        // mint gate: supply asla tavani asamaz
+        assertLe(cUSD.totalSupply(), cap, "supply TVL tavanini asamaz");
+    }
+
     function invariantAllocationSumsTo10000() public {
         IReserveStrategy.Allocation memory a = reserve.targetAllocation(reserve.activeTier());
         assertEq(

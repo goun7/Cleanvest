@@ -1,1 +1,1 @@
-{"version":1,"failures":[{"contract":"test/Invariant.t.sol:InvariantTest","test":"invariantRedemptionNeverLocked"}]}
+{"version":1,"failures":[{"contract":"test/scusd_vault_invariants.t.sol:InvariantTest","test":"invariantRedemptionNeverLocked"},{"contract":"test/scusd_vault_invariants.t.sol:InvariantTest","test":"invariantSeedToTvlCap"}]}
