@@ -10,7 +10,7 @@ describe('i18n dil paketi', () => {
     // i18n.ts icerisindeki her iki dict'i dolasilabilir degil,
     // bu yuzden tum bilinen anahtarlari test ediyoruz
     const known = [
-      'subtitle', 'live', 'connectWallet', 'wrongNetwork', 'noWallet',
+      'subtitle', 'live', 'connected', 'liveNoData', 'connectWallet', 'wrongNetwork', 'noWallet',
       'statTvl', 'statTier', 'statPrice', 'statJunior',
       'juniorSafe', 'juniorRisk', 'shareSub',
       'yieldPanel', 'yieldVerified', 'tier0', 'tier1', 'tier2', 'yieldNote',

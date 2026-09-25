@@ -130,9 +130,17 @@ function App() {
           >
             {lang.toUpperCase()}
           </button>
-          {s?.loaded && (
+          {account && s?.loaded ? (
             <span className="chip bg-fx-yield/15 text-fx-yield">
-              <span className="h-1.5 w-1.5 rounded-full bg-fx-yield" /> {tt("live")}
+              <span className="h-1.5 w-1.5 rounded-full bg-fx-yield" /> {tt("connected")}
+            </span>
+          ) : !s?.loaded ? (
+            <span className="chip bg-fx-gold/10 text-fx-gold">
+              <span className="h-1.5 w-1.5 rounded-full bg-fx-gold" /> {tt("liveNoData")}
+            </span>
+          ) : (
+            <span className="chip bg-fx-base/15 text-fx-base">
+              <span className="h-1.5 w-1.5 rounded-full bg-fx-base" /> {tt("live")}
             </span>
           )}
           {account ? (

@@ -8,6 +8,8 @@ type Dict = Record<string, string>;
 const tr: Dict = {
   subtitle: "Sifir manipulasyonlu spot borsa ve getiri kasasi",
   live: "Canli",
+  connected: "Bagli",
+  liveNoData: "Veri bekleniyor",
   connectWallet: "Cuzdan Bagla",
   wrongNetwork: "Base agina bagli degilsin (su an: chainId {id}). Lutfen Base'e gec.",
   noWallet: "Cuzdan bulunamadi (MetaMask yuklu degil).",
@@ -50,6 +52,8 @@ const tr: Dict = {
 const en: Dict = {
   subtitle: "Zero-manipulation spot exchange and yield vault",
   live: "Live",
+  connected: "Connected",
+  liveNoData: "Awaiting data",
   connectWallet: "Connect Wallet",
   wrongNetwork: "Not on Base network (current: chainId {id}). Please switch to Base.",
   noWallet: "No wallet found (MetaMask not installed).",
