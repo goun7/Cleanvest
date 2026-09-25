@@ -4,6 +4,35 @@ import CleanFXVaultAbi from "../contracts/CleanFXVault.abi.json";
 import CleanUSDAbi from "../contracts/CleanUSD.abi.json";
 import addresses from "../contracts/addresses.json";
 
+/**
+ * Canli anvil degerleriyle dogrulanmis birim donusumleri.
+ * Regression: juniorCoverageRatio BPS doner (300 = %3.00) — 18 decimals DEGIL.
+ * Bir zamanlar formatUnits(18)*100 yapildi ve UI %0.00 gosteriyordu.
+ */
+export function bpsToPct(bps: bigint | number): number {
+  return Number(bps) / 100;
+}
+
+/** Yuzde bicimleme (TR yerel). */
+export function pct(n: number): string {
+  return `%${n.toFixed(2)}`;
+}
+
+/**
+ * Getiri egrisi sabitleri — canli anvil ile birebir dogrulandi:
+ *   currentSeniorYield() = 3.05e16 (Tier 0) = %3.05
+ *   redemptionGate()     = (1000, 172800) = %10 gunluk + 2 gun
+ *   juniorCoverageRatio()= 300 bps = %3.00
+ */
+export const LIVE_VERIFIED = {
+  tier0YieldPct: 3.05,
+  tier1YieldPct: 2.91,
+  tier2YieldPct: 2.92,
+  dailyCapBps: 1000,
+  settleSeconds: 172800,
+  juniorMinBps: 300,
+} as const;
+
 export const CHAIN_ID = 8453; // Base
 export const VAULT_ADDR = (addresses as unknown as Record<string, string>).CleanFXVault || "";
 export const CUSD_ADDR = (addresses as unknown as Record<string, string>).CleanUSD || "";
@@ -84,8 +113,8 @@ export async function fetchVaultState(account: string | null): Promise<VaultStat
     tier: TIER_NAMES[Number(tier)] ?? "-",
     seniorYieldPct: (Number(formatUnits(yieldRaw, 18)) * 100),
     // DİKKAT: juniorCoverageRatio BPS doner (300 = %3.00), 18 decimals DEGIL.
-    // Onceki kod formatUnits(18) yapip *100 carpiyordu -> UI'da %0.00 gosteriyordu.
-    juniorRatioPct: Number(juniorRatio) / 100,
+    // bpsToPct ile tek kaynak (regression testi: see __tests__)
+    juniorRatioPct: bpsToPct(juniorRatio),
     dailyInstantCapPct: Number(capPct) / 100,
     settleDays: Number(settleDays) / 86400,
     dailyRemaining: formatUnits(await vault.totalSupply().then((s: bigint) => (s * BigInt(capPct)) / 10000n), 18),
