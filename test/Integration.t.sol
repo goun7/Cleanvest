@@ -69,6 +69,18 @@ contract IntegrationTest is Test {
     // =================================================================
 
     /// @notice Tam yield dongusu: seed -> mint -> deposit -> tier -> redeem
+    /// @notice Batch icin gecerli kanit uretir.
+    function _makeProof(
+        bytes32 batchId,
+        bytes32 commitmentRoot,
+        uint256 clearingPrice,
+        uint256 totalVolume
+    ) internal pure returns (bytes memory) {
+        return abi.encode(
+            keccak256(abi.encode(batchId, commitmentRoot, clearingPrice, totalVolume))
+        );
+    }
+
     function testFullYieldFlow() public {
         // Founder tohum: $3.000 -> $100.000 TVL tavan
         vm.prank(founder);
@@ -168,7 +180,7 @@ contract IntegrationTest is Test {
         });
 
         vm.prank(solver);
-        settlement.executeBatchSettlement(batch, bytes("proof"));
+        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
 
         assertTrue(settlement.isBatchSettled(batchId), "Batch kesinlesti");
 

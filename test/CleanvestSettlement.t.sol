@@ -24,6 +24,19 @@ contract CleanvestSettlementTest is Test {
     }
 
     /// @notice T_batch 400ms kilitli
+
+    /// @notice Batch icin gecerli 32-bayt kanit uretir.
+    function _makeProof(
+        bytes32 batchId,
+        bytes32 commitmentRoot,
+        uint256 clearingPrice,
+        uint256 totalVolume
+    ) internal pure returns (bytes memory) {
+        return abi.encode(
+            keccak256(abi.encode(batchId, commitmentRoot, clearingPrice, totalVolume))
+        );
+    }
+
     function testTBatchIs400ms() public view {
         assertEq(settlement.T_BATCH_MS(), 400, "T_batch = 400ms (Budish FBA)");
     }
@@ -90,7 +103,7 @@ contract CleanvestSettlementTest is Test {
         });
 
         vm.prank(solver);
-        settlement.executeBatchSettlement(batch, bytes("proof"));
+        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
 
         assertTrue(settlement.isBatchSettled(BATCH_ID), "Batch kesinlesti");
     }
@@ -107,7 +120,7 @@ contract CleanvestSettlementTest is Test {
 
         vm.prank(solver);
         vm.expectRevert("orderCommitmentRoot ZORUNLU");
-        settlement.executeBatchSettlement(batch, bytes("proof"));
+        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
     }
 
     /// @notice Cift batch kesinlestirme reddedilir
@@ -121,10 +134,10 @@ contract CleanvestSettlementTest is Test {
         });
 
         vm.startPrank(solver);
-        settlement.executeBatchSettlement(batch, bytes("proof"));
+        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
 
         vm.expectRevert("Batch zaten kesinlesti");
-        settlement.executeBatchSettlement(batch, bytes("proof"));
+        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
         vm.stopPrank();
     }
 
@@ -140,7 +153,7 @@ contract CleanvestSettlementTest is Test {
 
         vm.prank(solver);
         vm.expectRevert("Takas fiyat 0 olamaz");
-        settlement.executeBatchSettlement(batch, bytes("proof"));
+        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
     }
 
     /// @notice Kayitsiz solver batch gonderemez
@@ -155,7 +168,7 @@ contract CleanvestSettlementTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectRevert("Kayitli RFQ solver degil");
-        settlement.executeBatchSettlement(batch, bytes("proof"));
+        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
     }
 
     /// @notice Lift trigger: hacim > $250k -> tavani kaldirir
@@ -169,7 +182,7 @@ contract CleanvestSettlementTest is Test {
         });
 
         vm.prank(solver);
-        settlement.executeBatchSettlement(batch, bytes("proof"));
+        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
 
         assertTrue(settlement.sizeCapLifted(), "Hacim lift trigger tetikledi");
         assertEq(settlement.orderSizeCap(), type(uint256).max, "Tavan kaldirildi");
@@ -200,5 +213,37 @@ contract CleanvestSettlementTest is Test {
         vm.prank(owner);
         vm.expectRevert("Feed sifir olamaz");
         settlement.setChainlinkFeed(address(0));
+    }
+
+    /// @notice Gecersiz kanit reddedilir (batch butunlik korumasi)
+    function testRevertInvalidProof() public {
+        ICleanvestSettlement.MatchedBatch memory batch = ICleanvestSettlement.MatchedBatch({
+            batchId: BATCH_ID,
+            orderCommitmentRoot: COMMIT_ROOT,
+            clearingPrice: 1_000 ether,
+            totalVolume: 500_000 ether,
+            solverSignature: ""
+        });
+
+        // Yanlis kanit (baska batch'in hash'i)
+        bytes memory badProof = abi.encode(keccak256("forged"));
+        vm.prank(solver);
+        vm.expectRevert("Kanit batch ile uyumsuz");
+        settlement.executeBatchSettlement(batch, badProof);
+    }
+
+    /// @notice 32 bayt olmayan kanit reddedilir
+    function testRevertWrongLengthProof() public {
+        ICleanvestSettlement.MatchedBatch memory batch = ICleanvestSettlement.MatchedBatch({
+            batchId: BATCH_ID,
+            orderCommitmentRoot: COMMIT_ROOT,
+            clearingPrice: 1_000 ether,
+            totalVolume: 500_000 ether,
+            solverSignature: ""
+        });
+
+        vm.prank(solver);
+        vm.expectRevert("Kanit 32 bayt olmali");
+        settlement.executeBatchSettlement(batch, bytes("short"));
     }
 }

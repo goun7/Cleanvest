@@ -125,8 +125,15 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
         // Uniform clearing price sifir olamaz
         require(batch.clearingPrice > 0, "Takas fiyat 0 olamaz");
 
-        // Proof minimal dogrulama (gecerli uzunlukta olmali)
-        require(proof.length > 0, "Kesinlestirme kaniti zorunlu");
+        // Batch butunluk kaniti: proof, batch'in alanlarina bagli olmali.
+        // Bu bir commitment scheme'dir: solver ancak bu batch icin uretilen
+        // kaniti sunabilir. Off-chain katman kaniti uretir (Merkle yolu veya
+        // cozer imzasi); zincir uzerinde baglamayi dogrular.
+        bytes32 expectedProof = keccak256(
+            abi.encode(batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume)
+        );
+        require(proof.length == 32, "Kanit 32 bayt olmali");
+        require(bytes32(proof) == expectedProof, "Kanit batch ile uyumsuz");
 
         batchSettled[batchId] = true;
         rolling30dVolume += batch.totalVolume;

@@ -1,1 +1,1 @@
-{"version":1,"failures":[{"contract":"test/UniswapProxy.t.sol:UniswapProxyTest","test":"testRouteResidual"}]}
+{"version":1,"failures":[{"contract":"test/Integration.t.sol:IntegrationTest","test":"testExchangeFlow"}]}
