@@ -61,9 +61,14 @@ contract CleanUSD is ICleanUSD, ERC20, Ownable {
     /// @inheritdoc ICleanUSD
     /// @notice Junior havuzunu besler ve TVL tavanını açar.
     /// @dev $3.000 tohum → $100.000 tavan ($3.000 / 0.03).
-    function seedJunior(uint256 amount) external payable {
+    ///      GUVENLIK: onlyOwner - herkes cagiramaz (DoS onlenur).
+    ///      Asiri buyuk tohum reddedilir (canMint icinde carpma tasma riski).
+    function seedJunior(uint256 amount) external payable onlyOwner {
         require(msg.value > 0 || amount > 0, "Tohum sifir olamaz");
         uint256 seed = msg.value > 0 ? msg.value : amount;
+        // OVERFLOW KORUMASI: juniorReserve * 10000 (canMint icinde) tasmamali
+        // 1_000_000 ether = $1M tohum → $33M TVL tavan (gercek disi yuksek)
+        require(seed <= 1_000_000 ether, "Tohum cok buyuk (max $1M)");
 
         juniorReserve += seed;
 

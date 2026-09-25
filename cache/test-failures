@@ -1,1 +1,1 @@
-{"version":1,"failures":[{"contract":"test/CleanvestSettlement.t.sol:CleanvestSettlementTest","test":"testAntiCollusionGrowsWithSize"}]}
+{"version":1,"failures":[{"contract":"test/Invariant.t.sol:InvariantTest","test":"invariantRedemptionNeverLocked"}]}
