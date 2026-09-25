@@ -1,1 +1,1 @@
-{"version":1,"failures":[{"contract":"test/CleanFXVault.t.sol:CleanFXVaultTest","test":"testInstantRedemptionWithinCap"},{"contract":"test/CleanFXVault.t.sol:CleanFXVaultTest","test":"testRedemptionNeverLocked"}]}
+{"version":1,"failures":[{"contract":"test/CleanFXVault.t.sol:CleanFXVaultTest","test":"testRedemptionNeverLocked"}]}

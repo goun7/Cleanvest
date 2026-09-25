@@ -132,6 +132,9 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
     }
 
     /// @notice Cikis kapisi - ASLA kilitlenmez, yalnizca geciktirilir.
+    /// @dev Kotanin altinda: anlik. Uzerinde: once requestRedemption() ile
+    ///      kuyruga girilir (ayri transaction - revert state'i geri alir),
+    ///      2 gun sonra withdraw() basarili olur.
     function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
         internal
         override
@@ -139,17 +142,52 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
         uint256 today = block.timestamp / 1 days;
         uint256 usedToday = dailyRedemptions[today];
 
-        if (assets <= _dailyRemainingInstant(usedToday) && _instantRedemptionAllowed()) {
+        bool instantAllowed = assets <= _dailyRemainingInstant(usedToday)
+            && _instantRedemptionAllowed();
+
+        if (!instantAllowed) {
+            uint256 unlock = queuedRedemptionUnlock[owner];
+            require(unlock != 0, "Once requestRedemption ile kuyruga girin");
+            require(block.timestamp >= unlock, "T+2 bekleme suresi dolmadi");
+            // Sure doldu -> kuyruktan temizle, fonlar simdi hareket eder
+            delete queuedRedemptionUnlock[owner];
+        } else {
             // Anlik USDC cekimi - gunluk %10 kotasi icinde
             dailyRedemptions[today] = usedToday + assets;
-            super._withdraw(caller, receiver, owner, assets, shares);
+        }
+
+        super._withdraw(caller, receiver, owner, assets, shares);
+    }
+
+    /// @notice Kotayi asan cikisi T+2 kuyruguna alir (ayri transaction).
+    /// @dev Solidity revert state'i geri alir; bu yuzden kuyruk kaydi ayri
+    ///      bir cagrida yapilmalidir. CIKIS KILITLENMEZ - 2 gun sonra serbest.
+    /// @param assets Cekilecek miktar (gunluk kotayi asiyor olmali)
+    function requestRedemption(uint256 assets) external nonReentrant {
+        uint256 today = block.timestamp / 1 days;
+        uint256 usedToday = dailyRedemptions[today];
+
+        bool instantAllowed = assets <= _dailyRemainingInstant(usedToday)
+            && _instantRedemptionAllowed();
+
+        if (!instantAllowed) {
+            queuedRedemptionUnlock[msg.sender] = block.timestamp + T2_SETTLE_SECONDS;
+            emit RedemptionQueued(msg.sender, assets, block.timestamp + T2_SETTLE_SECONDS);
         } else {
-            // %10 uzeri veya devre-kesici tetiklendi -> T+2 kuyrugu
-            // CIKIS KILITLENMEZ - ertelenir
-            queuedRedemptionUnlock[owner] = block.timestamp + T2_SETTLE_SECONDS;
-            super._withdraw(caller, receiver, owner, assets, shares);
+            // Kota icinde - kuyruk GEREKMEZ, anlik cek
+            queuedRedemptionUnlock[msg.sender] = 0;
+            emit RedemptionInstantEligible(msg.sender, assets);
         }
     }
+
+    /// @notice Kuyruktaki cikisin ne zaman serbest kalacagini dondurur.
+    /// @return 0 = kuyrukta degil; >0 = serbest kalma timestamp'i.
+    function queuedUnlockTime(address owner) external view returns (uint256) {
+        return queuedRedemptionUnlock[owner];
+    }
+
+    event RedemptionQueued(address indexed owner, uint256 assets, uint256 unlockTime);
+    event RedemptionInstantEligible(address indexed owner, uint256 assets);
 
     /// @notice Gunluk anlik kalan kotayi hesaplar.
     function _dailyRemainingInstant(uint256 usedToday) internal view returns (uint256) {

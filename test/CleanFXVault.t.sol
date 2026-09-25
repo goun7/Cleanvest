@@ -20,6 +20,7 @@ contract CleanFXVaultTest is Test {
     MockUSDC public usdc;
     address public founder = address(0xF0D5000);
     address public alice = address(0xA11CE);
+    address public bob = address(0xB0B);
 
     function setUp() public {
         usdc = new MockUSDC();
@@ -28,6 +29,7 @@ contract CleanFXVaultTest is Test {
 
         usdc.mint(alice, 20_000_000 ether);
         usdc.mint(founder, 1_000_000 ether);
+        usdc.mint(bob, 20_000_000 ether);
     }
 
     /// @notice Tier0: TVL < $250k -> kucuk depozit
@@ -83,6 +85,18 @@ contract CleanFXVaultTest is Test {
         assertApproxEqAbs(y1, 0.0291 ether, 0.0002 ether, "Tier1 ~%2.91");
     }
 
+    /// @notice Kuyruk istegi yapmadan cok buyuk cekim reddedilir
+    function testRevertWithdrawWithoutRequest() public {
+        usdc.mint(alice, 200 ether);
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 200 ether);
+        vault.deposit(200 ether, alice);
+
+        vm.expectRevert("Once requestRedemption ile kuyruga girin");
+        vault.withdraw(21 ether, alice, alice);
+        vm.stopPrank();
+    }
+
     /// @notice Optimize modu feed bagli degilken ACILAMAZ
     function testRevertOptimizeWithoutFeed() public {
         vm.prank(founder);
@@ -123,15 +137,21 @@ contract CleanFXVaultTest is Test {
         usdc.approve(address(vault), 100_000 ether);
         vault.deposit(100_000 ether, alice);
 
-        // %10 uzeri cekim -> T+2 kuyrugu (KILITLENMEZ, ertelenir)
+        // Kuyruk istegi (ayri transaction - state kalici)
+        vault.requestRedemption(20_000 ether);
+        assertGt(vault.queuedUnlockTime(alice), 0, "T+2 kuyruk kaydi");
+
+        // Hemen cekmek reddedilir
+        vm.expectRevert("T+2 bekleme suresi dolmadi");
+        vault.withdraw(20_000 ether, alice, alice);
+
+        // 2 gun sonra CIKIS SERBEST - sonsuz kilit YOK
+        vm.warp(block.timestamp + 2 days + 1);
         vault.withdraw(20_000 ether, alice, alice);
         vm.stopPrank();
 
-        // Alice yine de USDC'sini aldi (ertelendi ama kilitlenmedi)
-        assertEq(usdc.balanceOf(alice), 19_920_000 ether, "19.9M + 20.000 (T+2)");
-
-        // T+2 kuyruk kaydi olustu
-        assertGt(vault.queuedRedemptionUnlock(alice), 0, "T+2 kuyruk kaydi");
+        assertEq(usdc.balanceOf(alice), 19_920_000 ether, "T+2 sonrasi fonlar serbest (20M - 100k deposit + 20k cekim)");
+        assertEq(vault.queuedUnlockTime(alice), 0, "Kuyruk temizlendi");
     }
 
     /// @notice Junior coverage orani %3
@@ -146,4 +166,107 @@ contract CleanFXVaultTest is Test {
         assertEq(capPct, 1000, "Gunluk %10 anlik kap");
         assertEq(settleSec, 2 days, "T+2 = 2 gun");
     }
+
+    /// @notice T+2 kuyrugu: kotayi asan cikis_once revert eder, fonlar YERINDE KALIR
+    function testT2QueueRevertsFirstAttempt() public {
+        usdc.mint(alice, 200 ether);
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 200 ether);
+        vault.deposit(200 ether, alice);
+
+        // Gunluk kota = %10 x 200 = 20. 21 cekmek kuyruga girer.
+        vault.requestRedemption(21 ether);
+
+        // Fonlar YERINDE - T+2 ihlal edilmedi
+        assertEq(usdc.balanceOf(alice), 20_000_000 ether, "Fonlar kuyruktayken hareket ETMEZ");
+        assertGt(vault.queuedUnlockTime(alice), 0, "Kuyruk zamani set edildi");
+
+        // Hemen cekme reddedilir
+        vm.expectRevert("T+2 bekleme suresi dolmadi");
+        vault.withdraw(21 ether, alice, alice);
+        vm.stopPrank();
+    }
+
+    /// @notice T+2: 2 gun sonra ayni cagri basarili olur
+    function testT2QueueSucceedsAfter2Days() public {
+        usdc.mint(alice, 200 ether);
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 200 ether);
+        vault.deposit(200 ether, alice);
+
+        vault.requestRedemption(21 ether);
+
+        // 2 gun bekle
+        vm.warp(block.timestamp + 2 days + 1);
+
+        vault.withdraw(21 ether, alice, alice);
+        assertGt(usdc.balanceOf(alice), 20_000_000 ether, "T+2 sonrasi cekim basarili");
+        assertEq(vault.queuedUnlockTime(alice), 0, "Kuyruk temizlendi");
+        vm.stopPrank();
+    }
+
+    /// @notice T+2: 2 gun dolmadan ikinci deneme reddedilir
+    function testT2QueueRejectsBeforeUnlock() public {
+        usdc.mint(alice, 200 ether);
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 200 ether);
+        vault.deposit(200 ether, alice);
+
+        vault.requestRedemption(21 ether);
+
+        vm.warp(block.timestamp + 1 days);
+        vm.expectRevert("T+2 bekleme suresi dolmadi");
+        vault.withdraw(21 ether, alice, alice);
+        vm.stopPrank();
+    }
+
+    /// @notice Kota icindeki cikis anlik yapilir, kuyruga girmez
+    function testInstantWithinDailyCap() public {
+        usdc.mint(alice, 200 ether);
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 200 ether);
+        vault.deposit(200 ether, alice);
+
+        // 20 = tam %10 kotasi -> anlik
+        vault.withdraw(20 ether, alice, alice);
+        assertGt(usdc.balanceOf(alice), 19_999_000 ether, "Kota icinde anlik");
+        assertEq(vault.queuedUnlockTime(alice), 0, "Kuyrukta degil");
+        vm.stopPrank();
+    }
+
+    /// @notice Feed baglaninca Optimize modu acilabilir
+    function testOptimizeAfterFeedWired() public {
+        address feed = address(0xFEED);
+
+        vm.prank(founder);
+        vault.setAaveUtilizationFeed(feed);
+
+        vm.prank(founder);
+        vault.setOptimizeMode(true);
+
+        assert(uint256(vault.activeTier()) == uint256(ICleanvestVault.ReserveTier.TierOptimize));
+    }
+
+    /// @notice Getiri egrisi: Tier0 > Tier1 (OUSG eklendiginde dusus)
+    function testYieldCurveMonotone() public {
+        // Tier0
+        usdc.mint(alice, 100_000 ether);
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 100_000 ether);
+        vault.deposit(100_000 ether, alice);
+        uint256 y0 = vault.currentSeniorYield();
+        vm.stopPrank();
+
+        // Tier1
+        usdc.mint(bob, 250_000 ether);
+        vm.startPrank(bob);
+        usdc.approve(address(vault), 250_000 ether);
+        vault.deposit(250_000 ether, bob);
+        uint256 y1 = vault.currentSeniorYield();
+        vm.stopPrank();
+
+        assertLt(y1, y0, "Tier1 getirisi Tier0'dan DUSUK olmali");
+        assertGt(y0, 0, "Getiri pozitif");
+    }
+
 }
