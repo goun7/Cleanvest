@@ -83,11 +83,11 @@ contract UniswapProxy is Ownable, ReentrancyGuard {
             ? Math.mulDiv(amountIn - amountOut, 10000, amountIn)
             : 0;
 
+        // CEI: once transfer, sonra state (reentrancy en iyi pratik)
+        IERC20(tokenOut).transfer(msg.sender, amountOut);
+
         totalRoutedVolume += amountIn;
         totalRoutedCount++;
-
-        // Cikis tokenini gonder
-        IERC20(tokenOut).transfer(msg.sender, amountOut);
 
         emit VolumeRouted(tokenIn, tokenOut, amountIn, amountOut, slippageBps);
 
