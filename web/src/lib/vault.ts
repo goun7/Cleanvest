@@ -83,7 +83,9 @@ export async function fetchVaultState(account: string | null): Promise<VaultStat
     sharePrice,
     tier: TIER_NAMES[Number(tier)] ?? "-",
     seniorYieldPct: (Number(formatUnits(yieldRaw, 18)) * 100),
-    juniorRatioPct: Number(formatUnits(juniorRatio, 18)) * 100,
+    // DİKKAT: juniorCoverageRatio BPS doner (300 = %3.00), 18 decimals DEGIL.
+    // Onceki kod formatUnits(18) yapip *100 carpiyordu -> UI'da %0.00 gosteriyordu.
+    juniorRatioPct: Number(juniorRatio) / 100,
     dailyInstantCapPct: Number(capPct) / 100,
     settleDays: Number(settleDays) / 86400,
     dailyRemaining: formatUnits(await vault.totalSupply().then((s: bigint) => (s * BigInt(capPct)) / 10000n), 18),
