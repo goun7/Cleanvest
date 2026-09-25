@@ -1,0 +1,23 @@
+ # | Kategori                                   |    Bosta Nakit | Mevcut % | scUSD % |  Yillik Kazanc
+---------------------------------------------------------------------------------------------------------
+ 1 | Elektronik Para Kurulusu (EMU)             | $    4,200,000 |    0.90% |   2.91% | $       84,420
+ 2 | Odeme Agi Islemcisi                        | $    2,800,000 |    1.10% |   2.91% | $       50,680
+ 3 | Kripto Borsa Hazinesi                      | $   15,000,000 |    1.50% |   2.92% | $      213,000
+ 4 | Fintech Cuzdan Saglayici                   | $    1,150,000 |    0.85% |   2.91% | $       23,690
+ 5 | Kurumsal Tedarik Zinciri Finansmani        | $    6,700,000 |    1.05% |   2.91% | $      124,620
+ 6 | Banka Odeme Hizmetleri (BOH)               | $   22,000,000 |    1.20% |   2.92% | $      378,400
+ 7 | E-Ticaret Pazaryeri Escrow                 | $    9,400,000 |    0.95% |   2.91% | $      184,240
+ 8 | Mikrofinans Kurulusu                       | $      890,000 |    0.80% |   2.91% | $       18,779
+ 9 | Faktoring Sirketi                          | $    3,600,000 |    1.00% |   2.91% | $       68,760
+10 | Sigorta Sirketi Likidite Havuzu            | $   18,500,000 |    1.15% |   2.92% | $      327,450
+11 | Emeklilik Fonu Nakit Bolumu                | $   31,000,000 |    0.90% |   2.92% | $      626,200
+12 | Hazine Yonetim Platformu (B2B)             | $    5,200,000 |    0.98% |   2.91% | $      100,360
+13 | Stablecoin Ihraac Edeni                    | $   47,000,000 |    1.40% |   2.92% | $      714,400
+14 | Borsalik Islem Masasi                      | $    7,900,000 |    1.25% |   2.91% | $      131,140
+15 | Kurumsal Risk Fonu Likidite                | $    2,100,000 |    1.05% |   2.91% | $       39,060
+---------------------------------------------------------------------------------------------------------
+   | TOPLAM (15 haznedar)                       | $  177,440,000 |          |         | $    3,085,199
+
+Toplam yonetilebilir likidite: $177,440,000
+Yillik ek getiri (verimsizlik farki): $3,085,199
+Ortalama bosta kalma verimsizligi: 1.74%
