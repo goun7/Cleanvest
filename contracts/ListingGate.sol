@@ -34,6 +34,15 @@ contract ListingGate is IListingGate, Ownable {
     /// @notice Basvuru => taahhudun mint edildigi timestamp (hash domain'i).
     mapping(bytes32 => uint256) public commitmentTimestamp;
 
+    /// @notice Basvuru => taahhuttaki bulgu sayisi (KAMUSAL - sayi gizli degil).
+    /// @dev AegisForge cekirdegi PovCommitment.finding_count ile ayni deger.
+    mapping(bytes32 => uint256) public commitmentFindingCount;
+
+    /// @notice Basvuru => risk skoru 0-100 (KAMUSAL - CleanScore'dan gelir).
+    /// @dev AegisForge cekirdegi PovCommitment.risk_score ile ayni deger.
+    ///      Skor gizli degildir; gizli olan yalnizca exploit payload ve tuz'dur.
+    mapping(bytes32 => uint8) public commitmentRiskScore;
+
     /// @notice Basvuru sayaci (gas verimli id uretimi)
     uint256 public applicationCount;
 
@@ -123,16 +132,22 @@ contract ListingGate is IListingGate, Ownable {
     ///      hash'i gonderir. Bu "satilmis sirlar" modelidir: alici odeme yapinca
     ///      payload ve tuzu alir, hash'i YENIDEN uretir ve eslestigini dogrular.
     ///      Taahhudun kendi basina bir ZK-SNARK olmadigini acikca belirtiyoruz.
+    /// @param findingCount Kamusal bulgu sayisi (gizli degil)
+    /// @param riskScore Kamusal risk skoru 0-100 (gizli degil)
     function sealPovCommitment(
         bytes32 applicationId,
         bytes32 povHash,
-        uint256 timestamp
+        uint256 timestamp,
+        uint256 findingCount,
+        uint8 riskScore
     ) external onlyAegisForge {
         require(povHash != bytes32(0), "PoV hash sifir olamaz");
         require(timestamp > 0, "Timestamp sifir olamaz");
 
         povCommitmentHash[applicationId] = povHash;
         commitmentTimestamp[applicationId] = timestamp;
+        commitmentFindingCount[applicationId] = findingCount;
+        commitmentRiskScore[applicationId] = riskScore;
 
         emit PovCommitmentSealed(applicationId, povHash, timestamp);
     }

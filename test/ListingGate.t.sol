@@ -114,7 +114,7 @@ contract ListingGateTest is Test {
         uint256 ts = block.timestamp;
 
         vm.prank(oracle);
-        gate.sealPovCommitment(appId, povHash, ts);
+        gate.sealPovCommitment(appId, povHash, ts, 2, 45);
 
         // Kamusal dogrulama
         assertTrue(gate.verifyPovCommitment(appId, povHash, ts), "Gecerli taahhut dogrulanmali");
@@ -128,7 +128,7 @@ contract ListingGateTest is Test {
         uint256 ts = block.timestamp;
 
         vm.prank(oracle);
-        gate.sealPovCommitment(appId, povHash, ts);
+        gate.sealPovCommitment(appId, povHash, ts, 2, 45);
 
         bytes32 wrongHash = keccak256("forged-payload");
         assertFalse(gate.verifyPovCommitment(appId, wrongHash, ts), "Yanlis hash reddedilmeli");
@@ -141,7 +141,7 @@ contract ListingGateTest is Test {
         uint256 ts = block.timestamp;
 
         vm.prank(oracle);
-        gate.sealPovCommitment(appId, povHash, ts);
+        gate.sealPovCommitment(appId, povHash, ts, 2, 45);
 
         // Ayni hash, farkli timestamp -> gecersiz (yeniden tarama farkli taahhut)
         assertFalse(gate.verifyPovCommitment(appId, povHash, ts + 1), "Yanlis timestamp reddedilmeli");
@@ -160,7 +160,7 @@ contract ListingGateTest is Test {
         bytes32 appId = gate.applyForListing(projectToken, "TestToken");
 
         vm.expectRevert("Yalnizca AegisForge oracle");
-        gate.sealPovCommitment(appId, keccak256("payload"), block.timestamp);
+        gate.sealPovCommitment(appId, keccak256("payload"), block.timestamp, 1, 30);
     }
 
     /// @notice Sifir PoV hash reddedilmeli
@@ -169,6 +169,6 @@ contract ListingGateTest is Test {
 
         vm.prank(oracle);
         vm.expectRevert("PoV hash sifir olamaz");
-        gate.sealPovCommitment(appId, bytes32(0), block.timestamp);
+        gate.sealPovCommitment(appId, bytes32(0), block.timestamp, 0, 0);
     }
 }
