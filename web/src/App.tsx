@@ -126,7 +126,8 @@ function App() {
           <button
             className="btn-ghost w-auto px-3 py-2 text-xs font-mono"
             onClick={() => { const l = lang === "tr" ? "en" : "tr"; setLang(l); setLangState(l); }}
-            aria-label="Switch language"
+            aria-label={`Switch to ${lang === "tr" ? "English" : "Turkce"}`}
+            title={`Switch to ${lang === "tr" ? "English" : "Turkce"}`}
           >
             {lang.toUpperCase()}
           </button>
@@ -143,14 +144,10 @@ function App() {
               <span className="h-1.5 w-1.5 rounded-full bg-fx-base" /> {tt("live")}
             </span>
           )}
-          {account ? (
+          {account && (
             <span className="chip border border-white/15 bg-white/5 font-mono text-slate-300">
               {account.slice(0, 6)}…{account.slice(-4)}
             </span>
-          ) : (
-            <button className="btn-ghost w-auto px-5 py-2 text-sm" onClick={connect}>
-              {tt("connectWallet")}
-            </button>
           )}
         </div>
       </header>
