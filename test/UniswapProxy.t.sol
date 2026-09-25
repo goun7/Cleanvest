@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "../contracts/UniswapProxy.sol";
+import "../contracts/interfaces/IUniswapV3Router.sol";
 
 /// @title UniswapProxy Test Suite
 /// @notice Artik hacim yonlendirme: seffaf kayma (gizleme YOK)
@@ -12,12 +13,13 @@ contract UniswapProxyTest is Test {
     MockToken public tokenIn;
     MockToken public tokenOut;
     address public owner = address(0x0ABE);
-    address public router = address(0x5047);
+    MockV3Router public router;
 
     function setUp() public {
         tokenIn = new MockToken("Token In", "TIN");
         tokenOut = new MockToken("Token Out", "TOUT");
-        proxy = new UniswapProxy(router);
+        router = new MockV3Router();
+        proxy = new UniswapProxy(address(router));
         proxy.transferOwnership(owner);
 
         tokenIn.mint(owner, 1_000_000 ether);
@@ -29,7 +31,7 @@ contract UniswapProxyTest is Test {
         vm.startPrank(owner);
         tokenIn.approve(address(proxy), 1_000 ether);
 
-        uint256 out = proxy.routeResidual(address(tokenIn), address(tokenOut), 1_000 ether, 950 ether);
+        uint256 out = proxy.routeResidual(address(tokenIn), address(tokenOut), 1_000 ether, 950 ether, 3000);
         vm.stopPrank();
 
         assertGt(out, 0, "Cikis miktari pozitif");
@@ -41,14 +43,14 @@ contract UniswapProxyTest is Test {
     function testRevertSameToken() public {
         vm.prank(owner);
         vm.expectRevert("Ayni token");
-        proxy.routeResidual(address(tokenIn), address(tokenIn), 100 ether, 90 ether);
+        proxy.routeResidual(address(tokenIn), address(tokenIn), 100 ether, 90 ether, 3000);
     }
 
     /// @notice Sifir miktar reddedilir
     function testRevertZeroAmount() public {
         vm.prank(owner);
         vm.expectRevert("Miktar 0 olamaz");
-        proxy.routeResidual(address(tokenIn), address(tokenOut), 0, 0);
+        proxy.routeResidual(address(tokenIn), address(tokenOut), 0, 0, 3000);
     }
 
     /// @notice Kayma uyarısı: %3 altinda -> uyarı YOK
@@ -74,12 +76,12 @@ contract UniswapProxyTest is Test {
 
     /// @notice Router guncellenebilir
     function testSetRouter() public {
-        address newRouter = address(0xBEEF);
+        MockV3Router newRouter = new MockV3Router();
 
         vm.prank(owner);
-        proxy.setSwapRouter(newRouter);
+        proxy.setSwapRouter(address(newRouter));
 
-        assertEq(proxy.swapRouter(), newRouter);
+        assertEq(proxy.swapRouter(), address(newRouter));
     }
 
     /// @notice Sifir router reddedilir
@@ -95,5 +97,19 @@ contract MockToken is ERC20 {
 
     function mint(address to, uint256 amount) public {
         _mint(to, amount);
+    }
+}
+/// @notice Test router: IUniswapV3Router arayuzunu gercekten implement eder.
+/// @dev Legit mock - arayuz sozlesmesine uyar, sahte deger_atmaz.
+contract MockV3Router is IUniswapV3Router {
+    function exactInputSingle(ExactInputSingleParams calldata params)
+        external
+        payable
+        returns (uint256 amountOut)
+    {
+        // Basit 1:1.05 takas orani (gercek pool davranisi simule)
+        amountOut = (params.amountIn * 105) / 100;
+        require(amountOut >= params.amountOutMinimum, "V3Router: slippage exceeded");
+        return amountOut;
     }
 }

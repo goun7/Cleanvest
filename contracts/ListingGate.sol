@@ -87,6 +87,10 @@ contract ListingGate is IListingGate, Ownable {
     /// @notice Token => mevcut denetim kademesi.
     mapping(address => AuditTier) public auditTier;
 
+    /// @notice Token => EN SON basvuru id'si (applicationId timestamp icerir,
+    ///         bu yuzden ayri takip sarttir - aksi halde score lookup hatali olur).
+    mapping(address => bytes32) public lastApplicationId;
+
     /// @notice Kademelerin dolar fiyatları (sent Degil, tam dolar).
     /// @dev Odeme off-chain alinir (fiat/kripto); zincir yalnizca kademe
     ///      yukseltmesini kaydeder. Haraç modeli YOK: dusuk kademe bile
@@ -121,6 +125,7 @@ contract ListingGate is IListingGate, Ownable {
 
         applicationCount++;
         applicationId = keccak256(abi.encodePacked(projectToken, applicationCount, block.timestamp));
+        lastApplicationId[projectToken] = applicationId;
 
         listingStatus[projectToken] = ListingStatus.Pending;
 
@@ -250,8 +255,9 @@ contract ListingGate is IListingGate, Ownable {
         returns (ListingStatus status, uint256 cleanScore)
     {
         status = listingStatus[projectToken];
-        // Skoru en son basvurudan al (basitlestirilmis)
-        cleanScore = applicationScore[keccak256(abi.encodePacked(projectToken, applicationCount))];
+        // EN SON basvurudan al (applicationId timestamp icerir, mapping ile takip)
+        bytes32 lastApp = lastApplicationId[projectToken];
+        cleanScore = applicationScore[lastApp];
         return (status, cleanScore);
     }
 

@@ -43,7 +43,8 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     /// @notice Emir tavani kaldirildi mi (lift trigger).
     bool public sizeCapLifted;
 
-    /// @notice 30-gun toplam hacim (kayan pencere, basitlestirilmis).
+    /// @notice 30-gun toplam hacim (epok-bazli birikmeli; kayan pencere
+///         duzeltmesi epoch-basi sifirlama ile deployment sonrasi eklenir).
     uint256 public rolling30dVolume;
 
     /// @notice Kayitli RFQ solver'lar.

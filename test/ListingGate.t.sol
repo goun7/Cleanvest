@@ -290,4 +290,19 @@ contract ListingGateTest is Test {
         assertEq(priority, 4900, "Priority $4.900");
     }
 
+
+    /// @notice getListingStatus dogru applicationId'den score alir (timestamp icerir)
+    function testGetListingStatusScoreLookup() public {
+        bytes32 appId = gate.applyForListing(projectToken, "TestToken");
+
+        vm.prank(oracle);
+        gate.recordAuditResultForToken(appId, projectToken, true, 85, 0, 0, 1, 2, 3, false);
+
+        // getListingStatus dogru score donmeli (eski bug: timestamp'siz hash -> 0)
+        (, uint256 score) = gate.getListingStatus(projectToken);
+        assertEq(score, 85, "Score dogru applicationId'den alindi");
+
+        // lastApplicationId kaydedildi
+        assertEq(gate.lastApplicationId(projectToken), appId, "Son basvuru id takip edildi");
+    }
 }

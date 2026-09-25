@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "./interfaces/IUniswapV3Router.sol";
 
 /// @title UniswapProxy - Artik Hacim Yonlendirme (Faz-3 Residual)
 /// @author Cleanvest
@@ -40,25 +41,39 @@ contract UniswapProxy is Ownable, ReentrancyGuard {
     /// @param tokenOut Cikis tokeni
     /// @param amountIn Giris miktari
     /// @param minAmountOut Minimum cikis (slippage tolerance, ayarlanabilir)
+    /// @param poolFee Uniswap v3 pool fee (orn. 3000 = %0.3, 500 = %0.05)
     function routeResidual(
         address tokenIn,
         address tokenOut,
         uint256 amountIn,
-        uint256 minAmountOut
+        uint256 minAmountOut,
+        uint24 poolFee
     ) external onlyOwner nonReentrant returns (uint256 amountOut) {
         require(swapRouter != address(0), "Swap router bagli degil");
         require(amountIn > 0, "Miktar 0 olamaz");
         require(tokenIn != tokenOut, "Ayni token");
+        require(minAmountOut > 0, "Min cikis 0 olamaz");
 
-        // Once giris tokenini al
+        // Token'leri al
         IERC20(tokenIn).transferFrom(msg.sender, address(this), amountIn);
         IERC20(tokenIn).approve(swapRouter, amountIn);
 
-        // Basitlestirilmis swap - gercek implementasyonda router.exactInputSingle
-        // Burada minAmountOut kontrolu ile seffaf kaymayi olcuyoruz
-        require(minAmountOut > 0, "Min cikis 0 olamaz");
+        // GERCEK Uniswap V3 swap (mock DEGIL)
+        IUniswapV3Router router = IUniswapV3Router(swapRouter);
+        IUniswapV3Router.ExactInputSingleParams memory params = IUniswapV3Router
+            .ExactInputSingleParams({
+                tokenIn: tokenIn,
+                tokenOut: tokenOut,
+                fee: poolFee,
+                recipient: address(this),
+                deadline: block.timestamp,
+                amountIn: amountIn,
+                amountOutMinimum: minAmountOut,
+                sqrtPriceLimitX96: 0
+            });
 
-        amountOut = minAmountOut; // router'dan gelen miktar (mock)
+        amountOut = router.exactInputSingle(params);
+        require(amountOut >= minAmountOut, "Slippage: cikis minimumun altinda");
 
         // Kaymayi olc ve raporla (UI'da gosterilir - GIZLENMEZ)
         uint256 slippageBps = amountIn > amountOut
