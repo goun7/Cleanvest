@@ -305,4 +305,27 @@ contract ListingGateTest is Test {
         // lastApplicationId kaydedildi
         assertEq(gate.lastApplicationId(projectToken), appId, "Son basvuru id takip edildi");
     }
+
+    /// @notice recordAuditResult applicationToken eslemesinden GERCEK token adresi emit eder
+    /// @dev Teknik borc kapatma kodunun testi: eskiden address(0) emit ediliyordu.
+    ///      Coverage: L144-150 kapsamamasi giderildi.
+    function testRecordAuditResultResolvesRealToken() public {
+        bytes32 appId = gate.applyForListing(projectToken, "TestToken");
+
+        // applicationToken eslemesi applyForListing icinde set edilmeli
+        assertEq(gate.applicationToken(appId), projectToken, "Esleme gercek token adresi icermeli");
+
+        // recordAuditResult oracle disinda cagrilamaz
+        vm.expectRevert();
+        gate.recordAuditResult(appId, true, 88);
+
+        // oracle cagrisi: GERCEK token adresi ile AuditRecorded emit edilmeli
+        vm.prank(oracle);
+        vm.expectEmit(true, true, true, true);
+        emit ListingGate.AuditRecorded(appId, projectToken, true, 88);
+        gate.recordAuditResult(appId, true, 88);
+
+        // score kaydedildi
+        assertEq(gate.applicationScore(appId), 88, "Score applicationId'ye yazildi");
+    }
 }
