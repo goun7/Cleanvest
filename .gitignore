@@ -8,3 +8,6 @@ web/node_modules/
 # Gecici
 *.tgz
 .DS_Store
+
+# Forge broadcast artifactlari
+broadcast/
