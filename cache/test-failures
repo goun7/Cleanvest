@@ -1,1 +1,0 @@
-{"version":1,"failures":[{"contract":"test/CleanFXVault.t.sol:CleanFXVaultTest","test":"testOptimizeTierYieldCoverage"}]}
