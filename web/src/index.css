@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-900 text-slate-200 antialiased;
+  background-image: radial-gradient(
+      ellipse 80% 50% at 50% -20%,
+      rgba(14, 165, 233, 0.15),
+      transparent
+    ),
+    radial-gradient(ellipse 60% 50% at 80% 110%, rgba(52, 211, 153, 0.08), transparent);
+  background-attachment: fixed;
+}
+
+/* Cam efektli panel (glassmorphism) */
+@layer components {
+  .panel {
+    @apply rounded-2xl border border-white/10 bg-ink-800/60 shadow-2xl backdrop-blur-md;
+  }
+  .panel-hover {
+    @apply transition-all duration-200 hover:border-fx-base/40 hover:shadow-fx-base/10;
+  }
+  .stat-label {
+    @apply text-xs font-medium uppercase tracking-wider text-slate-400;
+  }
+  .stat-value {
+    @apply font-mono text-2xl font-semibold text-white;
+  }
+  .btn-primary {
+    @apply inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-fx-base to-fx-glow
+      px-4 py-3 font-semibold text-ink-900 shadow-lg shadow-fx-base/25 transition-all
+      hover:shadow-fx-base/40 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex w-full items-center justify-center rounded-xl border border-white/15
+      bg-white/5 px-4 py-3 font-semibold text-slate-200 transition-all hover:border-white/30 hover:bg-white/10;
+  }
+  .input {
+    @apply w-full rounded-xl border border-white/10 bg-ink-900/60 px-4 py-3 font-mono text-lg
+      text-white outline-none transition-all placeholder:text-slate-600
+      focus:border-fx-base focus:ring-2 focus:ring-fx-base/20;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold;
+  }
+}

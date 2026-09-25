@@ -1,0 +1,10 @@
+# Build ciktilari
+out/
+cache/
+node_modules/
+web/dist/
+web/node_modules/
+
+# Gecici
+*.tgz
+.DS_Store
