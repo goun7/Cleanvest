@@ -1,1 +1,1 @@
-{"version":1,"failures":[{"contract":"test/CleanFXVault.t.sol:CleanFXVaultTest","test":"testRedemptionNeverLocked"}]}
+{"version":1,"failures":[{"contract":"test/CleanvestSettlement.t.sol:CleanvestSettlementTest","test":"testAntiCollusionGrowsWithSize"}]}
