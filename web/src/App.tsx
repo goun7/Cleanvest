@@ -147,6 +147,14 @@ function App() {
         </div>
       </header>
 
+      {/* Deploy bekleniyor bilgisi (adresler girilmemisse) */}
+      {s && !s.loaded && (
+        <div className="mb-6 rounded-xl border border-fx-gold/30 bg-fx-gold/5 px-4 py-3 text-sm text-fx-gold">
+          ℹ️ Sözleşmeler henüz canlı deploy edilmedi — değerler dağıtım sonrası görünecek.
+          Mevcut kod Base mainnet'e hazır (`script/Deploy.s.sol`).
+        </div>
+      )}
+
       {/* Stat kartlari */}
       <section className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard

@@ -102,6 +102,29 @@ Denetim turları yapmadan "bitti" denseydi bunlar canlıda patlardı:
 3. Batch settlement proof **5 bayt ile geçiyordu** (artık commitment scheme)
 4. UniswapProxy **sahte swap** yapıyordu (artık gerçek `exactInputSingle`)
 
+## Frontend — scUSD Dashboard (`web/`)
+
+Kurumsal dashboard; kullanıcı gözünden tek sayfada tüm durum görünür.
+
+```bash
+cd web && pnpm install && pnpm dev      # gelistirme (localhost:5174)
+pnpm build                               # production (34.89kB ana bundle)
+```
+
+**Ekranlar:**
+- 4 stat kartı: Kasa TVL, aktif kademe, pay fiyatı, junior örtüsü (renk uyarılı)
+- Dürüst getiri eğrisi paneli (aktif kademe vurgulu)
+- Çıkış kapısı: günlük %10 anlık kota, kalan anlık, T+2 kuyruk durumu
+- Yatır/Çık paneli: slippage-korumalı (`depositWithMin`/`redeemWithMin`)
+
+**Güvenlik entegrasyonu:** UI, ERC-4626 inflation-attack kalkanını
+otomatik uygular — kullanıcı manuel slippage girmez, `minShares`/`minAssets`
+arka planda hesaplanır (**HITL minimum**).
+
+**i18n:** TR + EN (tarayıcı diline göre varsayılan, localStorage kalıcı).
+
+**Mobil:** 390px'e kadar responsive, yatay taşma yok (headless Chrome ile doğrulandı).
+
 ## Lisans
 
 MIT
