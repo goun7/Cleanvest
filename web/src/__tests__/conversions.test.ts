@@ -80,3 +80,24 @@ describe("dailyRemaining (anlik kalan kota)", () => {
     expect(remaining(1000n, 999n)).toBe(0n);
   });
 });
+
+/**
+ * Gun-index birim hatasi regresyonu (GERCEK hata, canli testle yakalandi):
+ * Date.now() MILLISECONDS doner; sozlesme block.timestamp (SANIYE) / 1 days
+ * kullanir. 86_400 ile bolmek 1000x buyuk index uretir -> bos mapping slotu
+ * -> 0 kullanilmis -> kota yanlis dolu gosterilir.
+ */
+describe("gunluk kota gun-index hesabi (ms vs saniye)", () => {
+  it("sozlesmenin block.timestamp/1 days ile ayni index uretir", () => {
+    const nowMs = 1_790_379_441_000; // Date.now() ms
+    const blockTs = 1_790_379_441;   // ayni anin saniyesi
+    const fromMs = Math.floor(nowMs / 86_400_000); // dogru
+    const fromS = Math.floor(blockTs / 86_400);    // sozlesme
+    expect(fromMs).toBe(fromS);
+    // yanlis formul cok buyuk bir index uretir (bos mapping slotuna isaret
+    // eder -> sozlesme 0 kullanilmis sanar -> kota yanlis dolu gosterilir)
+    const buggy = Math.floor(nowMs / 86_400);
+    expect(buggy).toBeGreaterThan(fromS * 100);
+    expect(buggy).not.toBe(fromS);
+  });
+});

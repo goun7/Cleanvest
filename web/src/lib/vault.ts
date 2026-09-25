@@ -120,9 +120,13 @@ export async function fetchVaultState(account: string | null): Promise<VaultStat
     // KALAN anlik kota = cap - bugun kullanilan. Sozlesmedeki
     // _dailyRemainingInstant(usedToday) ile ayni formul. Onceden yanlizca
     // cap gosteriliyordu (kullanilmis olsa bile dolu gozukuyordu).
+    // DİKKAT: Date.now() MILLISECONDS doner; sozlesme block.timestamp
+    // (saniye) / 1 days kullanir. Bu yuzden 86_400_000 ile bolmeli.
+    // 86_400 ile bolmek 1000x buyuk index verir -> bos slot -> 0
+    // kullanilmis -> kota yanlis dolu gosterilir (canli testle yakalandi).
     dailyRemaining: formatUnits(
       await vault
-        .dailyRedemptions(BigInt(Math.floor(Date.now() / 86_400)))
+        .dailyRedemptions(BigInt(Math.floor(Date.now() / 86_400_000)))
         .then((used: bigint) => {
           const cap = (totalSupply * BigInt(capPct)) / 10000n;
           return used >= cap ? 0n : cap - used;
