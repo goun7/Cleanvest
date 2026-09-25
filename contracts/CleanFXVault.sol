@@ -165,6 +165,37 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
         super._withdraw(caller, receiver, owner, assets, shares);
     }
 
+    /// @notice Slippage-korumali depozito: en az minShares kadar pay alinmazsa revert.
+    /// @dev ERC-4626 INFLATION ATTACK kalkani (Cream/Sonne/Resupply hack'lerinin
+    ///      tipi: saldirgan 1 wei + bagis ile pay fiyatini siseirip kurbanin
+    ///      depozitini el koymak). Kullanici (veya onyuz) convertToShares ile
+    ///      minShares hesaplar; saldiri durumunda revert -> fon korunur.
+    ///      Akademik konsensus: "minimum-shares-out parameter on deposit"
+    ///      (bailsec.io, ChainScore Labs arastirmasi).
+    /// @param assets Yatirilacak cUSD miktari
+    /// @param receiver Pay'lerin gideceği adres
+    /// @param minShares Minimum kabul edilecek pay sayisi (slippage limiti)
+    /// @return shares Mintlenen pay sayisi
+    function depositWithMin(uint256 assets, address receiver, uint256 minShares)
+        external
+        nonReentrant
+        returns (uint256 shares)
+    {
+        shares = super.deposit(assets, receiver);
+        require(shares >= minShares, "Slippage: pay sayisi minimumun altinda");
+    }
+
+    /// @notice Slippage-korumali cikis: en az minAssets kadar varlik alinmazsa revert.
+    /// @dev Cikis tarafinda da ayni koruma (kötü niyetli pay fiyat manipulasyonuna karsi).
+    function redeemWithMin(uint256 shares, address receiver, address owner, uint256 minAssets)
+        external
+        nonReentrant
+        returns (uint256 assets)
+    {
+        assets = super.redeem(shares, receiver, owner);
+        require(assets >= minAssets, "Slippage: varlik miktari minimumun altinda");
+    }
+
     /// @notice Kotayi asan cikisi T+2 kuyruguna alir (ayri transaction).
     /// @dev Solidity revert state'i geri alir; bu yuzden kuyruk kaydi ayri
     ///      bir cagrida yapilmalidir. CIKIS KILITLENMEZ - 2 gun sonra serbest.

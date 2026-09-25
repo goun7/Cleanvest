@@ -91,6 +91,12 @@ contract ListingGate is IListingGate, Ownable {
     ///         bu yuzden ayri takip sarttir - aksi halde score lookup hatali olur).
     mapping(address => bytes32) public lastApplicationId;
 
+    /// @notice applicationId -> token adresi (audit akisi cozumu).
+    /// @dev TEKNIK BORC KAPANDI: once recordAuditResult address(0) emit
+    ///      ediyordu (yorum "production'da mapping" diyordu). Artik
+    ///      applyForListing sirasinda esleme tutulur.
+    mapping(bytes32 => address) public applicationToken;
+
     /// @notice Kademelerin dolar fiyatları (sent Degil, tam dolar).
     /// @dev Odeme off-chain alinir (fiat/kripto); zincir yalnizca kademe
     ///      yukseltmesini kaydeder. Haraç modeli YOK: dusuk kademe bile
@@ -126,6 +132,7 @@ contract ListingGate is IListingGate, Ownable {
         applicationCount++;
         applicationId = keccak256(abi.encodePacked(projectToken, applicationCount, block.timestamp));
         lastApplicationId[projectToken] = applicationId;
+        applicationToken[applicationId] = projectToken;
 
         listingStatus[projectToken] = ListingStatus.Pending;
 
@@ -137,10 +144,10 @@ contract ListingGate is IListingGate, Ownable {
     function recordAuditResult(bytes32 applicationId, bool passed, uint256 cleanScore) external onlyAegisForge {
         applicationScore[applicationId] = cleanScore;
 
-        // Token adresini basvurudan coz (applicationCount ile uretildi)
-        // Not: gercek implementasyonda applicationId -> token eslemesi tutulur
-        // Bu ornekte emit ile bildirilir; production'da mapping kullanilir
-        emit AuditRecorded(applicationId, address(0), passed, cleanScore);
+        // Token adresini applicationToken eslemesinden coz (TEKNIK BORC KAPANDI:
+        // eskiden address(0) emit ediliyordu; artik gercek token adresi kullanilir)
+        address token = applicationToken[applicationId];
+        emit AuditRecorded(applicationId, token, passed, cleanScore);
     }
 
     /// @notice AegisForge tarafindan cagrilir - token adresi ile birlikte.

@@ -34,4 +34,19 @@ interface ICleanvestVault {
     ///      için T+2 kuyruğu. Optimize modunda Aave utilization > %92 ise anlık çekimler
     ///      otomatik T+2 kuyruğuna düşer (devre-kesici).
     function redemptionGate() external view returns (uint256 dailyInstantCapPct, uint256 settleDaysAboveCap);
+
+    /// @notice Slippage-korumalı depozito (ERC-4626 inflation attack kalkanı).
+    /// @dev Klasik saldırı: saldırgan ilk depozitörün önüne geçer, 1 wei ile 1 pay
+    ///      basar, kasaya doğrudan bağış yaparak pay fiyatını şişirir; kurbanın
+    ///      depoziti pay alamaz ve saldırgan fonu çeker. minShares ile kullanıcı
+    ///      (veya önyüz) convertToShares sonucunu sınır verir; sapmada revert.
+    ///      Vaka örnekleri: Cream, Sonne, Resupply (2024-2026).
+    function depositWithMin(uint256 assets, address receiver, uint256 minShares)
+        external
+        returns (uint256 shares);
+
+    /// @notice Slippage-korumalı çıkış (aynı manipülasyona karşı).
+    function redeemWithMin(uint256 shares, address receiver, address owner, uint256 minAssets)
+        external
+        returns (uint256 assets);
 }

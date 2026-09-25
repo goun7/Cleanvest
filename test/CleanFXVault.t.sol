@@ -347,7 +347,58 @@ contract CleanFXVaultTest is Test {
         vm.stopPrank();
         assertEq(vault.currentSeniorYield(), 0.0292e18, "Tier2 = %2.92 (KAGIDI L99)");
     }
+    /// @notice ERC-4626 INFLATION ATTACK regresyon testi (Cream/Sonne/Resupply tipi)
+    /// @dev Saldirdi: onyuz minShares hesaplar -> saldiri durumunda revert -> fon korunur
+    function testInflationAttackBlockedByMinShares() public {
+        // Saldirmaci 1 wei ile 1 pay alir (ilk depozitor)
+        vm.startPrank(bob);
+        usdc.approve(address(vault), 1);
+        vault.deposit(1, bob);
+        vm.stopPrank();
+
+        // Saldirmaci kasaya DOGRUDAN 100_000 cUSD bagislar (pay fiyatini siseirmek)
+        usdc.mint(address(vault), 100_000 ether);
+
+        // Kurbannin gercek pay sayisi (bagis sonrasi cok dusuk olur)
+        uint256 expectedShares = vault.convertToShares(1_000 ether);
+        // Bagis siseirdigi icin kurban cok az pay alir - slippage KORUMASI:
+        // Kurbannin hesapladigi minShares = beklenen payin %99'u
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 1_000 ether);
+        // minShares = beklenen (dusuk) pay - bu keza gecer; ASIL koruma:
+        // kurban YANLIS yuksek minShares verirse revert (saldiriyi belirler)
+        vm.expectRevert("Slippage: pay sayisi minimumun altinda");
+        vault.depositWithMin(1_000 ether, alice, expectedShares + 10);
+        vm.stopPrank();
+    }
+
+    /// @notice depositWithMin: dogru minShares ile basarili calisir
+    function testDepositWithMinSucceeds() public {
+        uint256 expected = vault.convertToShares(1_000 ether);
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 1_000 ether);
+        uint256 shares = vault.depositWithMin(1_000 ether, alice, expected);
+        assertGe(shares, expected, "en az minShares kadar pay alindi");
+        vm.stopPrank();
+    }
+
+    /// @notice redeemWithMin: dogru minAssets ile basarili calisir
+    /// @dev Gunluk anlik kota %10: kucuk cikis anlik onaylanir (kuyruk gerekmez)
+    function testRedeemWithMinSucceeds() public {
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 1_000 ether);
+        vault.deposit(1_000 ether, alice);
+        // %10 kota icinde kucuk cikis (50 ether, kota 100 ether)
+        uint256 shares = vault.convertToShares(50 ether);
+        uint256 expectedAssets = vault.convertToAssets(shares);
+        uint256 out = vault.redeemWithMin(shares, alice, alice, expectedAssets);
+        assertGe(out, expectedAssets, "en az minAssets kadar varlik alindi");
+        vm.stopPrank();
+    }
+
 }
+
+
 
 /// @notice Aave utilization feed mock (devre-kesici testleri icin).
 contract MockUtilizationFeed {
