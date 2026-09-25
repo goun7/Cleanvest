@@ -396,6 +396,23 @@ contract CleanFXVaultTest is Test {
         vm.stopPrank();
     }
 
+    /// @notice Optimize tier'i R_bps=346 yolunu kapsar (L88 - coverage boslugu)
+    /// @dev Optimize: %40 OUSG(344) + %42 Aave(378) + %3 float + %15 Prime(330) = 345.9 -> 346
+    ///      senior = (346*10000 - 300*990)/(10000-300) = 3163900/9700 = 326.39 bp -> %3.26
+    ///      GUVENLIK: optimize feed bagli olmadan acilamaz (sozlesme require'i)
+    function testOptimizeTierYieldCoverage() public {
+        // owner once feed baglar, sonra optimize'yi acar
+        vm.startPrank(founder);
+        vault.setAaveUtilizationFeed(address(0xFEED));
+        vault.setOptimizeMode(true);
+        vm.stopPrank();
+
+        assert(uint256(vault.activeTier()) == uint256(ICleanvestVault.ReserveTier.TierOptimize));
+        uint256 y = vault.currentSeniorYield();
+        // senior_bps = 3163900/9700 = 326.39 bp
+        assertApproxEqAbs(y / 1e14, 326, 2, "Optimize senior ~%3.26");
+    }
+
 }
 
 

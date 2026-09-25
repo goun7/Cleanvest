@@ -117,7 +117,18 @@ export async function fetchVaultState(account: string | null): Promise<VaultStat
     juniorRatioPct: bpsToPct(juniorRatio),
     dailyInstantCapPct: Number(capPct) / 100,
     settleDays: Number(settleDays) / 86400,
-    dailyRemaining: formatUnits(await vault.totalSupply().then((s: bigint) => (s * BigInt(capPct)) / 10000n), 18),
+    // KALAN anlik kota = cap - bugun kullanilan. Sozlesmedeki
+    // _dailyRemainingInstant(usedToday) ile ayni formul. Onceden yanlizca
+    // cap gosteriliyordu (kullanilmis olsa bile dolu gozukuyordu).
+    dailyRemaining: formatUnits(
+      await vault
+        .dailyRedemptions(BigInt(Math.floor(Date.now() / 86_400)))
+        .then((used: bigint) => {
+          const cap = (totalSupply * BigInt(capPct)) / 10000n;
+          return used >= cap ? 0n : cap - used;
+        }),
+      18,
+    ),
     walletCUSD: account ? formatUnits(balance, 18) : "0",
     walletScUSD: account ? formatUnits(scBalance, 18) : "0",
     queuedUnlock: Number(unlock),

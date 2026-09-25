@@ -108,4 +108,39 @@ contract CleanUSDTest is Test {
         (bool ok,) = address(cUSD).staticcall(abi.encodeWithSelector(noRebaseSelector));
         assertFalse(ok, "REBASE YASAK - rebase() bulunmamal");
     }
+
+    /// @notice canMintAfter katmani: cap tam dolu mint basarili (esitlik >= %3)
+    /// @dev BULGU (bu tur): tvlCap kontrolu once calisir; canMintAfter
+    ///      false <=> newTvl > tvlCap oldugundan ikinci katman golgelenir.
+    ///      Bu BILINÇLI defense-in-depth'tur (sozlesmede dokumante edildi).
+    ///      Test, GOZLENEN davranisi sabitler: cap'e tam esit mint OK,
+    ///      cap'i asan mint "TVL tavani asildi" ile revert.
+    function testMintAtCapBoundarySucceeds() public {
+        vm.startPrank(founder);
+        cUSD.seedJunior{value: 3_000 ether}(0);
+
+        // cap'e TAM ESIT mint: junior 3000/100000 = %3.00 >= %3 -> BASARILI
+        uint256 cap = cUSD.tvlCap();
+        cUSD.mint(alice, cap);
+        vm.stopPrank();
+
+        assertEq(cUSD.totalSupply(), cap, "Cap tam dolu mint basarili");
+        // junior hala tam %3'te (invariant saglandi)
+        assertEq(cUSD.juniorCoverageBps(), 300, "Junior hala >= %3");
+    }
+
+    /// @notice Cap'i asan mint reddedilir (L91 - birinci katman)
+    function testRevertMintExceedsCap() public {
+        vm.startPrank(founder);
+        cUSD.seedJunior{value: 3_000 ether}(0);
+
+        // DİKKAT: tvlCap() cagrisi expectRevert'ten ONCE yapilmali -
+        // forge "next call" bekler, arguman icindeki staticcall'i sayar
+        uint256 overCap = cUSD.tvlCap() + 1;
+        vm.expectRevert("TVL tavani asildi");
+        cUSD.mint(alice, overCap);
+        vm.stopPrank();
+
+        assertEq(cUSD.totalSupply(), 0, "Cap asimi reddedildi");
+    }
 }

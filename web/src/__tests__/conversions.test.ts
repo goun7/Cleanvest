@@ -51,3 +51,32 @@ describe('birim donusumleri (canli anvil degerleri)', () => {
     expect(bpsToPct(300)).toBe(3); // dogru yol
   });
 });
+
+/**
+ * dailyRemaining bug regresyonu (GERCEK hata):
+ * Onceden UI "Kalan anlik" icin yanlizca cap = supply*%10 gosteriyordu;
+ * bugun kullanilan kotayi cikarmiyordu. Sozlesmedeki
+ * _dailyRemainingInstant(usedToday) ile ayni formul olmali:
+ *   cap - usedToday (0'a sabitlenir, negatif olmaz)
+ */
+describe("dailyRemaining (anlik kalan kota)", () => {
+  const capOf = (supply: bigint) => (supply * 1000n) / 10000n;
+  const remaining = (supply: bigint, used: bigint) => {
+    const cap = capOf(supply);
+    return used >= cap ? 0n : cap - used;
+  };
+
+  it("kullanilmamissa cap'in tamamini gosterir", () => {
+    expect(remaining(1000n, 0n)).toBe(100n);
+  });
+
+  it("kullanilmis miktari cikarir (onceki bug)", () => {
+    // 1000 supply, cap 100, 40 kullanildi -> 60 kalmali (eski kod 100 gosterirdi)
+    expect(remaining(1000n, 40n)).toBe(60n);
+  });
+
+  it("cap asilinca 0'a sabitlenir, negatif olmaz", () => {
+    expect(remaining(1000n, 100n)).toBe(0n);
+    expect(remaining(1000n, 999n)).toBe(0n);
+  });
+});

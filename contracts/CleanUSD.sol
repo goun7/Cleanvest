@@ -86,6 +86,15 @@ contract CleanUSD is ICleanUSD, ERC20, Ownable {
     /// @notice Yeni $cUSD basar — SADECE hard invariant sağlanıyorsa.
     /// @dev Kural ihlal edilirse REVERT. Bu, çoklu-katmanlı savunmadır:
     ///      canMint() view kontrolü + mint içinde require.
+    ///
+    ///      KATMAN SIRASI (önemli): tvlCap kontrolü (L91) canMintAfter'tan
+    ///      ÖNCE çalışır. canMintAfter(amount) false <=> newTvl > tvlCap
+    ///      olduğundan, bugün tvlCap her zaman bağlayıcıdır ve canMintAfter
+    ///      ikinci katman olarak GÖLGELENİR. Bu BILINÇLI defense-in-depth'tir:
+    ///      tvlCap mantığı ileride değişse (örn. yönetişim ile cap artırılsa)
+    ///      hard invariant (junior >= %3) yine korunur. juniorReserve
+    ///      azalamadığından (yalnizca seedJunior ile artar) bu katman bugün
+    ///      ölüdür ama kaldırılmaz — güvenlik katmanı olarak kalır.
     function mint(address to, uint256 amount) external {
         require(canMint(), "TVL-Kapili Degismez: Junior <%3, mint kilitli");
         require(totalSupply() + amount <= tvlCap, "TVL tavani asildi");
