@@ -48,10 +48,20 @@ Bu vaka çalışması **kendi kodumuzu** taradı — çıkar çatışması yok. 
 **Üçüncü-taraf yeniden doğrulama daveti:** Aşağıdaki komutla sonuç yeniden üretilebilir:
 
 ```bash
-cd 26_Cleanvest_Sifir_Manipulasyonlu_Spot_Borsa_Ve_CleanFX/aegisforge
-cargo build --release
-./target/release/aegisforge scan --source ../contracts/CleanUSD.sol
-./target/release/aegisforge scan --source ../contracts/CleanFXVault.sol
+# AegisForge cekirdegi 07_Temporit icindedir (26_Cleanvest icinde DEGIL - kapsam karari)
+cd ../07_Temporit_DeFi_Metamorfik_Yaris_Durumu_Avcisi
+cargo build -p aegisforge --release
+
+# Hedef bytecode'lerini hazirla (26_Cleanvest icinde)
+cd ../26_Cleanvest_Sifir_Manipulasyonlu_Spot_Borsa_Ve_CleanFX
+export PATH="$HOME/.foundry/bin:$PATH"
+forge build
+
+# Tara (v0.4.0+)
+../07_Temporit_.../target/release/aegisforge scan \
+    --file out/CleanUSD.sol/CleanUSD.json --tier scan
+../07_Temporit_.../target/release/aegisforge scan \
+    --file out/CleanFXVault.sol/CleanFXVault.json --tier scan
 ```
 
 ## Sınırlamalar (Radikal Dürüstlük)

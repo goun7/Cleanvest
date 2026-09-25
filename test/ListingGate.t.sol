@@ -221,4 +221,73 @@ contract ListingGateTest is Test {
         vm.stopPrank();
     }
 
+
+    /// @notice Ilk tarama Scan ($299) kademesi atar
+    function testFirstAuditSetsScanTier() public {
+        vm.prank(oracle);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 1, 2, 3, false);
+
+        assertTrue(uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.Scan), "Ilk tarama = Scan");
+    }
+
+    /// @notice Kademeyi FuzzPatch'e yukselt -> tam audit acilir
+    function testUpgradeToFuzzPatch() public {
+        vm.startPrank(oracle);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 1, 2, 3, false);
+        gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.FuzzPatch);
+        vm.stopPrank();
+
+        assertTrue(uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.FuzzPatch), "Kademe FuzzPatch");
+        assertTrue(gate.fullAuditAvailable(projectToken), "Tam audit ACILDI");
+    }
+
+    /// @notice Priority kademesi tam audit sunar
+    function testUpgradeToPriority() public {
+        vm.startPrank(oracle);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+        gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.Priority);
+        vm.stopPrank();
+
+        assertTrue(uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.Priority), "Kademe Priority");
+        assertTrue(gate.fullAuditAvailable(projectToken), "Priority tam audit");
+    }
+
+    /// @notice Downgrade reddedilmeli
+    function testRevertDowngrade() public {
+        vm.startPrank(oracle);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+        gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.FuzzPatch);
+
+        vm.expectRevert("Yalnizca ileri yonlu yukseltme");
+        gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.Scan);
+        vm.stopPrank();
+    }
+
+    /// @notice Ayni kademe yeniden yukseltme reddedilmeli
+    function testRevertSameTier() public {
+        vm.startPrank(oracle);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+
+        vm.expectRevert("Yalnizca ileri yonlu yukseltme");
+        gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.Scan);
+        vm.stopPrank();
+    }
+
+    /// @notice Oracle disinda kademe yukseltemez
+    function testRevertNonOracleUpgrade() public {
+        vm.prank(oracle);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+
+        vm.expectRevert("Yalnizca AegisForge oracle");
+        gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.FuzzPatch);
+    }
+
+    /// @notice Fiyat karti seffaf ve gizli degil
+    function testPriceCard() public {
+        (uint256 scan, uint256 fuzzPatch, uint256 priority) = gate.getPriceCard();
+        assertEq(scan, 299, "Scan $299");
+        assertEq(fuzzPatch, 1490, "FuzzPatch $1.490");
+        assertEq(priority, 4900, "Priority $4.900");
+    }
+
 }

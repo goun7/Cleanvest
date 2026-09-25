@@ -74,6 +74,28 @@ contract ListingGate is IListingGate, Ownable {
     ///      $1.490 ve $4.900 kademeleri tam audit + remediation diff verir.
     mapping(address => bool) public fullAuditAvailable;
 
+    /// @notice Denetim kademesi - AegisForge pricing.rs Tier enum'unun EVM karsiligi.
+    /// @dev Musteri sureci: ucretsiz basvuru -> Scan ($299) -> FuzzPatch ($1.490)
+    ///      -> Priority ($4.900). Yalnizca ileri yonlu yukseltme (downgrade YOK).
+    enum AuditTier {
+        None,       // basvuru yapildi, tarama yok
+        Scan,       // $299 - 4 kademe huni + PoV_Hash raporu
+        FuzzPatch,  // $1.490 - Scan + 10k metamorfik fuzz + remediation diff
+        Priority    // $4.900 - tumu + formal assurance + 30-gun SLA + oncelik
+    }
+
+    /// @notice Token => mevcut denetim kademesi.
+    mapping(address => AuditTier) public auditTier;
+
+    /// @notice Kademelerin dolar fiyatları (sent Degil, tam dolar).
+    /// @dev Odeme off-chain alinir (fiat/kripto); zincir yalnizca kademe
+    ///      yukseltmesini kaydeder. Haraç modeli YOK: dusuk kademe bile
+    ///      listelemeyi engellemez, sirada oncelik kaybettirir.
+    uint256 public constant PRICE_SCAN = 299;
+    uint256 public constant PRICE_FUZZ_PATCH = 1490;
+    uint256 public constant PRICE_PRIORITY = 4900;
+
+    event TierUpgraded(address indexed projectToken, AuditTier fromTier, AuditTier toTier);
     event CleanScorePublished(address indexed projectToken, uint8 score, bytes1 grade);
 
     event ApplicationSubmitted(bytes32 indexed applicationId, address indexed projectToken, string projectName);
@@ -148,6 +170,12 @@ contract ListingGate is IListingGate, Ownable {
         });
         fullAuditAvailable[projectToken] = auditFullAvailable;
 
+        // Ilk taramada Scan ($299) kademesi varsayilan olarak atanir.
+        // Musteri daha sonra upgradeAuditTier ile yukseltir.
+        if (auditTier[projectToken] == AuditTier.None) {
+            auditTier[projectToken] = AuditTier.Scan;
+        }
+
         if (passed && cleanScore >= MIN_CLEAN_SCORE) {
             listingStatus[projectToken] = ListingStatus.Verified;
             verifiedUntil[projectToken] = type(uint256).max; // Suresiz
@@ -157,6 +185,42 @@ contract ListingGate is IListingGate, Ownable {
 
         emit AuditRecorded(applicationId, projectToken, passed, cleanScore);
         emit CleanScorePublished(projectToken, uint8(cleanScore), _gradeFor(cleanScore));
+    }
+
+    /// @notice Musteri kademeyi yukseltir - Siparis -> Tarama -> PoV -> Odeme akisi.
+    /// @dev Odeme off-chain alinir; bu fonksiyon yalnizca KADEME YUKSELTME kaydeder.
+    ///      Sadece ILERI yonlu (downgrade YOK). Haraç YOK: dusuk kademe listelemeyi
+    ///      engellemez - sadece siralamada oncelik kaybettirir.
+    /// @param projectToken Yükseltilecek proje
+    /// @param newTier Hedef kadem (mevcutten yüksek olmalı)
+    function upgradeAuditTier(address projectToken, AuditTier newTier) external onlyAegisForge {
+        AuditTier current = auditTier[projectToken];
+        require(uint256(newTier) > uint256(current), "Yalnizca ileri yonlu yukseltme");
+        require(uint256(newTier) <= uint256(AuditTier.Priority), "Gecersiz kademe");
+
+        auditTier[projectToken] = newTier;
+
+        // FuzzPatch+ kademeleri tam audit (payload + remediation diff) sunar
+        if (uint256(newTier) >= uint256(AuditTier.FuzzPatch)) {
+            fullAuditAvailable[projectToken] = true;
+        }
+
+        emit TierUpgraded(projectToken, current, newTier);
+    }
+
+    /// @notice Kademeyi oku (kamusal, ucretsiz).
+    function getAuditTier(address projectToken) external view returns (AuditTier) {
+        return auditTier[projectToken];
+    }
+
+    /// @notice Fiyat kartini zincirde yayimla (seffaf, gizli degil).
+    /// @return scan / fuzzPatch / priority dolar fiyatları
+    function getPriceCard()
+        external
+        pure
+        returns (uint256 scan, uint256 fuzzPatch, uint256 priority)
+    {
+        return (PRICE_SCAN, PRICE_FUZZ_PATCH, PRICE_PRIORITY);
     }
 
     /// @notice Harf notu hesapla - AegisForge grade_for ile ayni bantlar.
