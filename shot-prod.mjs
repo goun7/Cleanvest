@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const browser = await chromium.launch({ headless: true, channel: 'chrome' });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+const errors = [];
+page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message.slice(0,150)));
+await page.goto('http://[::1]:4174/', { waitUntil: 'networkidle' });
+await page.waitForTimeout(2000);
+const text = await page.evaluate(() => document.body.innerText.slice(0, 200));
+console.log('PROD metin:', text.slice(0, 120));
+console.log('hatalar:', errors[0] || 'YOK');
+await browser.close();

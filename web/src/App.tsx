@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BrowserProvider } from "ethers";
 import type { Eip1193Provider } from "./types";
+import { getLang, setLang, t, type Lang } from "./lib/i18n";
 import {
   CHAIN_ID,
   depositWithMin,
@@ -32,6 +33,8 @@ function App() {
   const [account, setAccount] = useState<string | null>(null);
   const [state, setState] = useState<VaultState | null>(null);
   const [tab, setTab] = useState<"deposit" | "redeem">("deposit");
+  const [lang, setLangState] = useState<Lang>(() => getLang());
+  const tt = (key: string, params?: Record<string, string | number>) => t(lang, key, params);
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: "ok" | "err" | "info"; text: string } | null>(null);
@@ -39,7 +42,7 @@ function App() {
 
   const connect = useCallback(async () => {
     if (!window.ethereum) {
-      setMessage({ kind: "err", text: "Cuzdan bulunamadi (MetaMask yuklu degil)." });
+      setMessage({ kind: "err", text: tt("noWallet") });
       return;
     }
     const p = new BrowserProvider(window.ethereum as Eip1193Provider);
@@ -47,7 +50,7 @@ function App() {
     if (Number(net.chainId) !== CHAIN_ID) {
       setMessage({
         kind: "err",
-        text: `Base agina bagli degilsin (su an: chainId ${net.chainId}). Lutfen Base'e gec.`,
+        text: tt("wrongNetwork", { id: Number(net.chainId) }),
       });
       return;
     }
@@ -62,7 +65,7 @@ function App() {
     try {
       setState(await fetchVaultState(account));
     } catch (e) {
-      setMessage({ kind: "err", text: `Veri okunamadi: ${(e as Error).message.slice(0, 90)}` });
+      setMessage({ kind: "err", text: `${tt("dataFail")}: ${(e as Error).message.slice(0, 80)}` });
     }
   }, [vault, account]);
 
@@ -84,12 +87,12 @@ function App() {
         // Cikis: once slippage-korumali dene; kota asarsa T+2 kuyruguna al
         try {
           const hash = await redeemWithMin(provider, amount, account);
-          setMessage({ kind: "ok", text: `Cikis basarili (anlik): ${hash.slice(0, 18)}…` });
+          setMessage({ kind: "ok", text: `${tt("redeemOk")}: ${hash.slice(0, 18)}…` });
         } catch {
           const hash = await requestRedemption(provider, amount);
           setMessage({
             kind: "info",
-            text: `Gunluk kotayi astin - T+2 kuyruguna alindi (cikis KILITLENMEZ): ${hash.slice(0, 18)}…`,
+            text: `${tt("queuedInfo")}: ${hash.slice(0, 18)}…`,
           });
         }
       }
@@ -98,7 +101,7 @@ function App() {
     } catch (e) {
       const msg = (e as Error).message ?? "";
       const reason = msg.includes("reason=") ? msg.split("reason=")[1].slice(0, 90) : msg.slice(0, 90);
-      setMessage({ kind: "err", text: `Islem basarisiz: ${reason}` });
+      setMessage({ kind: "err", text: `${tt("fail")}: ${reason}` });
     } finally {
       setBusy(false);
     }
@@ -116,13 +119,20 @@ function App() {
             <h1 className="text-2xl font-bold tracking-tight text-white">
               Cleanvest <span className="text-fx-glow">scUSD</span>
             </h1>
-            <p className="text-sm text-slate-400">Sifir manipulasyonlu spot borsa ve getiri kasasi</p>
+            <p className="text-sm text-slate-400">{tt("subtitle")}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            className="btn-ghost w-auto px-3 py-2 text-xs font-mono"
+            onClick={() => { const l = lang === "tr" ? "en" : "tr"; setLang(l); setLangState(l); }}
+            aria-label="Switch language"
+          >
+            {lang.toUpperCase()}
+          </button>
           {s?.loaded && (
             <span className="chip bg-fx-yield/15 text-fx-yield">
-              <span className="h-1.5 w-1.5 rounded-full bg-fx-yield" /> Canli
+              <span className="h-1.5 w-1.5 rounded-full bg-fx-yield" /> {tt("live")}
             </span>
           )}
           {account ? (
@@ -131,7 +141,7 @@ function App() {
             </span>
           ) : (
             <button className="btn-ghost w-auto px-5 py-2 text-sm" onClick={connect}>
-              Cuzdan Bagla
+              {tt("connectWallet")}
             </button>
           )}
         </div>
@@ -140,25 +150,25 @@ function App() {
       {/* Stat kartlari */}
       <section className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
-          label="Kasa TVL"
+          label={tt("statTvl")}
           value={s ? fmtUsd(s.tvl) : "…"}
           sub={s ? `${fmtFull(s.totalSupply)} scUSD` : ""}
         />
         <StatCard
-          label="Aktif Kademe"
+          label={tt("statTier")}
           value={s?.tier ?? "…"}
           sub={s ? `Getiri %${s.seniorYieldPct.toFixed(2)}` : ""}
           accent
         />
         <StatCard
-          label="Pay Fiyati"
+          label={tt("statPrice")}
           value={s ? `$${s.sharePrice.toFixed(4)}` : "…"}
-          sub="1 scUSD karsiligi"
+          sub={tt("shareSub")}
         />
         <StatCard
-          label="Junior Ortusu"
+          label={tt("statJunior")}
           value={s ? `%${s.juniorRatioPct.toFixed(1)}` : "…"}
-          sub={s && s.juniorRatioPct >= 3 ? "GUVENLI (>= %3)" : "mint-halt riski"}
+          sub={s && s.juniorRatioPct >= 3 ? tt("juniorSafe") : tt("juniorRisk")}
           danger={s ? s.juniorRatioPct < 3 : false}
         />
       </section>
@@ -167,55 +177,54 @@ function App() {
       <section className="mb-8 grid gap-4 lg:grid-cols-3">
         <div className="panel panel-hover p-6 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Dürüst Getiri Egrisi</h2>
-            <span className="stat-label">2026-09-24 dogrulanmis veriler</span>
+            <h2 className="text-lg font-semibold text-white">{tt("yieldPanel")}</h2>
+            <span className="stat-label">{tt("yieldVerified")}</span>
           </div>
           <div className="space-y-3">
             <TierRow
-              name="Tier 0 — Baslangic"
+              name={tt("tier0")}
               range="< $250k"
               yieldPct={3.05}
               active={s?.tier === "Tier 0"}
             />
             <TierRow
-              name="Tier 1 — Kurumsal"
+              name={tt("tier1")}
               range="$250k – $12.5M"
               yieldPct={2.91}
               active={s?.tier === "Tier 1"}
             />
             <TierRow
-              name="Tier 2 — Likidite"
+              name={tt("tier2")}
               range="≥ $12.5M"
               yieldPct={2.92}
               active={s?.tier === "Tier 2"}
             />
           </div>
           <p className="mt-4 text-xs leading-relaxed text-slate-500">
-            Getiri Rezerv katmanindan dagitilir (OUSG %3.46 / BUIDL %3.45 / Aave Base). Rebase YOK —
-            $cUSD sabit $1.00. T+2 cikis garantisi: gunluk arzin %10'u anlik, ustu 2 gun sonra serbest.
+            {tt("yieldNote")}
           </p>
         </div>
 
         <div className="panel panel-hover flex flex-col justify-between p-6">
           <div>
-            <h2 className="mb-4 text-lg font-semibold text-white">Cikis Kapisi</h2>
+            <h2 className="mb-4 text-lg font-semibold text-white">{tt("gatePanel")}</h2>
             <div className="mb-4">
-              <p className="stat-label">Gunluk anlik kota</p>
+              <p className="stat-label">{tt("dailyCap")}</p>
               <p className="stat-value text-fx-yield">%{s?.dailyInstantCapPct ?? 0}</p>
             </div>
             <div className="mb-4">
-              <p className="stat-label">Kalan anlik</p>
+              <p className="stat-label">{tt("remainingInstant")}</p>
               <p className="stat-value">{s ? fmtUsd(s.dailyRemaining) : "…"}</p>
             </div>
           </div>
           <div>
             {s && s.queuedUnlock > 0 && (
               <div className="chip bg-fx-gold/15 text-fx-gold">
-                Kuyrukta: {new Date(s.queuedUnlock * 1000).toLocaleDateString("tr-TR")} serbest
+                {tt("queued", { date: new Date(s.queuedUnlock * 1000).toLocaleDateString(lang) })}
               </div>
             )}
             <p className="mt-3 text-xs text-slate-500">
-              CIKISLAR ASLA KILITLENMEZ — kotayi asanlar T+2 kuyruguna alinir.
+              {tt("gateNote")}
             </p>
           </div>
         </div>
@@ -234,14 +243,14 @@ function App() {
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              {t === "deposit" ? "Yatir (cUSD → scUSD)" : "Cik (scUSD → cUSD)"}
+              {t === "deposit" ? tt("tabDeposit") : tt("tabRedeem")}
             </button>
           ))}
         </div>
 
         <div className="mb-4">
           <div className="mb-2 flex items-center justify-between">
-            <label className="stat-label">Miktar (cUSD)</label>
+            <label className="stat-label">{tt("amount")}</label>
             <span className="text-xs text-slate-500">
               Bakiye: {balance ? fmtFull(balance) : "0"} {tab === "deposit" ? "cUSD" : "scUSD"}
             </span>
@@ -260,22 +269,18 @@ function App() {
               onClick={() => setAmount(balance)}
               disabled={busy}
             >
-              Maksimum kullan
+              {tt("useMax")}
             </button>
           )}
         </div>
 
         {!account ? (
           <button className="btn-primary" onClick={connect}>
-            Cuzdan Bagla
+            {tt("connectWallet")}
           </button>
         ) : (
           <button className="btn-primary" disabled={busy || !amount} onClick={submit}>
-            {busy
-              ? "Isleniyor…"
-              : tab === "deposit"
-                ? "Yatir (slippage korumali)"
-                : "Cik (slippage korumali)"}
+            {busy ? tt("processing") : tab === "deposit" ? tt("depositBtn") : tt("redeemBtn")}
           </button>
         )}
 
@@ -293,13 +298,11 @@ function App() {
           </div>
         )}
 
-        <p className="mt-4 text-center text-xs text-slate-600">
-          ERC-4626 inflation-attack kalkani: UI minShares degerini otomatik hesaplar
-        </p>
+        <p className="mt-4 text-center text-xs text-slate-600">{tt("shieldNote")}</p>
       </section>
 
       <footer className="mt-8 text-center text-xs text-slate-600">
-        Cleanvest · Sözlesmeler Base aginda · 122/122 Foundry testi · <span className="font-mono">rc=0</span>
+        Cleanvest · {tt("footer")} · 122/122 Foundry tests · <span className="font-mono">rc=0</span>
       </footer>
     </div>
   );
