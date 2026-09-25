@@ -4,6 +4,7 @@ pragma solidity ^0.8.28;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "./interfaces/IUniswapV3Router.sol";
 
 /// @title UniswapProxy - Artik Hacim Yonlendirme (Faz-3 Residual)
@@ -76,8 +77,10 @@ contract UniswapProxy is Ownable, ReentrancyGuard {
         require(amountOut >= minAmountOut, "Slippage: cikis minimumun altinda");
 
         // Kaymayi olc ve raporla (UI'da gosterilir - GIZLENMEZ)
+        // Math.mulDiv: 512-bit ara deger - amountIn = type().max olsa bile
+        // (amountIn - amountOut) * 10000 tasmaz (overflow korumasi)
         uint256 slippageBps = amountIn > amountOut
-            ? ((amountIn - amountOut) * 10000) / amountIn
+            ? Math.mulDiv(amountIn - amountOut, 10000, amountIn)
             : 0;
 
         totalRoutedVolume += amountIn;
@@ -98,7 +101,8 @@ contract UniswapProxy is Ownable, ReentrancyGuard {
         returns (bool warn, uint256 slippageBps)
     {
         if (amountIn == 0 || amountOut >= amountIn) return (false, 0);
-        slippageBps = ((amountIn - amountOut) * 10000) / amountIn;
+        // Math.mulDiv ile overflow korumasi (amountIn kullanici girisi)
+        slippageBps = Math.mulDiv(amountIn - amountOut, 10000, amountIn);
         return (slippageBps > SLIPPAGE_WARN_BPS, slippageBps);
     }
 

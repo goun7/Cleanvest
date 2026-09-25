@@ -90,6 +90,15 @@ contract UniswapProxyTest is Test {
         vm.expectRevert("Router sifir olamaz");
         proxy.setSwapRouter(address(0));
     }
+
+    /// @notice Asiri buyuk amountIn ile kayma hesabi overflow vermemeli
+    function testSlippageOverflowProtection() public view {
+        // ESKIDEN: (type().max - 1) * 10000 -> panic 0x11
+        // SIMDI: Math.mulDiv ile tasmaz
+        (bool warn, uint256 bps) = proxy.slippageWarningActive(type(uint256).max, 1);
+        assertGt(bps, 0, "mulDiv tasmadi - bps hesaplandi");
+        assertTrue(warn, "asiri kaymada uyar aktif");
+    }
 }
 
 contract MockToken is ERC20 {
@@ -112,4 +121,6 @@ contract MockV3Router is IUniswapV3Router {
         require(amountOut >= params.amountOutMinimum, "V3Router: slippage exceeded");
         return amountOut;
     }
+
+    /// @notice Asiri buyuk amountIn ile kayma hesabi overflow vermemeli
 }
