@@ -82,8 +82,19 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     {
         if (liquidityOnchain == 0) return EPS0_BPS;
 
-        // kappa * (dQ / L) - tamsayi bolme, 0'dan kucuk olamaz
-        uint256 sizeTerm = (KAPPA_BPS * deltaQ) / liquidityOnchain;
+        // OVERFLOW KORUMASI: KAPPA_BPS * deltaQ 256-bit'i asiyor (dQ=type().max).
+        // Cozum: makul degerlerde HASSAS hesap (once carp, sonra bol),
+        // asiri degerlerde once-bol yedegi (ratio tavani ile).
+        uint256 sizeTerm;
+        if (deltaQ <= type(uint256).max / KAPPA_BPS) {
+            // Hassas yol: kucuk dQ icin tamsayi bolme kaybi yok
+            sizeTerm = (KAPPA_BPS * deltaQ) / liquidityOnchain;
+        } else {
+            // Yedek yol: once bol, sonra carp.
+            // ratio > 97 zaten sizeTerm tavanini (485) vuruyor.
+            uint256 ratio = deltaQ / liquidityOnchain;
+            sizeTerm = ratio > 97 ? 485 : KAPPA_BPS * ratio;
+        }
 
         // Asiri buyuk dQ icin tavan (eps sonsuza gitmesin - %5 = 500 bps)
         if (sizeTerm > 485) sizeTerm = 485;
