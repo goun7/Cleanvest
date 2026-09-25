@@ -1,1 +1,1 @@
-{"version":1,"failures":[{"contract":"test/UniswapProxy.t.sol:UniswapProxyTest","test":"testNoSlippage"},{"contract":"test/UniswapProxy.t.sol:UniswapProxyTest","test":"testSlippageNoWarning"},{"contract":"test/UniswapProxy.t.sol:UniswapProxyTest","test":"testSlippageWarning"}]}
+{"version":1,"failures":[{"contract":"test/Integration.t.sol:IntegrationTest","test":"testFullYieldFlow"}]}
