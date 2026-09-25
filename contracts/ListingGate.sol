@@ -49,6 +49,33 @@ contract ListingGate is IListingGate, Ownable {
     /// @notice Minimum gecerli CleanScore ebesigi (70/100).
     uint256 public constant MIN_CLEAN_SCORE = 70;
 
+    /// @notice KAMUSAL CleanScore kaydi - AegisForge cekirdeginin
+    ///         CleanScoreResponse yapisinin EVM karsiligi.
+    /// @dev Sartname: CleanScore KAMUSAL ve UCRETSIZ bir API'dir. Bu yapi
+    ///      zincirde okunabilir; gizli degildir. Gizli olan yalnizca PoV
+    ///      payload ve tuz'dur.
+    struct CleanScoreRecord {
+        uint8 score;            // 0-100
+        bytes1 grade;           // harf notu (A/B/C)
+        uint64 computedAt;      // motor tarafindan hesaplanma timestamp'i
+        uint16 findingsCritical;
+        uint16 findingsHigh;
+        uint16 findingsMedium;
+        uint16 findingsLow;
+        uint16 findingsInfo;
+        bool fullAuditAvailable; // yalnizca $1.490+ kademelerde
+    }
+
+    /// @notice Token => EN SON kamusal CleanScore kaydi.
+    mapping(address => CleanScoreRecord) public cleanScoreRecords;
+
+    /// @notice Token => tam denetim sunulabilir mi (kademeye bagli).
+    /// @dev $299 kademesi PoV_Hash raporu verir ama payload'a tam erisim YOK.
+    ///      $1.490 ve $4.900 kademeleri tam audit + remediation diff verir.
+    mapping(address => bool) public fullAuditAvailable;
+
+    event CleanScorePublished(address indexed projectToken, uint8 score, bytes1 grade);
+
     event ApplicationSubmitted(bytes32 indexed applicationId, address indexed projectToken, string projectName);
     event AuditRecorded(bytes32 indexed applicationId, address indexed projectToken, bool passed, uint256 cleanScore);
     event OracleUpdated(address indexed oldOracle, address indexed newOracle);
@@ -90,14 +117,36 @@ contract ListingGate is IListingGate, Ownable {
     }
 
     /// @notice AegisForge tarafindan cagrilir - token adresi ile birlikte.
-    /// @dev Bu fonksiyon gercek audit akisidir.
+    /// @dev Bu fonksiyon gercek audit akisidir. Tam bulgu sayilari KAMUSALDIR.
     function recordAuditResultForToken(
         bytes32 applicationId,
         address projectToken,
         bool passed,
-        uint256 cleanScore
+        uint256 cleanScore,
+        uint16 findingsCritical,
+        uint16 findingsHigh,
+        uint16 findingsMedium,
+        uint16 findingsLow,
+        uint16 findingsInfo,
+        bool auditFullAvailable
     ) external onlyAegisForge {
+        require(cleanScore <= 100, "Skor 0-100 arasinda olmali");
+
         applicationScore[applicationId] = cleanScore;
+
+        // KAMUSAL CleanScore kaydini yayimla (ucretsiz API sozu koda islendi)
+        cleanScoreRecords[projectToken] = CleanScoreRecord({
+            score: uint8(cleanScore),
+            grade: _gradeFor(cleanScore),
+            computedAt: uint64(block.timestamp),
+            findingsCritical: findingsCritical,
+            findingsHigh: findingsHigh,
+            findingsMedium: findingsMedium,
+            findingsLow: findingsLow,
+            findingsInfo: findingsInfo,
+            fullAuditAvailable: auditFullAvailable
+        });
+        fullAuditAvailable[projectToken] = auditFullAvailable;
 
         if (passed && cleanScore >= MIN_CLEAN_SCORE) {
             listingStatus[projectToken] = ListingStatus.Verified;
@@ -107,6 +156,27 @@ contract ListingGate is IListingGate, Ownable {
         }
 
         emit AuditRecorded(applicationId, projectToken, passed, cleanScore);
+        emit CleanScorePublished(projectToken, uint8(cleanScore), _gradeFor(cleanScore));
+    }
+
+    /// @notice Harf notu hesapla - AegisForge grade_for ile ayni bantlar.
+    /// @dev Kasitli muhafazakar: AAA kazanmak zordur (cekirdek yorumundan alinti).
+    function _gradeFor(uint256 score) internal pure returns (bytes1) {
+        if (score >= 95) return bytes1("S");  // nadir, muhafazakar
+        if (score >= 85) return bytes1("A");
+        if (score >= 70) return bytes1("B");  // Verified esigi
+        if (score >= 50) return bytes1("C");
+        return bytes1("D");
+    }
+
+    /// @notice KAMUSAL CleanScore okuma - UCRETSIZ (harc YOK).
+    /// @return record Tam kayit: skor, not, bulgu sayilari, tam-audit durumu.
+    function getCleanScore(address projectToken)
+        external
+        view
+        returns (CleanScoreRecord memory record)
+    {
+        return cleanScoreRecords[projectToken];
     }
 
     /// @inheritdoc IListingGate

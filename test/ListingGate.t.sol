@@ -45,7 +45,7 @@ contract ListingGateTest is Test {
         gate.applyForListing(projectToken, "TestToken");
 
         vm.prank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 1, 2, 3, false);
 
         assertTrue(gate.isVerified(projectToken), "85 skoru Verified olmali");
     }
@@ -55,7 +55,7 @@ contract ListingGateTest is Test {
         gate.applyForListing(projectToken, "TestToken");
 
         vm.prank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 50);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 50, 0, 1, 2, 3, 4, false);
 
         (IListingGate.ListingStatus status,) = gate.getListingStatus(projectToken);
         assertTrue(uint256(status) == uint256(IListingGate.ListingStatus.Rejected), "50 skoru Reddedilmeli");
@@ -67,7 +67,7 @@ contract ListingGateTest is Test {
         gate.applyForListing(projectToken, "TestToken");
 
         vm.expectRevert("Yalnizca AegisForge oracle");
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 90);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 90, 0, 0, 0, 1, 2, true);
     }
 
     /// @notice Ayni token icin ikinci basvuru reddedilmeli (Rejected haric)
@@ -83,7 +83,7 @@ contract ListingGateTest is Test {
         gate.applyForListing(projectToken, "TestToken");
 
         vm.prank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, false, 30);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, false, 30, 2, 1, 0, 0, 0, false);
 
         // Rejected durumda yeniden basvuru yapilabilmeli
         bytes32 appId2 = gate.applyForListing(projectToken, "TestToken v2");
@@ -171,4 +171,54 @@ contract ListingGateTest is Test {
         vm.expectRevert("PoV hash sifir olamaz");
         gate.sealPovCommitment(appId, bytes32(0), block.timestamp, 0, 0);
     }
+
+    /// @notice Kamusal CleanScore kaydi dogru yayimlanmali
+    function testCleanScorePublished() public {
+        vm.prank(oracle);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 1, 2, 3, false);
+
+        ListingGate.CleanScoreRecord memory rec = gate.getCleanScore(projectToken);
+        assertEq(rec.score, 85, "Skor 85");
+        assertEq(uint8(rec.grade), uint8(bytes1("A")), "Not A");
+        assertEq(rec.findingsCritical, 0, "Kritik yok");
+        assertEq(rec.findingsHigh, 0, "High yok");
+        assertEq(rec.findingsMedium, 1, "1 medium");
+        assertEq(rec.findingsLow, 2, "2 low");
+        assertEq(rec.findingsInfo, 3, "3 info");
+        assertFalse(rec.fullAuditAvailable, "Tam audit yok ($299 kademe)");
+    }
+
+    /// @notice Yuksek kademe tam audit sunmali
+    function testFullAuditAvailable() public {
+        vm.prank(oracle);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 90, 0, 0, 0, 1, 2, true);
+
+        ListingGate.CleanScoreRecord memory rec = gate.getCleanScore(projectToken);
+        assertTrue(rec.fullAuditAvailable, "Tam audit VAR ($1.490+ kademe)");
+        assertTrue(gate.fullAuditAvailable(projectToken), "Mapper de true");
+    }
+
+    /// @notice Skor 100'den buyuk olamaz
+    function testRevertScoreAbove100() public {
+        vm.prank(oracle);
+        vm.expectRevert("Skor 0-100 arasinda olmali");
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 101, 0, 0, 0, 0, 0, false);
+    }
+
+    /// @notice Harf notu bantlari dogru olmali
+    function testGradeBands() public {
+        vm.startPrank(oracle);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 95, 0,0,0,0,0, false);
+        assertEq(uint8(gate.getCleanScore(projectToken).grade), uint8(bytes1("S")), "95 = S");
+        gate.recordAuditResultForToken(bytes32(uint256(2)), projectToken, true, 85, 0,0,0,0,0, false);
+        assertEq(uint8(gate.getCleanScore(projectToken).grade), uint8(bytes1("A")), "85 = A");
+        gate.recordAuditResultForToken(bytes32(uint256(3)), projectToken, true, 70, 0,0,0,0,0, false);
+        assertEq(uint8(gate.getCleanScore(projectToken).grade), uint8(bytes1("B")), "70 = B");
+        gate.recordAuditResultForToken(bytes32(uint256(4)), projectToken, false, 50, 0,0,0,0,0, false);
+        assertEq(uint8(gate.getCleanScore(projectToken).grade), uint8(bytes1("C")), "50 = C");
+        gate.recordAuditResultForToken(bytes32(uint256(5)), projectToken, false, 30, 0,0,0,0,0, false);
+        assertEq(uint8(gate.getCleanScore(projectToken).grade), uint8(bytes1("D")), "30 = D");
+        vm.stopPrank();
+    }
+
 }
