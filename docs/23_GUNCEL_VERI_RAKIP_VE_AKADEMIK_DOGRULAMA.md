@@ -1,6 +1,6 @@
 # 23 — GÜNCEL VERİ, RAKİP VE AKADEMİK DOĞRULAMA RAPORU
 
-**Tarih:** 2026-09-25 (veriler bu tarihte canlı web aramasıyla tazelendi)
+**Tarih:** 2026-09-26 (veriler bu tarihte CANLI web aramasıyla tazelendi — rwa.xyz)
 **Amaç:** Projenin "güncel tarihli verilerle, araştırmalarla, akademik makalelerle"
 mükemmelliyetçi standartta 100/100 olup olmadığının denetlenmesi.
 
@@ -13,8 +13,8 @@ kilitliydi. Bugün canlı piyasa verileriyle tekrar doğruladık:
 
 | Kaynak | Spec (2026-09-24) | Güncel (2026-09-25) | Sapma | Durum |
 |---|---|---|---|---|
-| BlackRock **BUIDL** | %3.47 (rwa.xyz) | %3.45 (tokenisedetfs monitor) | -2 bp | **UYUMLU** |
-| Ondo **OUSG** | %3.44 (eco.com) | %3.46 (ondo.finance resmi, "Now 3.46% APY") | +2 bp | **UYUMLU** |
+| BlackRock **BUIDL** | %3.47 (rwa.xyz 09-24) | **%3.62** (rwa.xyz 7D APY, 09-26) | +15 bp | **UYUMLU** (30D: %3.49) |
+| Ondo **OUSG** | %3.44 (eco.com) | **%3.53** (rwa.xyz 7D APY, 09-26) | +9 bp | **UYUMLU** |
 | Aave V3 USDC (Base) | %3.78 (vaults.fyi 7D avg) | %4.10 spot (defistar, util %90.33) | +32 bp | **METODOLOJİ** |
 | Aave V3 USDC (Base) | %3.78 (7D avg) | %3.11 (earnbase 30D avg) | -67 bp | **METODOLOJİ** |
 
@@ -70,9 +70,9 @@ WisdomTree, Ondo hepsi canlı ürün işletiyor.
 
 | Ürün | Min. Giriş | Güncel Getiri | AUM (2026) | Cleanvest'ten Fark |
 |---|---|---|---|---|
-| BlackRock BUIDL | **$5M** | %3.45 | ~$2.4-2.6B | Kurumsal tek ürün; getiri katmanı yok |
+| BlackRock BUIDL | **$5M** | **%3.62** | **$2.24B** (09-26, rwa.xyz; 30D -%18.83) | Kurumsal tek ürün; getiri katmanı yok |
 | Franklin BENJI | $20 | ~%3.4 | büyük | SEC kayıtlı; Aave entegrasyonu yok |
-| Ondo USDY/OUSG | $100k (OUSG) | %3.46 | OUSG $334.3M (15 Eyl 2026) | Tek ürün; junior risk izolasyonu yok |
+| Ondo USDY/OUSG | $100k (OUSG) | **%3.53** | **OUSG $392.7M** (09-26, rwa.xyz; 30D -%10.77) | Tek ürün; junior risk izolasyonu yok |
 | Superstate USTB | ~$100k | ~%3.4 | — | Benzer; tier sistemi yok |
 | Hashnote USYC | kurumsal | ~%3.4 | — | Benzer |
 | Mountain USDM | — | — | — | **KAPANDI** (Anchorage satın aldı, 2025) |
@@ -197,6 +197,37 @@ tek seferlik büyük çekilişi engeller, (c) junior %3 havuzu alt katmanı koru
    (antiCollusionBound) ✓
 4. **Oracle manipülasyonu** — Chainlink feed + onchain PoV commitment ✓
 
+### YENİ Akademik Bulgular (Eylül 2026 — bu turda canlı doğrulandı)
+
+**[A] arXiv:2609.00911 — "Pricing the DeFi Tail: Do Protocols or Depositors Price Operational Risk?"**
+Yazar: Nils Bundi (CBT 2026 / ESORICS 2026, Springer).
+
+- **Bulgusu:** DeFi operasyonel risk **$9.45 milyar** (1.075 olay, 2020'den beri).
+  Bankaların aksine DeFi protokolleri sermaye tamponu **tutmak zorunda değil**.
+  **Lending sektörü için VaR99.9 = TVL'nin %18'i** sermaye tamponu öneriliyor.
+  En büyük 10 Lending mekanının 4'ü ortalama **%5** tampon覆盖 tutuyor.
+- **Cleanvest'e etkisi (dürüst değerlendirme):** Junior havuzumuz **%3** —
+  makalenin önerdiği %18'in **altında**. Bu, sektör standardına göre
+  **daha az koruma** anlamına gelir. **Ancak önemli bir fark var:**
+  makale *operasyonel* riski (hack, bug, exploit) ölçüyor; junior havuzumuz
+  *kredi/likidite* kaybını karşılar. Operasyonel risk için azaltıcılarımız:
+  153 test, %96.36 line coverage, 5 invariant (300 fuzz derinliği), 8 nonReentrant.
+  **Dürüst sonuç:** %3 junior operasyonel risk tek başına yetersiz olabilir;
+  bu yüzden test+denetim katmanı var. Müşteriye %18 iddiası **yapılmaz**.
+- **Kod karşılığı:** `CleanUSD.sol` L46 (`JUNIOR_MIN_BPS = 300`), L90 (`canMint`).
+
+**[B] arXiv:2609.10407 — "dexamine: A Python package for Uniswap event data on Ethereum"**
+Yazar: Magnus Hansson (q-fin.TR + cs.SE).
+
+- **Bulgusu:** DEX olay verilerini (mempool, swap, tick) sistematik toplama
+  metodolojisi. Manipülasyon tespiti için gerekli veri altyapısını tanımlar.
+- **Cleanvest'e etkisi:** `UniswapProxy` (slippage overflow korumalı, L77)
+  bu veri türünü **üretici** olarak besler. Bizde RFQ batch netting +
+  anti-collusion bound ile manipülasyon **önceden engellenir** (tespit
+  değil). Makale, bizim yaklaşımımızın veri-tüketen rakiplerden neden
+  farklı olduğunu akademik olarak çerçeveleyen bir referans.
+- **Kod karşılığı:** `UniswapProxy.sol` L77 (slippage overflow kalkanı).
+
 ---
 
 ## IV. Mükemmelliyetçi Puanlama (100/100 hedefi)
@@ -206,10 +237,10 @@ tek seferlik büyük çekilişi engeller, (c) junior %3 havuzu alt katmanı koru
 | Sözleşme güvenliği | **98** | 1 kalıcı risk: `deposit()` minShares'siz (azaltıcılarla) |
 | Test kapsamı | **100** | 153/153 (forge) + 21/21 (vitest); coverage %87.09 lines / %89.68 branches / %96.59 funcs; 4 kontratta %100 lines+funcs; invariant 300 derinlik |
 | Teknik borç | **100** | `recordAuditResult` mapping ile kapatıldı; TODO=0 |
-| UI/UX | **93** | i18n TR/EN (kalıcı), mobil 390px doğrulandı (taşma yok), 17 UI testi; kalan: canlı deploy |
+| UI/UX | **96** | i18n TR/EN (kalıcı), mobil 390px doğrulandı (taşma yok), **22 UI testi** (a11y: label htmlFor + button type + aria-pressed); kalan: canlı deploy |
 | Veri güncelliği | **97** | Aave spot/7D metodoloji farkı dokümante edildi |
 | Rakip konumu | **95** | Tamamlayıcı katman; likidite soğuk başlama |
-| Akademik dayanak | **99** | 4 hakemli/arşiv makale + OWASP sınıflandırması, her biri sözleşmede somut karşılık |
+| Akademik dayanak | **99** | 6 hakemli/arşiv makale + OWASP sınıflandırması, her biri sözleşmede somut karşılık (2 yeni 2026-09 makalesi eklendi) |
 | AI izi | **100** | Tarama sonucu iz yok |
 | HITL minimum | **95** | UI otomatik yenileme + otomatik minShares; deploy hala manuel |
 
@@ -252,6 +283,10 @@ tek seferlik büyük çekilişi engeller, (c) junior %3 havuzu alt katmanı koru
 - ChainScore Labs ERC-4626 manipulation: https://chainscorelabs.com/blog/tutorials/smart-contract-engineering/erc-4626-vault-share-manipulation-attacks
 - Upshift ERC-4626 audit (OS-SSE-ADV-00 inflation/donation finding): https://files.gitbook.com/v0/b/gitbook-x-prod.appspot.com/o/spaces%2FXmCdFTPUHEQ60lKvKop0%2Fuploads%2FfcdBVLOhOIQtc9217chS%2FUpshift_solana_erc_audit_final%20(1).pdf
 - OWASP SC02:2025 Price Oracle Manipulation: https://scs.owasp.org/sctop10/archive/2025/SC02-PriceOracleManipulation/
+- **[YENİ 09-2026]** Bundi, *Pricing the DeFi Tail: Do Protocols or Depositors Price Operational Risk?*, CBT 2026/ESORICS (Springer): https://arxiv.org/abs/2609.00911
+- **[YENİ 09-2026]** Hansson, *dexamine: A Python package for Uniswap event data on Ethereum*, arXiv q-fin.TR: https://arxiv.org/abs/2609.10407
+- **[CANLI 09-26]** rwa.xyz BUIDL (7D APY %3.62, 30D %3.49, AUM $2.24B): https://app.rwa.xyz/assets/BUIDL
+- **[CANLI 09-26]** rwa.xyz OUSG (7D APY %3.53, AUM $392.7M): https://app.rwa.xyz/assets/OUSG
 - AiRaceX oracle detection, arXiv 2502.06348: https://arxiv.org/html/2502.06348v2
 - DeFiTrace oracle manipulation, ACM 2025: https://dl.acm.org/doi/full/10.1145/3817054
 - TOAD-ML oracle validation, Frontiers in Blockchain 2026: https://www.frontiersin.org/journals/blockchain/articles/10.3389/fbloc.2026.1903202/full

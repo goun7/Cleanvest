@@ -129,6 +129,27 @@ contract UniswapProxyTest is Test {
         proxy.routeResidual(address(tokenIn), address(tokenOut), 100 ether, 200 ether, 3000);
         vm.stopPrank();
     }
+
+    /// @notice Slippage korumasi: router dusuk dondururse proxy L77 yakalar
+    /// @dev testRevertSlippageBelowMin'den FARKLI: MockShortRouter kendi
+    /// icinde revert ETMEZ (her zaman 1 dondurur). boylece islem
+    /// UniswapProxy L77'deki require'a kadar gelir ve "Slippage: cikis
+    /// minimumun altinda" ile reddedilir. Bu katman gercek Uniswap V3
+    /// router'inin bug'li/kotu niyetli bir uygulama olmasi durumunda bile
+    /// kullaniciyi korur (defense-in-depth).
+    function testRevertSlippageBelowMinProxyLayer() public {
+        MockShortRouter shortRouter = new MockShortRouter();
+        vm.prank(owner);
+        proxy.setSwapRouter(address(shortRouter));
+
+        tokenIn.mint(owner, 100 ether);
+        vm.startPrank(owner);
+        tokenIn.approve(address(proxy), 100 ether);
+        // router 1 dondurur, min 200 -> L77 require'i tetiklenir
+        vm.expectRevert("Slippage: cikis minimumun altinda");
+        proxy.routeResidual(address(tokenIn), address(tokenOut), 100 ether, 200 ether, 3000);
+        vm.stopPrank();
+    }
 }
 
 contract MockToken is ERC20 {
@@ -153,4 +174,22 @@ contract MockV3Router is IUniswapV3Router {
     }
 
     /// @notice Asiri buyuk amountIn ile kayma hesabi overflow vermemeli
+}
+
+/// @notice Kisa donen router: kendi icinde slippage kontrolu YOK.
+/// @dev MockV3Router gercek V3 davranisini simule eder (kendi slippage
+///      require'i ile revert). Bu mock ise HIC revert etmeden her zaman
+///      1 birim dondurur - amaci UniswapProxy L77'deki proxy katmani
+///      require'inin gercekten calistigini test etmektir (kotu niyetli
+///      veya bug'li router senaryosu).
+contract MockShortRouter is IUniswapV3Router {
+    function exactInputSingle(ExactInputSingleParams calldata params)
+        external
+        payable
+        returns (uint256 amountOut)
+    {
+        // Her zaman 1 dondurur: herhangi bir minAmountOut > 1 case'inde
+        // UniswapProxy L77 yakalamak zorundadir.
+        return 1;
+    }
 }

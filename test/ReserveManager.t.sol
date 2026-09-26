@@ -307,6 +307,26 @@ contract ReserveManagerTest is Test {
         assertFalse(reserve.utilizationCircuitBreakerActive(), "feedsiz false");
     }
 
+    /// @notice circuitBreaker: OPTIMIZE ACIKKEN feed kaldirilinca false (L163)
+    /// @dev testCircuitBreakerOptimizeWithoutFeedAddress'ten farkli: optimize
+    ///      KAPALI iken L162'de erken donuluyordu. Burada once feed baglanip
+    ///      optimize acilir (setOptimizeMode feed gerektirir), sonra feed
+    ///      address(0) yapilir. boylece L162 gecilir ve L163'teki
+    ///      (aaveUtilizationFeed == address(0)) TRUE dal isler.
+    function testCircuitBreakerOptimizeEnabledFeedUnset() public {
+        vm.startPrank(owner);
+        reserve.setAaveUtilizationFeed(feed); // feed gerekli yoksa optimize acilmaz
+        reserve.setOptimizeMode(true);
+        // setter sifira izin verir (bilincli tasarim) -> feed artik yok
+        reserve.setAaveUtilizationFeed(address(0));
+        vm.stopPrank();
+
+        assertFalse(
+            reserve.utilizationCircuitBreakerActive(),
+            "Optimize ACIK + feed YOK -> L163 false (devre-kesici pasif)"
+        );
+    }
+
     /// @notice rebalance: total 0 iken erken donus (branch L113)
     /// @dev TAZE reserve; sahibi msg.sender (test kontrati) - owner DEGIL
     function testRebalanceZeroTotalEarlyReturn() public {

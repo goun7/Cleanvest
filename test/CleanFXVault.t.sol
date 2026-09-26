@@ -328,6 +328,35 @@ contract CleanFXVaultTest is Test {
         vm.stopPrank();
     }
 
+    /// @notice OPTIMIZE acikken utilization feed kaldirilinca anlik cekis T+2'ye duser (L131)
+    /// @dev testSafeModeIgnoresFeed'in TERSI: optimize ACIK iken feed yoksa
+    ///      _instantRedemptionAllowed() L131'de (aaveUtilizationFeed == 0)
+    ///      false doner. once feed baglanip optimize acilir (setOptimizeMode
+    ///      feed gerektirir), sonra feed address(0) yapilir. requestRedemption
+    ///      anlik degil T+2 kuyruguna gider.
+    function testOptimizeEnabledFeedUnsetRoutesToT2() public {
+        vm.startPrank(founder);
+        vault.setAaveUtilizationFeed(address(0xFEED)); // feed olmadan optimize acilmaz
+        vault.setOptimizeMode(true);
+        // feed'i kaldir (setter sifira izin verir) -> L131 artik false doner
+        vault.setAaveUtilizationFeed(address(0));
+        vm.stopPrank();
+
+        usdc.mint(alice, 1000 ether);
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 1000 ether);
+        vault.deposit(1000 ether, alice);
+
+        // 50 ether gunluk %10 kotanin (100 ether) icinde ama feed yok
+        vault.requestRedemption(50 ether);
+        assertGt(
+            vault.queuedUnlockTime(alice),
+            0,
+            "Optimize ACIK + feed YOK -> anlik cekis T+2 kuyruguna duser (L131)"
+        );
+        vm.stopPrank();
+    }
+
     /// @notice Getiri egrisi PROJE_KAGIDI.md L99 ile BIREBIR: %3.05/%2.91/%2.92
     function testYieldCurveMatchesSpec() public {
         // Tier0: TVL < $250k -> %3.05
