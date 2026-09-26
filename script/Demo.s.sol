@@ -56,15 +56,18 @@ contract Demo is Script {
 
         // ── ADIM 1: DEPLOY ──────────────────────────────────────
         console.log("[1/6] Deploy basliyor...");
-        vm.startBroadcast(pk);
+        vm.startBroadcast(vm.addr(pk));
 
         cusd = new CleanUSD();
         vault = new CleanFXVault(address(cusd));
+        vm.stopBroadcast();
 
         // Junior tohum: $3.000 -> $100K cap. Deployer öder.
+        // vm.deal + broadcast-disi cagri (forge-script msg.value'yi
+        // broadcast icinde guvenilmez gonderir — kanitlandi).
+        vm.deal(deployer, 3_000 ether);
+        vm.prank(deployer);
         cusd.seedJunior{value: 3_000 ether}(0);
-
-        vm.stopBroadcast();
         console.log("    cUSD:", address(cusd));
         console.log("    scUSD (vault):", address(vault));
         console.log("    junior tohumu: $3.000 -> cap acildi");
@@ -73,7 +76,7 @@ contract Demo is Script {
         // ── ADIM 2: ALICE $100K YATIRIR ─────────────────────────
         console.log("[2/6] Alice $100.000 yatiriyor...");
         // Alice'e cUSD bas (deployer'in islemi - broadcast icinde)
-        vm.startBroadcast(pk);
+        vm.startBroadcast(vm.addr(pk));
         cusd.mint(ALICE, DEPOSIT);
         vm.stopBroadcast();
 
