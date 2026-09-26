@@ -272,6 +272,26 @@ contract ListingGateTest is Test {
         assertTrue(gate.fullAuditAvailable(projectToken), "Priority tam audit");
     }
 
+    /// @notice Gecersiz (enum disi) kademe reddedilmeli - L214 defense-in-depth
+    /// @dev L211-213 yorumunda belgelendigi gibi: typed conversion
+    ///      AuditTier(uint256(99)) Solidity 0.8'de conversion aninda Panic
+    ///      verir (compiler katmani) ve raw calldata ile de ABI dekoderi enum
+    ///      sinirini dogrulayip reddeder. Yani L214'e HIC ulasilamaz - bu
+    ///      bilincli dead-by-design guvenlik katmanidir: decoder bir gun
+    ///      atlanirsa (raw memory manipulasyonu, gelecekteki decoder bug'i)
+    ///      L214 yine korur. Bu test decoder katmanini dogrular.
+    function testRevertInvalidTierOutOfRange() public {
+        // Raw calldata: uint8=99 enum disinda -> ABI dekoderi reddeder
+        bytes memory cd = abi.encodeWithSignature(
+            "upgradeAuditTier(address,uint8)",
+            projectToken,
+            uint8(99)
+        );
+        vm.prank(oracle);
+        (bool ok, ) = address(gate).call(cd);
+        assertFalse(ok, "enum disi raw calldata reddedilmeli (ABI decoder katmani)");
+    }
+
     /// @notice Downgrade reddedilmeli
     function testRevertDowngrade() public {
         vm.startPrank(oracle);
