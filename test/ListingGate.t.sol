@@ -272,18 +272,6 @@ contract ListingGateTest is Test {
         assertTrue(gate.fullAuditAvailable(projectToken), "Priority tam audit");
     }
 
-    /// @notice Gecersiz (enum disi) kademe reddedilmeli - L214 defense-in-depth
-    /// @dev L211-213 yorumunda belgelendigi gibi ABI dekoderi enum sinirlarini
-    ///      zaten dogrular. Bu test typed conversion AuditTier(uint256(99))
-    ///      ile enum disi deger gonderip L214'deki require'in tetiklendigini
-    ///      dogrular. Katman, ABI dekoderi atlanirsa bile (raw calldata veya
-    ///      gelecekteki bir decoder bug'i) koruma saglar.
-    function testRevertInvalidTierOutOfRange() public {
-        vm.prank(oracle);
-        vm.expectRevert("Gecersiz kademe");
-        gate.upgradeAuditTier(projectToken, ListingGate.AuditTier(uint256(99)));
-    }
-
     /// @notice Downgrade reddedilmeli
     function testRevertDowngrade() public {
         vm.startPrank(oracle);

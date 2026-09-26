@@ -46,6 +46,13 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
     /// @notice T+2 kuyrugu: kullanici => serbest kalma zamani.
     mapping(address => uint256) public queuedRedemptionUnlock;
 
+    /// @notice T+2 kuyrugundaki MIKTAR: kullanici => cekilecek cUSD.
+    /// @dev GUVENLIK: requestRedemption() miktari kaydetmezse kullanici
+    ///      kucuk bir miktari kuyruga sokup T+2'de SINIRSIZ cekim yapabilir
+    ///      (gunluk %10 kotasini atlatir). Bu yuzden miktar da saklanir ve
+    ///      _withdraw'ta sinirlanir.
+    mapping(address => uint256) public queuedRedemptionAmount;
+
     constructor(address asset) ERC4626(IERC20(asset)) ERC20("Clean FX Yield", "scUSD") Ownable(msg.sender) {}
 
     /// @inheritdoc ICleanvestVault
@@ -155,8 +162,18 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
             uint256 unlock = queuedRedemptionUnlock[owner];
             require(unlock != 0, "Once requestRedemption ile kuyruga girin");
             require(block.timestamp >= unlock, "T+2 bekleme suresi dolmadi");
-            // Sure doldu -> kuyruktan temizle, fonlar simdi hareket eder
-            delete queuedRedemptionUnlock[owner];
+            // GUVENLIK: kuyruga alinan miktari asma. Aksi halde kullanici
+            // $1 kuyruga girip $1M cekebilirdi (kota atlama).
+            require(
+                assets <= queuedRedemptionAmount[owner],
+                "Kuyruk miktarindan fazlasi cekilemez"
+            );
+            // Cekilen miktari duskur; birden fazla cekiste ayni sinic gecer
+            queuedRedemptionAmount[owner] -= assets;
+            // Tamamen cekildiyse kuyruk kaydini temizle
+            if (queuedRedemptionAmount[owner] == 0) {
+                delete queuedRedemptionUnlock[owner];
+            }
         } else {
             // Anlik USDC cekimi - gunluk %10 kotasi icinde
             dailyRedemptions[today] = usedToday + assets;
@@ -209,10 +226,12 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
 
         if (!instantAllowed) {
             queuedRedemptionUnlock[msg.sender] = block.timestamp + T2_SETTLE_SECONDS;
+            queuedRedemptionAmount[msg.sender] = assets;
             emit RedemptionQueued(msg.sender, assets, block.timestamp + T2_SETTLE_SECONDS);
         } else {
             // Kota icinde - kuyruk GEREKMEZ, anlik cek
             queuedRedemptionUnlock[msg.sender] = 0;
+            queuedRedemptionAmount[msg.sender] = 0;
             emit RedemptionInstantEligible(msg.sender, assets);
         }
     }
