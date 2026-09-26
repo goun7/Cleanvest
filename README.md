@@ -1,6 +1,6 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**Sözleşme + frontend katmanı tamamlandı** · 153/153 Foundry + 22/22 vitest testi yeşil · %96.36 line / %93.92 branch coverage · TODO/placeholder sıfır
+**Sözleşme + frontend katmanı tamamlandı** · 159/159 Foundry + 22/22 vitest testi yeşil · %99.41 line / %97.92 branch coverage (6 sözleşme) · TODO/placeholder sıfır
 
 Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getirili stabilcoin
 ($cUSD/$scUSD) sunan bir kripto ekosistemidir. Bu depo **sözleşme katmanını** içerir.
@@ -49,32 +49,50 @@ Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getiril
 | [`UniswapProxy`](contracts/UniswapProxy.sol) | Artık hacim yönlendirme; **kayma gizlenmez**, UI'da şeffaf | 8 |
 | [Integration](test/Integration.t.sol) | 6 sözleşmenin birlikte çalışması; 3 uçtan uca senaryo | 8 |
 
-## Hızlı Başlangıç
+## Hızlı Başlangıç (Quick Start — 5 adım)
 
 ```bash
-# Tüm testler (153/153)
-forge test
+# 1. Kurulum — Foundry + frontend bagimliliklari
+#    (forge: https://getfoundry.sh | pnpm: https://pnpm.io)
+git submodule update --init --recursive          # forge-std + OpenZeppelin
+cd web && pnpm install && cd ..                    # scUSD dashboard bagimliliklari
 
-# Frontend testleri (22/22, erisilebilirlik testi dahil)
-cd web && npx vitest run
-
-# Kod kapsamı (6 sozlesme: %96.36 line / %93.92 branch)
-# NOT: script/ altindaki deploy araclari is mantigi icermez;
-#      lcov'da %0 gosterip genel rakami dusurur. Sozlesme
-#      coverage'i yukaridaki sayilardir.
-forge coverage --report lcov
-
-# Müsteri demosu (anvil gerekir, 6 adim CANLI)
+# 2. Konfig — yerel test agi (anvil) + anahtar
 anvil --port 8545 --block-time 2 --host 127.0.0.1 \
   --mnemonic "test test test test test test test test test test test junk"
 export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-forge script script/Demo.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --unlocked
 
-# Deployment dry-run
-forge script script/Deploy.s.sol:Deploy
+# 3. Deploy — 4 sozlesme + likidite tohumu (ayri terminalde, anvil ayakta)
+forge script script/Deploy.s.sol:Deploy \
+  --rpc-url http://127.0.0.1:8545 --broadcast --unlocked
+export CUSD_ADDR=$(cast call ... 2>/dev/null || echo "<deploy edilen cUSD adresi>")
+forge script script/Bootstrap.s.sol \
+  --rpc-url http://127.0.0.1:8545 --broadcast --unlocked
+#    Bootstrap dogrulamasi: junior $3.000 / cap $100.000 / coverage >= %3 / mint ACIK
+
+# 4. Demo — musteri deneyiminin 6 adimi (CANLI onchain, rc=0)
+forge script script/Demo.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --unlocked
+#    Cikti "=== ONCHAIN EXECUTION COMPLETE & SUCCESSFUL ===" ile biter
+
+# 5. Dogrulama — testler + kapsamislik
+~/.foundry/bin/forge test                          # 159/159 Foundry
+cd web && npx vitest run && cd ..                  # 22/22 vitest (erisilebilirlik dahil)
+~/.foundry/bin/forge coverage --report lcov        # 6 sozlesme: %99.41 line / %97.92 branch
 ```
 
-Deployment için bkz. [`docs/19_DEPLOYMENT_REHBERI.md`](docs/19_DEPLOYMENT_REHBERI.md).
+> **vitest NOTU:** `npx vitest` her zaman `web/` icinden calistirilmalidir. Repo
+> kokunden calistirilirsa vitest (npx cache'inden gelir) `lib/` altindaki 217
+> vendored OpenZeppelin/forge-std hardhat testini toplar ve **"164 FAILED"**
+> false alarm'i uretir. `web/vitest.config.mts` artik `lib/` exclude ile
+> korumali; ayrica jsdom+vitest yalnizca `web/node_modules`'tadir.
+
+> **Coverage NOTU:** `script/` altindaki deploy araclari is mantigi icermez,
+> lcov'da %0 gosterip genel rakami dusurur. Yukaridaki sayilar 6 SOZLESME icin.
+> Kalan 2 acik dal (CleanUSD:102, ListingGate:214) belgelenmis dead-by-design
+> defense-in-depth katmanlaridir (test ile ulasilamaz).
+
+Deployment detaylari icin bkz. [`docs/19_DEPLOYMENT_REHBERI.md`](docs/19_DEPLOYMENT_REHBERI.md).
+Musteri onboarding akisi: [`docs/27_MUSTERI_ONBOARDING.md`](docs/27_MUSTERI_ONBOARDING.md).
 
 ## Doğrulanmış Getiri Eğrisi (2026-09-24)
 
