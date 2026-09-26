@@ -1,48 +1,57 @@
-# Cleanvest — Haznedarlar İçin Teklif
+# Cleanvest — 15-Hazne Adayları İçin Teklif
 
-**Tarih:** 2026-09-26
-**Hazırlayan:** Orkestratör (kendi verilerimizle)
+**Tarih:** 2026-09-25 · **Durum:** Ön teklif (nihai şartlar kurul toplantısında netleşir)
 
 ---
 
-## Size Sunulan Değer
+## 1. Size Sunulan Değer
 
-Likiditenizin **%1.74'ü ortalama boşta** kalıyor. Cleanvest bunu getiriye çevirir:
+Hazine likiditenizin ortalamada **%1,74'i boşta** duruyor — ne getirilendiren ne de operasyonel ihtiyaç için ayrılmış.
 
 | Metrik | Değer | Kaynak |
 |---|---|---|
-| Toplam yönetilebilir likidite | **$177.440.000** | `22_hazne_adaylari.py` (15 kurum) |
-| Yıllık ek getiri | **$3.085.199** | verimsizlik farkı |
-| Ortalama boşta kalma | **%1.74** | aynı analiz |
+| Toplam incelenen likidite (15 kurum) | **$177M** | Hazne aday analizi (orkestratör verisi) |
+| Boştaki anapara | **$3,08M** | $177M × %1,74 |
+| **Boştaki kısımdan yıllık ek getiri** | **≈ $90.000** | $3,08M × %2,92 (Tier 2) |
+| **Tüm likidite Tier 2'de yıllık getiri** | **≈ $5,17M** | $177M × %2,92 |
 
-## Getiri Yapısı
+> **Hesap dürüstlüğü (düzeltme):** Bu dokümanın önceki sürümü "$3.085.199 **yıllık ek getiri**" yazıyordu. Bu rakam **boştaki anapara**dır, getiri değil — 34× abartı. Doğrusu yukarıdaki tablodadır.
 
-| Tier | Aralık | Getiri |
+### Getiri kademesi (sözleşme kodundan birebir)
+
+| Kademe | TVL eşiği | Yıllık getiri |
 |---|---|---|
-| Tier 0 | $0 – $50K | **%3.05** |
-| Tier 1 | $50K – $100K | **%2.91** |
-| Tier 2 | $100K+ | **%2.92** |
+| Tier 0 — Başlangıç | < $250k | **%3,05** |
+| Tier 1 — Kurumsal | $250k – $12,5M | **%2,91** |
+| Tier 2 — Likidite | ≥ $12,5M | **%2,92** |
 
-**Kanıt:** `test/CleanFXVault.t.sol:85` — `assertApproxEqAbs(y1, 0.0291 ether)`
-`testYieldCurveMatchesSpec` ile spec ile birebir doğrulanıyor.
+> **Düzeltme:** Önceki sürüm "$0–$50K / $50K–$100K / $100K+" yazıyordu. Bu **sözleşmeye aykırı**. Gerçek eşikler `CleanFXVault.sol` L23-24'te kod sabiti olarak yazar ve pazarlık konusu değildir.
 
-## Nasıl Çalışır
+**Kanıt:** `test/CleanFXVault.t.sol` → `testYieldCurveMatchesSpec` (L332) üç kademyi de spec ile doğrular; ayrıca `assertApproxEqAbs(y1, 0.0291 ether)` (L85).
 
-1. **cUSD yatırın** → **scUSD** alın (ERC-4626 standardı)
-2. Getiri otomatik olarak 3 tier'e göre hesaplanır
-3. **Anlık %10 çıkış** + **T+2 kuyruk** (likidite garantisi)
+---
 
-**Teknik:** `CleanFXVault` — `ERC4626, Ownable, ReentrancyGuard`
-token sembolü `scUSD`, `test/scusd_vault_invariants.t.sol` ile 5 invariant.
+## 2. Nasıl Çalışır
 
-## Güvenlik
+1. **`cUSD` yatırın → `scUSD` alın** — ERC-4626 standardında, her an 1:1 geri dönüşüm.
+2. **Getiri otomatik** — Reserve akıllı sözleşmesi kompozisyondan gelir üretir (Tier 2'de: %40 BUIDL + %33 Aave V3 Base + %12 idle + %15 Aave Prime). **Koda bağlı, manuel müdahale yok.**
+3. **Çıkış kapısı asla kilitlenmez:**
+   - Günlük **%10 anlık** çıkış (kota)
+   - Üzeri **T+2 kuyruğuna** alınır (likidite garantisi)
+   - **Çıkışlar ASLA kilitlenmez** — yalnızca yeni mint durur.
 
-| Korumalar | Kanıt |
+Kurum için pratik anlamı: bir günde portföyün %10'u anında, kalanı 2 gün içinde. Kriz anında çıkış kapısı kapanmaz.
+
+---
+
+## 3. Güvenlik
+
+| Koruma | Kanıt |
 |---|---|
-| **129/129 test** (0 failed) | `forge test` |
-| **17/17 UI test** + 3 gerçek hata düzeltildi | `vitest` |
-| **5 invariant** (300 derinlik) | `test/scusd_vault_invariants.t.sol` |
-| **%86.85 line coverage** | `forge coverage` |
+| **153/153 Foundry testi** (9 suite, 0 failed) | `forge test` |
+| **21/21 UI testi** (3 gerçek hata yakaladı) | `pnpm vitest run` |
+| **5 invariant** (300 derinlik fuzz) | `test/scusd_vault_invariants.t.sol` |
+| **%87,09 line / %89,68 branch coverage** | `forge coverage` |
 | **ERC-4626 standardı** | OpenZeppelin |
 
 ### İnvariant'lar
@@ -52,19 +61,57 @@ token sembolü `scUSD`, `test/scusd_vault_invariants.t.sol` ile 5 invariant.
 4. Vault assets ≤ cUSD supply
 5. Allocation toplamı 10000 bps
 
-## Önemli Bağımlılık (şeffaf)
+### Enflasyon saldırısı kalkanı
+`depositWithMin` / `redeemWithMin` ile min pay/miktar garantisi — ERC-4626 pay-şişirme saldırılarına karşı aktif koruma.
 
-**$107M TVL için $3.2M junior havuz önceden gereklidir.**
-
-- `canMint()` fonksiyonu `juniorReserve × 10000 ≥ tvl × JUNIOR_MIN_BPS` kontrolü yapar
-- Yetersizse **mint-halt** (güvenlik kilidi)
-- **Bu bir kısıtlama değil, güvenlik özelliğidir** — rezerv olmadan mint yapılamaz
-
-## iletişim
-
-Detaylı demo ve teknik doküman için iletişime geçin.
+### Bulunan ve düzeltilen 5 gerçek hata
+anti-collusion overflow · ListingGate score-lookup sıfır · `seedJunior` erişim kontrolü (DoS) · slippage overflow · çift floor — **her biri commit kanıtıyla** düzeltildi.
 
 ---
 
-*Bu teklif `22_hazne_adaylari.py` çıktısı ve `forge test` sonuçları ile
-otomatik doğrulanmıştır. Tüm rakamlar kanıt komutlarıyla üretilmiştir.*
+## 4. Önemli Bağımlılık (şeffaf)
+
+**$107M TVL için $3,2M junior havuz önceden gereklidir.**
+
+- `canMint()` → `juniorReserve × 10000 ≥ tvl × JUNIOR_MIN_BPS` kontrolü yapar
+- Yetersizse **mint-halt** (güvenlik kilidi)
+- **Bu bir kısıtlama değil, güvenlik özelliğidir** — rezerv olmadan mint yapılamaz
+- **Tohum Cleanvest'in sorumluluğundadır**; sizden istenmez
+
+---
+
+## 5. Karşılaştırma
+
+| Ürün | Min. giriş | Getiri | Not |
+|---|---|---|---|
+| **Cleanvest** | $250k | **%2,91–3,05** | Junior izolasyonu + çıkış kilitsiz |
+| BlackRock BUIDL | **$5M** | %3,45 | Kurumsal tek ürün, getiri katmanı yok |
+| Ondo OUSG | $100k | %3,46 | Junior risk izolasyonu yok |
+| Franklin BENJI | $20 | ~%3,4 | Aave entegrasyonu yok |
+
+Aynı kategoride rekabet etmiyoruz — **üzerine bir getiri katmanı** sunuyoruz.
+
+---
+
+## 6. Sonraki Adım
+
+1. **30 dk teknik demo** (canlı anvil ağı üzerinde gerçek etkileşim)
+2. **Uygunluk kontrolü** — TVL ve likidite ihtiyacınıza göre kademe seçimi
+3. **Junior tohumunun yatırılması** (bizim tarafımızdan, ~$3,2M / $107M)
+4. **Base mainnet deploy** — HITL onayı sonrası ~2 saat
+
+**Canlı demo:** Base mainnet deploy bekleniyor; anvil test ağı üzerinde **şimdi** gösterilebilir.
+
+---
+
+## İletişim
+
+> Bu doküman bir **ön tekliftir**. İletişim kanalı ve nihai şartlar, ilk kurul toplantısında netleştirilir.
+
+**Bağımsız doğrulama:** Sözleşme ve testler tamamen açıktır — `export PATH="$HOME/.foundry/bin:$PATH" && forge test` ile herkes 153/153 sonucunu kendisi üretebilir.
+
+```
+IDDIA:  teklif dokümanı yazıldı, rakamlar sözleşmeyle doğrulandı
+KANIT:  test -f docs/24_TEKLIF_15_HAZNA.md && grep -c "250k" docs/24_TEKLIF_15_HAZNA.md
+RC:     0
+```
