@@ -1,6 +1,6 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**Sözleşme + frontend katmanı tamamlandı** · 159/159 Foundry + 22/22 vitest testi yeşil · %99.41 line / %97.92 branch coverage (6 sözleşme) · TODO/placeholder sıfır
+**Sözleşme + frontend katmanı tamamlandı** · 160/160 Foundry + 23/23 vitest testi yeşil · %96.45 line / %96.71 branch coverage (6 sözleşme) · TODO/placeholder sıfır
 
 Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getirili stabilcoin
 ($cUSD/$scUSD) sunan bir kripto ekosistemidir. Bu depo **sözleşme katmanını** içerir.
@@ -75,9 +75,9 @@ forge script script/Demo.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --unl
 #    Cikti "=== ONCHAIN EXECUTION COMPLETE & SUCCESSFUL ===" ile biter
 
 # 5. Dogrulama — testler + kapsamislik
-~/.foundry/bin/forge test                          # 159/159 Foundry
-cd web && npx vitest run && cd ..                  # 22/22 vitest (erisilebilirlik dahil)
-~/.foundry/bin/forge coverage --report lcov        # 6 sozlesme: %99.41 line / %97.92 branch
+~/.foundry/bin/forge test                          # 160/160 Foundry
+cd web && npx vitest run && cd ..                  # 23/23 vitest (erisilebilirlik dahil)
+~/.foundry/bin/forge coverage --report lcov        # 6 sozlesme: %96.45 line / %96.71 branch
 ```
 
 > **vitest NOTU:** `npx vitest` her zaman `web/` icinden calistirilmalidir. Repo
