@@ -95,7 +95,10 @@ contract Demo is Script {
 
         // ── ADIM 3: 1 YIL GETIRI BIRIKIR ────────────────────────
         console.log("[3/6] 1 yil ileri sariliyor (getiri birikimi)...");
-        uint256 yieldPct = (vault.currentSeniorYield() * 100) / 1e18;
+        console.log("    NOT: demo'da dis getiri kaynagi yok (ReserveManager");
+        console.log("    bagli degil) - pay fiyati sabit. Getiri ORANI gosteriliyor.");
+        // currentSeniorYield(): 1e18 = %100 -> 1e16 = %1
+        uint256 yieldPct = vault.currentSeniorYield() / 1e16;
         // ERC-4626: pay basina dustugu varlik = totalAssets / totalSupply
         uint256 balanceBefore = _aliceValue();
 
@@ -106,7 +109,12 @@ contract Demo is Script {
         uint256 balanceAfter = _aliceValue();
         uint256 gain = balanceAfter > balanceBefore ? balanceAfter - balanceBefore : 0;
 
-        console.log("    Senet getiri orani: %", yieldPct / 100);
+        // 2 ondalik goster: 305 = %3.05 (bp/100 = yuzde, bp%100 = ondalik)
+        uint256 yieldBps = vault.currentSeniorYield() / 1e14;
+        uint256 yInt = yieldBps / 100;
+        uint256 yDec = yieldBps % 100;
+        // "3.05" icin ondalik herzaman 2 basamak (5 -> 05)
+        console.log("    Senet getiri orani: %s.%s", _2digit(yInt), _2digit(yDec));
         console.log("    1 yil sonra Alice bakiyesi:", balanceAfter / 1e18, "cUSD");
         console.log("    Getiri (projeksiyon):", gain / 1e18, "cUSD");
         console.log("");
@@ -161,6 +169,23 @@ contract Demo is Script {
         uint256 supply = vault.totalSupply();
         if (supply == 0) return 0;
         return (bal * vault.totalAssets()) / supply;
+    }
+
+    /// @notice Sayiyi her zaman 2 basamakli string yapar (5 -> "05", 12 -> "12").
+    function _2digit(uint256 n) internal pure returns (string memory) {
+        if (n < 10) return string(abi.encodePacked("0", _uintStr(n)));
+        return _uintStr(n);
+    }
+
+    function _uintStr(uint256 n) internal pure returns (string memory) {
+        if (n == 0) return "0";
+        uint256 j = n;
+        uint256 len;
+        while (j != 0) { len++; j /= 10; }
+        bytes memory b = new bytes(len);
+        uint256 k = len;
+        while (n != 0) { k = k - 1; b[k] = bytes1(uint8(48 + n % 10)); n /= 10; }
+        return string(b);
     }
 
     function _tierName(CleanFXVault.ReserveTier t) internal pure returns (string memory) {
