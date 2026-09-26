@@ -9,15 +9,19 @@
 Müşteri ürünü **tek komutla** görebilir (anvil gerekir):
 
 ```bash
-# 1. anvil başlat (yerel test ağı)
-anvil --port 8545 --block-time 2 --host 127.0.0.1
+# 1. anvil başlat (yerel test ağı, hesaplar unlock)
+anvil --port 8545 --block-time 2 --host 127.0.0.1 \
+  --mnemonic "test test test test test test test test test test test junk"
 
 # 2. Demo'yu çalıştır
+#    ÖNEMLİ: PRIVATE_KEY env ZORUNLU (anvil varsayılan anahtarı)
 export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-forge script script/Demo.s.sol --rpc-url http://127.0.0.1:8545 --broadcast
+forge script script/Demo.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --unlocked
 ```
 
 **Çıktı:** `=== ONCHAIN EXECUTION COMPLETE & SUCCESSFUL ===` (rc=0)
+
+> **`--unlocked` bayrağı:** Alice'in işlemleri için gerekli (anvil tüm hesapları unlock eder). Yoksa `No associated wallet` hatası alınır.
 
 Demo 6 adımı gerçek işlemlerle gösterir: deploy → $100K yatırım → 1 yıl getiri → anlık %10 çıkış → T+2 kalan → junior ≥%3 invariant.
 

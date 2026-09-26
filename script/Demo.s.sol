@@ -56,18 +56,15 @@ contract Demo is Script {
 
         // ── ADIM 1: DEPLOY ──────────────────────────────────────
         console.log("[1/6] Deploy basliyor...");
+        // Deploy + tohum TEK broadcast blokunda (replay tutarlili icin).
+        // seedJunior broadcast disinda olursa --broadcast replay'inde
+        // kaybolur, juniorReserve=0 kalir, mint "Junior <%3" revert alir.
         vm.startBroadcast(vm.addr(pk));
 
         cusd = new CleanUSD();
         vault = new CleanFXVault(address(cusd));
-        vm.stopBroadcast();
-
-        // Junior tohum: $3.000 -> $100K cap. Deployer öder.
-        // vm.deal + broadcast-disi cagri (forge-script msg.value'yi
-        // broadcast icinde guvenilmez gonderir — kanitlandi).
-        vm.deal(deployer, 3_000 ether);
-        vm.prank(deployer);
         cusd.seedJunior{value: 3_000 ether}(0);
+        vm.stopBroadcast();
         console.log("    cUSD:", address(cusd));
         console.log("    scUSD (vault):", address(vault));
         console.log("    junior tohumu: $3.000 -> cap acildi");
@@ -75,19 +72,22 @@ contract Demo is Script {
 
         // ── ADIM 2: ALICE $100K YATIRIR ─────────────────────────
         console.log("[2/6] Alice $100.000 yatiriyor...");
-        // Alice'e cUSD bas (deployer'in islemi - broadcast icinde)
+        // DİKKAT: mint broadcast DISINDA vm.prank ile yapilir.
+        // --broadcast tum islemleri bastan simule eder; eger mint
+        // broadcast icindeyse, warp/cekis state'i simülasyonda kaybolur
+        // ve mint "Junior <%3" revert'i alir. Prank + state tutarli.
+        // 1) Deployer Alice'e cUSD basar
         vm.startBroadcast(vm.addr(pk));
         cusd.mint(ALICE, DEPOSIT);
         vm.stopBroadcast();
 
-        // Alice'in islemleri: broadcast DISINDA vm.prank ile simule edilir.
-        // (Müsteri kendi imzasini kullanir; demo bunu prank ile gosterir.)
-        vm.startPrank(ALICE);
+        // 2) Alice kendi islemini yapar (anvil tum hesaplari unlock eder)
+        vm.startBroadcast(ALICE);
         cusd.approve(address(vault), DEPOSIT);
         uint256 expected = vault.convertToShares(DEPOSIT);
         uint256 minShares = (expected * 9950) / 10000;
         uint256 shares = vault.depositWithMin(DEPOSIT, ALICE, minShares);
-        vm.stopPrank();
+        vm.stopBroadcast();
         console.log("    Alice bakiyesi:", shares / 1e18, "scUSD");
         console.log("    Vault TVL:", vault.totalAssets() / 1e18, "cUSD");
         console.log("    Aktif kademe:", _tierName(vault.activeTier()));
@@ -113,22 +113,22 @@ contract Demo is Script {
 
         // ── ADIM 4: ANLIK %10 CEKIS ─────────────────────────────
         console.log("[4/6] Anlik cekis ($10.000 = gunluk %10 kota icinde)...");
-        // Alice'in cekisi (prank - broadcast disi)
-        vm.startPrank(ALICE);
+        // Cekis: Alice kendi imzasiyla
+        vm.startBroadcast(ALICE);
         uint256 sharesToBurn = vault.convertToShares(INSTANT_WITHDRAW);
         uint256 minOut = (INSTANT_WITHDRAW * 9950) / 10000;
         uint256 out = vault.redeemWithMin(sharesToBurn, ALICE, ALICE, minOut);
-        vm.stopPrank();
+        vm.stopBroadcast();
         console.log("    Anlik cikis:", out / 1e18, "cUSD (KUYRUK YOK)");
         console.log("    Gunluk kota: %10 doldu");
         console.log("");
 
         // ── ADIM 5: T+2 KALAN CEKIS (KUYRUK) ────────────────────
         console.log("[5/6] Kalan cekis ($20.000) T+2 kuyruguna alinir...");
-        // Kuyruk talebi (prank - broadcast disi)
-        vm.startPrank(ALICE);
+        // Kuyruk talebi: Alice imzasiyla
+        vm.startBroadcast(ALICE);
         vault.requestRedemption(QUEUED_WITHDRAW);
-        vm.stopPrank();
+        vm.stopBroadcast();
         uint256 unlock = vault.queuedRedemptionUnlock(ALICE);
         bool locked = unlock > block.timestamp;
         console.log("    Kuyruk talebi:", QUEUED_WITHDRAW / 1e18, "cUSD");
