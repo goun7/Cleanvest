@@ -155,7 +155,10 @@ function App() {
 
       {/* Deploy bekleniyor bilgisi (adresler girilmemisse) */}
       {s && !s.loaded && (
-        <div className="mb-6 rounded-xl border border-fx-gold/30 bg-fx-gold/5 px-4 py-3 text-sm text-fx-gold">
+        <div
+          role="status"
+          className="mb-6 rounded-xl border border-fx-gold/30 bg-fx-gold/5 px-4 py-3 text-sm text-fx-gold"
+        >
           ℹ️ Sözleşmeler henüz canlı deploy edilmedi — değerler dağıtım sonrası görünecek.
           Mevcut kod Base mainnet'e hazır (`script/Deploy.s.sol`).
         </div>
@@ -307,6 +310,8 @@ function App() {
 
         {message && (
           <div
+            role={message.kind === "err" ? "alert" : "status"}
+            aria-live={message.kind === "err" ? "assertive" : "polite"}
             className={`mt-4 rounded-xl px-4 py-3 text-sm ${
               message.kind === "ok"
                 ? "bg-fx-yield/10 text-fx-yield"
@@ -323,7 +328,7 @@ function App() {
       </section>
 
       <footer className="mt-8 text-center text-xs text-slate-600">
-        Cleanvest · {tt("footer")} · 122/122 Foundry tests · <span className="font-mono">rc=0</span>
+        Cleanvest · {tt("footer")} · 160/160 Foundry tests · <span className="font-mono">rc=0</span>
       </footer>
     </div>
   );

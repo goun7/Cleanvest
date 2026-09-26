@@ -116,6 +116,14 @@ describe("App — kullanicidan gelen UI akislari", () => {
     expect(pressed.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("footer taze test sayisini gosterir (stale degil)", () => {
+    const { container } = render(<App />);
+    const footer = container.querySelector("footer");
+    expect(footer).toBeTruthy();
+    // Stale "122/122" gecmiste yanlis sayiydi; taze sayi olmali
+    expect(footer?.textContent).not.toMatch(/122\/122/);
+  });
+
   it("tier esikleri ekranda dogru", () => {
     render(<App />);
     const ranges = screen.getAllByText(/\$250k|12\.5M/i);
