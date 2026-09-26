@@ -99,6 +99,48 @@ contract CleanUSDTest is Test {
         assertEq(cUSD.juniorCoverageBps(), 600);
     }
 
+    /// @notice juniorCoverageBps: TVL 0 iken max doner (branch L57)
+    /// @dev Seed oncesi junior tamamen guvenli - mint kilitli degil ama
+    ///      cap 0 oldugu icin mint yine revert eder.
+    function testJuniorCoverageBpsZeroTvl() public view {
+        assertEq(cUSD.juniorCoverageBps(), type(uint256).max, "TVL=0 -> max coverage");
+    }
+
+    /// @notice seedJunior amount PARAMETRESI ile de calisir (branch L67)
+    /// @dev msg.value=0 iken amount kullanilir. Ether gondermeden tohum.
+    function testSeedJuniorWithAmountParam() public {
+        vm.prank(founder);
+        cUSD.seedJunior(3_000 ether);
+
+        assertEq(cUSD.juniorReserve(), 3_000 ether, "amount parametresi ile seed");
+        assertEq(cUSD.tvlCap(), 100_000 ether, "cap acildi");
+    }
+
+    /// @notice seedJunior sifir tohum reddedilir (branch L67)
+    function testRevertSeedJuniorZero() public {
+        vm.prank(founder);
+        vm.expectRevert("Tohum sifir olamaz");
+        cUSD.seedJunior(0);
+    }
+
+    /// @notice Asiri buyuk tohum overflow riski nedeniyle reddedilir (L71)
+    function testRevertSeedJuniorTooBig() public {
+        vm.startPrank(founder);
+        vm.deal(founder, 2_000_000 ether);
+        vm.expectRevert("Tohum cok buyuk (max $1M)");
+        cUSD.seedJunior{value: 2_000_000 ether}(0);
+        vm.stopPrank();
+    }
+
+    /// @notice msg.value amount'tan once gelir (branch L67 oncelik)
+    function testSeedJuniorMsgValuePrecedence() public {
+        vm.prank(founder);
+        cUSD.seedJunior{value: 3_000 ether}(9_000 ether);
+
+        // msg.value kullanildi (3_000), amount gozardi
+        assertEq(cUSD.juniorReserve(), 3_000 ether, "msg.value oncelikli");
+    }
+
     /// @notice REBASE YOK - kontratta rebase fonksiyonu bulunmamal
     function testNoRebaseFunction() public view {
         // Bu test derleme zaman garantisidir: CleanUSD rebase() icermez.

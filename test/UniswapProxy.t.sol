@@ -99,6 +99,36 @@ contract UniswapProxyTest is Test {
         assertGt(bps, 0, "mulDiv tasmadi - bps hesaplandi");
         assertTrue(warn, "asiri kaymada uyar aktif");
     }
+
+    /// @notice minAmountOut=0 reddedilir (branch L56)
+    function testRevertZeroMinAmountOut() public {
+        vm.prank(owner);
+        vm.expectRevert("Min cikis 0 olamaz");
+        proxy.routeResidual(address(tokenIn), address(tokenOut), 100 ether, 0, 3000);
+    }
+
+    /// @notice Router bagli degilken routeResidual reddedilir (branch L53)
+    /// @dev TAZE proxy (router set edilmemis) ile cagrilir
+    function testRevertNoRouter() public {
+        UniswapProxy fresh = new UniswapProxy(address(0));
+        vm.prank(address(this));
+        vm.expectRevert("Swap router bagli degil");
+        fresh.routeResidual(address(tokenIn), address(tokenOut), 100 ether, 90 ether, 3000);
+    }
+
+    /// @notice Slippage korumasi: asiri minAmountOut ile takas reddedilir (L77)
+    /// @dev Slippage savunmasi IKI katmanli: MockV3Router kendi icinde
+    /// 'V3Router: slippage exceeded' ile revert eder (Uniswap V3 gercek
+    /// davranisi). UniswapProxy L77'de ek kontrol olsa da router once
+    /// revert eder - bu dogru davranistir (guvence katmani).
+    function testRevertSlippageBelowMin() public {
+        tokenIn.mint(owner, 100 ether);
+        vm.startPrank(owner);
+        tokenIn.approve(address(proxy), 100 ether);
+        vm.expectRevert("V3Router: slippage exceeded");
+        proxy.routeResidual(address(tokenIn), address(tokenOut), 100 ether, 200 ether, 3000);
+        vm.stopPrank();
+    }
 }
 
 contract MockToken is ERC20 {

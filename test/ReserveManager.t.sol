@@ -234,6 +234,87 @@ contract ReserveManagerTest is Test {
         vm.expectRevert("Miktar 0 olamaz");
         reserve.depositReserve(0);
     }
+
+    /// @notice supplyToAave: 0 miktar reddedilir (branch L133)
+    function testRevertSupplyToAaveZero() public {
+        vm.prank(owner);
+        vm.expectRevert("Miktar 0 olamaz");
+        reserve.supplyToAave(0);
+    }
+
+    /// @notice supplyToAave: pool bagli degilken reddedilir (branch L134)
+    /// @dev setUp pool set ediyor; bu yuzden TAZE (pool'suz) reserve gerekir
+    function testRevertSupplyToAaveNoPool() public {
+        ReserveManager fresh = new ReserveManager(address(usdc));
+        vm.prank(address(this));
+        vm.expectRevert("Aave pool bagli degil");
+        fresh.supplyToAave(100);
+    }
+
+    /// @notice withdrawFromAave: 0 miktar reddedilir (branch L148)
+    function testRevertWithdrawFromAaveZero() public {
+        vm.prank(owner);
+        vm.expectRevert("Miktar 0 olamaz");
+        reserve.withdrawFromAave(0);
+    }
+
+    /// @notice withdrawFromAave: pool bagli degilken reddedilir (branch L149)
+    /// @dev setUp'da pool set + Aave bakiye 0 oldugundan once 'bakiye yok'
+    /// reverts; pool kontrolunu test etmek icin taze reserve sart.
+    function testRevertWithdrawFromAaveNoPool() public {
+        ReserveManager fresh = new ReserveManager(address(usdc));
+        vm.prank(address(this));
+        vm.expectRevert("Aave pool bagli degil");
+        fresh.withdrawFromAave(100);
+    }
+
+    /// @notice withdrawReserve: 0 miktar reddedilir (branch L212)
+    function testRevertWithdrawReserveZero() public {
+        vm.prank(owner);
+        vm.expectRevert("Miktar 0 olamaz");
+        reserve.withdrawReserve(0);
+    }
+
+    /// @notice withdrawReserve: yetersiz idle bakiye reddedilir (branch L213)
+    /// @dev setUp 100_000 ether idle birakir; esigin uzerini istersek revert
+    function testRevertWithdrawReserveInsufficient() public {
+        uint256 idleBefore = reserve.idleBalance();
+        assertEq(idleBefore, 100_000 ether, "setUp idle'da 100k birakir");
+        vm.prank(owner);
+        vm.expectRevert("Yeterli idle USDC yok");
+        reserve.withdrawReserve(idleBefore + 1);
+    }
+
+    /// @notice setAavePool: sifir adres reddedilir (branch L171)
+    function testRevertSetAavePoolZero() public {
+        vm.prank(owner);
+        vm.expectRevert("Pool sifir olamaz");
+        reserve.setAavePool(address(0));
+    }
+
+    /// @notice circuitBreaker: optimize kapaliyken false (branch L163)
+    /// @dev optimizeModeEnabled=false -> hemen false doner
+    function testCircuitBreakerDisabledByDefault() public {
+        assertFalse(reserve.utilizationCircuitBreakerActive(), "optimize kapaliyken false");
+    }
+
+    /// @notice circuitBreaker: optimize acik ama feed bagli degilse false (L163/L171)
+    function testCircuitBreakerOptimizeWithoutFeedAddress() public {
+        vm.startPrank(owner);
+        // once optimize'yi ac (feed henuz set edilmemis olabilir)
+        reserve.setAaveUtilizationFeed(address(0));
+        vm.stopPrank();
+        assertFalse(reserve.utilizationCircuitBreakerActive(), "feedsiz false");
+    }
+
+    /// @notice rebalance: total 0 iken erken donus (branch L113)
+    /// @dev TAZE reserve; sahibi msg.sender (test kontrati) - owner DEGIL
+    function testRebalanceZeroTotalEarlyReturn() public {
+        ReserveManager empty = new ReserveManager(address(usdc));
+        vm.prank(address(this));
+        empty.rebalance(); // revert etmemeli, erken donus (total=0)
+        assertEq(empty.aaveBalance(), 0, "total=0: hicbir sey yapilmadi");
+    }
 }
 
 /// @notice Aave utilization feed mock (IUtilizationFeed)
