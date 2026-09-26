@@ -4,7 +4,13 @@
 **Amaç:** Kalan 3.6 puanlık operasyonel kısmı **insan için 5 dakikalık** copy-paste
 adımlara indirmek. Her adımın doğrulama komutu vardır.
 
-**Önkoşul:** Kod tarafı 100/100 — `forge test` 122/122 rc=0, deploy simülasyonu temiz.
+**Önkoşul:** Kod tarafı 100/100 — `forge test` 161/161 rc=0, deploy simülasyonu temiz.
+
+> ⚠️ **OKUMADAN DEPLOY ETME:** [docs/29_INSAN_KARARLARI.md](docs/29_INSAN_KARARLARI.md)
+> — 3 **geri dönülemez** kısıt var: (1) tohum miktarı **kalıcı TVL tavanını**
+> belirler (sonradan değişmez), (2) CleanUSD'ye gerçek ETH gönderirsen **sonsuz
+> kilitli** (çekme fonksiyonu yok), (3) tohum/cUSD **birim uyumsuzluğu**. ADIM 3'te
+> bu kısıtlar adım adım tekrar geçer.
 
 ---
 
@@ -59,18 +65,61 @@ cd web && pnpm build
 
 ---
 
-## ADIM 3 — İlk $3k Tohumu ile $100k Cap'i Aç (1 dakika)
+## ADIM 3 — İlk Tohumla Cap'i Aç (1 dakika) ⚠️ GERİ DÖNÜLEMEZ ADIM
 
-Bu adım **sadece owner** yapar. `$3k` seed, junior %3 invariant'ı sağlar ve
-`$100k` tvlCap'i açar (soğuk başlama kilidi).
+Bu adım **sadece owner** yapar. Tohum, junior %3 invariant'ı sağlar ve `tvlCap`'i
+açar (soğuk başlama kilidi).
+
+> ### ⚠️ KRİTİK KISITLAR — OKUMADAN ATLA (docs/29_INSAN_KARARLARI.md)
+>
+> **1. TAVAN KALICIDIR (geri alınamaz).** `tvlCap` **yalnızca İLK tohumda** bir kez
+> yazılır (`CleanUSD.sol L77, if (!capUnlocked)`). Başka hiçbir fonksiyon tavanı
+> değiştiremez. **Tohum miktarı = kalıcı TVL tavanı ÷ 33.3:**
+>
+> | Tohum | Kalıcı tavan | Tohum | Kalıcı tavan |
+> |---|---|---|---|
+> | $3.000 | **$100.000** | $30.000 | $1.000.000 |
+> | $300.000 | $10M | $1M (max) | $33M |
+>
+> **$3k tohum atarsan Cleanvest ASLA $100k TVL'i geçemez** — mint "TVL tavani
+> asildi" revert'ü alır. Hedefin $100k'nin üstündeyse tohumu ŞİMDİ büyütmen
+> gerek (sonra yetişmez).
+>
+> **2. GERÇEK ETH GÖNDERİRSEN SONSUZA KİLİTLİ.** `seedJunior` `payable`'dır ama
+> CleanUSD'de **ETH çekme fonksiyonu YOK** (tüm `contracts/` tarandı). Atılan ETH
+> geri alınamaz. Bu yüzden aşağıdaki komut `--value` KULLANMAZ.
+>
+> **3. BİRİM UYUMSUZLUĞU.** Sözleşme tohumu 18-ondalık birim olarak cUSD ile 1:1
+> sayar. `--value 3_000 ether` (gerçek 3.000 ETH ≈ $8M) gönderirsen sözleşme $3.000
+> sayar → $100k tavan ama **$8M kalıcı kilitli**. 1.1 ETH (~$3.000 değer)
+> gönderirsen sözleşme 1.1 sayar → tavan ≈ $37 → **bozuk**.
+
+**ÖNERİLEN komut (docs/29 KARAR 1 ile uyumlu — `amount` parametresi, --value'suz):**
 
 ```bash
 # DIKKAT: seedJunior CleanUSD'dedir (CleanFXVault'ta DEGIL) - cUSD adresini kullanin
-cast send $CUSD_ADDR "seedJunior(uint256)" 3000 \
-  --value 3000000000000000000000 \
+# --value YOK: msg.value=0 → seed = amount (accounting) → tavan dogru, ETH kilitlenmez
+cast send $CUSD_ADDR "seedJunior(uint256)" 3000000000000000000000 \
   --rpc-url "$BASE_RPC_URL" \
   --private-key "$OWNER_PK"
+# $3.000 (18 ondalik) → tvlCap = $100.000, juniorReserve = $3.000 (accounting)
 ```
+
+**VE gerçek $3.000'i yönetilebilir reserve'a aktar** (ReserveManager'da
+`withdrawReserve` VAR — CleanUSD'de yok). Bu örnek Aave V3'e supply edip Tier0
+getirisini (%3.05) başlatır:
+
+```bash
+# ReserveManager'a USDC/ETH reserve yatır (owner) — gercek varlik burada YONETILEBILIR
+cast send $RESERVE_ADDR "depositReserve(uint256)" 3000000000000000000000 \
+  --rpc-url "$BASE_RPC_URL" --private-key "$OWNER_PK"
+# sonrasinda rebalance → Tier0 dagilim (%73 Aave / %12 idle / %15 Prime)
+```
+
+> **Neden ikiye bölündü?** CleanUSD'deki `juniorReserve` bir **güvenlik tamponu
+> sayacıdır** (mint kapısı). Gerçek sermayeyi **yönetilebilir olduğu yerde**
+> (ReserveManager — `withdrawReserve` ile çıkılır) tutuyoruz; kalıcı kilitlenen
+> yerde (CleanUSD — çıkış yok) değil. Detay: docs/29 KARAR 3 (ETH çekme önerisi).
 
 **Doğrulama:**
 ```bash
@@ -80,7 +129,7 @@ cast call $CUSD_ADDR "juniorCoverageBps()(uint256)" --rpc-url "$BASE_RPC_URL"
 
 # tvlCap acildi mi?
 cast call $CUSD_ADDR "tvlCap()(uint256)" --rpc-url "$BASE_RPC_URL"
-# >= 100000000000000000000000 ($100k) OLMALI
+# 100000000000000000000000 ($100k) OLMALI — ⚠️ BU RAKAM KALICIDIR, bir daha degismez
 ```
 
 ---
@@ -110,13 +159,25 @@ cast call $SCUSD_ADDR "totalSupply()(uint256)" --rpc-url "$BASE_RPC_URL"
 
 ## ADIM 5 (OPSİYONEL) — Optimize Modu için Aave Feed
 
-Tier "Optimize" modu Aave utilization feed'ine ihtiyaç duyar. **İnsan kararı:**
+> **ÖNERİ: ATLA — SAFE mod faz-1 için yeterli.** Gerekçe ve alternatifler için
+> bkz. [docs/29_INSAN_KARARLARI.md KARAR 2](docs/29_INSAN_KARARLARI.md).
+> Özet: OPTIMIZE getiri %3.46 vs SAFE Tier0 %3.05 (+%0.41) ama **sosyalleşme
+> riski** taşır (Aave >%92 utilization'da anlık itfa T+2'ye düşer). Faz-1'de
+> TVL küçük, Aave utilization'ımız anlamsız → feed operasyonel karmaşıklık
+> katar, değer katmaz. **ATLANABİLİR** — Tier 0/1/2 SAFE mod tüm
+> fonksiyonelliği sağlar; `setAaveUtilizationFeed` opsiyoneldir, sonradan
+> upgrade'siz eklenebilir.
+
+Tier "Optimize" modu Aave utilization feed'ine ihtiyaç duyar (feed olmadan
+`setOptimizeMode(true)` revert'ler — test ile kanıtlandı). İnsan kararı:
 Chainlink veya Aave V3 base-rate oracle adresini `ReserveManager`'a girin.
-Bu adım ATLANABİLİR — Tier 0/1/2 tüm fonksiyonelliği sağlar, sadece dinamik
-yeniden dengeleme olmadan çalışır.
 
 ```bash
-cast send $RESERVE_ADDR "setOptimizeFeed(address)" $FEED_ADDR \
+# SADECE insan "feed bagla" derse calistir (oncelik: ATLA onerisi)
+cast send $RESERVE_ADDR "setAaveUtilizationFeed(address)" $FEED_ADDR \
+  --rpc-url "$BASE_RPC_URL" --private-key "$OWNER_PK"
+# ardindan optimize acilabilir (feed bagliyken):
+cast send $RESERVE_ADDR "setOptimizeMode(bool)" true \
   --rpc-url "$BASE_RPC_URL" --private-key "$OWNER_PK"
 ```
 
