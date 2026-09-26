@@ -30,9 +30,9 @@ aile ofisleri, yüksek-net-değerli bireylerin yöneticileri, mahrem veri taşı
 
 | Tier | Aralık | Getiri |
 |---|---|---|
-| Tier 0 | $0 – $50K | **%3.05** |
-| Tier 1 | $50K – $100K | **%2.91** |
-| Tier 2 | $100K+ | **%2.92** |
+| Tier 0 | < $250K | **%3.05** |
+| Tier 1 | $250K – $12.5M | **%2.91** |
+| Tier 2 | ≥ $12.5M | **%2.92** |
 
 **Kanıt:** `test/CleanFXVault.t.sol:85` — spec ile birebir
 
@@ -40,9 +40,9 @@ aile ofisleri, yüksek-net-değerli bireylerin yöneticileri, mahrem veri taşı
 
 | Özellik | Kanıt |
 |---|---|
-| **129/129 test** (0 failed) | `forge test` |
+| **153/153 test** (0 failed) | `forge test` |
 | **5 invariant** (300 derinlik) | `test/scusd_vault_invariants.t.sol` |
-| **%86.85 line coverage** | `forge coverage` |
+| **%87.09 line / %89.68 branch coverage** | `forge coverage --report lcov` |
 
 ## Şeffaflık
 
@@ -50,4 +50,4 @@ aile ofisleri, yüksek-net-değerli bireylerin yöneticileri, mahrem veri taşı
 
 ---
 
-*Tüm rakamlar `22_ILK_MUSTERI_ADAYLARI.md` ve `forge test` ile doğrulanmıştır.*
+*Tüm rakamlar `22_ILK_MUSTERI_ADAYLARI.md`, `forge test` ve `contracts/CleanFXVault.sol` L23-24 ile doğrulanmıştır.*
