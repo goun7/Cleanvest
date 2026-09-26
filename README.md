@@ -1,6 +1,6 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**Sözleşme + frontend katmanı tamamlandı** · 153/153 Foundry + 21/21 vitest testi yeşil · TODO/placeholder sıfır
+**Sözleşme + frontend katmanı tamamlandı** · 153/153 Foundry + 22/22 vitest testi yeşil · %96.36 line / %93.92 branch coverage · TODO/placeholder sıfır
 
 Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getirili stabilcoin
 ($cUSD/$scUSD) sunan bir kripto ekosistemidir. Bu depo **sözleşme katmanını** içerir.
@@ -55,11 +55,20 @@ Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getiril
 # Tüm testler (153/153)
 forge test
 
-# Frontend testleri (21/21)
-cd web && pnpm vitest run
+# Frontend testleri (22/22, erisilebilirlik testi dahil)
+cd web && npx vitest run
 
-# Kod kapsamı
-forge coverage
+# Kod kapsamı (6 sozlesme: %96.36 line / %93.92 branch)
+# NOT: script/ altindaki deploy araclari is mantigi icermez;
+#      lcov'da %0 gosterip genel rakami dusurur. Sozlesme
+#      coverage'i yukaridaki sayilardir.
+forge coverage --report lcov
+
+# Müsteri demosu (anvil gerekir, 6 adim CANLI)
+anvil --port 8545 --block-time 2 --host 127.0.0.1 \
+  --mnemonic "test test test test test test test test test test test junk"
+export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+forge script script/Demo.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --unlocked
 
 # Deployment dry-run
 forge script script/Deploy.s.sol:Deploy
