@@ -124,6 +124,7 @@ function App() {
         </div>
         <div className="flex items-center gap-3">
           <button
+            type="button"
             className="btn-ghost w-auto px-3 py-2 text-xs font-mono"
             onClick={() => { const l = lang === "tr" ? "en" : "tr"; setLang(l); setLangState(l); }}
             aria-label={`Switch to ${lang === "tr" ? "English" : "Turkce"}`}
@@ -249,6 +250,8 @@ function App() {
           {(["deposit", "redeem"] as const).map((t) => (
             <button
               key={t}
+              type="button"
+              aria-pressed={tab === t}
               onClick={() => setTab(t)}
               className={`flex-1 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all ${
                 tab === t
@@ -263,21 +266,26 @@ function App() {
 
         <div className="mb-4">
           <div className="mb-2 flex items-center justify-between">
-            <label className="stat-label">{tt("amount")}</label>
-            <span className="text-xs text-slate-500">
+            <label className="stat-label" htmlFor="amount-input">
+              {tt("amount")}
+            </label>
+            <span className="text-xs text-slate-500" id="balance-hint">
               Bakiye: {balance ? fmtFull(balance) : "0"} {tab === "deposit" ? "cUSD" : "scUSD"}
             </span>
           </div>
           <input
+            id="amount-input"
             className="input"
             inputMode="decimal"
             placeholder="0.00"
             value={amount}
             disabled={busy || !account}
+            aria-describedby="balance-hint"
             onChange={(e) => setAmount(e.target.value)}
           />
           {balance && Number(balance) > 0 && (
             <button
+              type="button"
               className="mt-2 text-xs font-medium text-fx-glow hover:underline"
               onClick={() => setAmount(balance)}
               disabled={busy}
@@ -288,11 +296,11 @@ function App() {
         </div>
 
         {!account ? (
-          <button className="btn-primary" onClick={connect}>
+          <button type="button" className="btn-primary" onClick={connect}>
             {tt("connectWallet")}
           </button>
         ) : (
-          <button className="btn-primary" disabled={busy || !amount} onClick={submit}>
+          <button type="button" className="btn-primary" disabled={busy || !amount} onClick={submit}>
             {busy ? tt("processing") : tab === "deposit" ? tt("depositBtn") : tt("redeemBtn")}
           </button>
         )}

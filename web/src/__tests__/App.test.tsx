@@ -95,6 +95,27 @@ describe("App — kullanicidan gelen UI akislari", () => {
     expect(screen.getByText(/ERC-4626 inflation-attack kalkani/i)).toBeInTheDocument();
   });
 
+  it("erisilebilirlik: input label bagli + butonlar type belirtmis", async () => {
+    const { container } = render(<App />);
+
+    // Input, <label htmlFor> ile baglanmali (WCAG 1.3.1)
+    const input = container.querySelector("#amount-input");
+    expect(input).toBeTruthy();
+    const label = container.querySelector('label[for="amount-input"]');
+    expect(label).toBeTruthy();
+
+    // Hicbir buton type belirtmemis olmamali (varsayilan submit riski)
+    const buttons = container.querySelectorAll("button");
+    expect(buttons.length).toBeGreaterThan(0);
+    buttons.forEach((b) => {
+      expect(b.getAttribute("type")).not.toBeNull();
+    });
+
+    // Tab butonlari aria-pressed vermeli
+    const pressed = container.querySelectorAll('button[aria-pressed]');
+    expect(pressed.length).toBeGreaterThanOrEqual(2);
+  });
+
   it("tier esikleri ekranda dogru", () => {
     render(<App />);
     const ranges = screen.getAllByText(/\$250k|12\.5M/i);
