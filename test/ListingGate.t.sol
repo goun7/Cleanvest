@@ -121,6 +121,26 @@ contract ListingGateTest is Test {
         assertTrue(gate.commitmentSealed(appId), "Taahhut muhurlu");
     }
 
+    /// @notice PoV hash sifir olamaz (ListingGate L294)
+    function testRevertSealPovZeroHash() public {
+        bytes32 appId = gate.applyForListing(projectToken, "TestToken");
+        uint256 ts = block.timestamp;
+
+        vm.prank(oracle);
+        vm.expectRevert("PoV hash sifir olamaz");
+        gate.sealPovCommitment(appId, bytes32(0), ts, 2, 45);
+    }
+
+    /// @notice Timestamp sifir olamaz (ListingGate L295) - acik dal kapatildi
+    function testRevertSealPovZeroTimestamp() public {
+        bytes32 appId = gate.applyForListing(projectToken, "TestToken");
+        bytes32 povHash = keccak256("payload");
+
+        vm.prank(oracle);
+        vm.expectRevert("Timestamp sifir olamaz");
+        gate.sealPovCommitment(appId, povHash, 0, 2, 45);
+    }
+
     /// @notice Yanlis hash ile dogrulama false donmeli
     function testVerifyRejectsWrongHash() public {
         bytes32 appId = gate.applyForListing(projectToken, "TestToken");
