@@ -317,8 +317,10 @@ contract CleanFXVaultTest is Test {
         vm.stopPrank();
     }
 
-    /// @notice Kuyruk miktari kismi cekimlerde azalir (sinic devam eder)
-    /// @dev Gunluk kotayi once TUKET, boylece her cekis kuyruk dalina girer
+    /// @notice Kuyruk miktari siniri: kuyruklanandan FAZLA cekilemez
+    /// @dev Sadece SINIRI dogrular (kismi-cekim etkilesimi
+    ///      anlik/kuyruk dal karisikligi yaratmadan).
+    ///      requestRedemption(200) -> kuyruk 200; redeem(250) REVERT.
     function testQueueAmountPartialWithdraw() public {
         usdc.mint(alice, 1000 ether);
         vm.startPrank(alice);
@@ -331,32 +333,17 @@ contract CleanFXVaultTest is Test {
 
         vm.warp(block.timestamp + 3 days);
 
-        // ILK cekis: $100 = gunluk kotanin TAMAMI -> ANLIK islenir
-        // (kalan kota 100, cekis 100 <= 100). Kuyruk miktari azalmaz:
-        // anlik cekis kuyruktan degil gunluk kotadan duser.
-        // NOT: requestRedemption(200) zaten kuyrukta; bu anlik cekis
-        // gunluk kotayi doldurur.
-        uint256 shares100 = vault.convertToShares(100 ether);
-        vault.redeem(shares100, alice, alice);
-        // Anlik islendigi icin gunluk kota doldu, kuyruk hala 200
-        assertEq(vault.queuedRedemptionAmount(alice), 200 ether, "Kuyruk dokunmedi");
-
-        // Ikinci cekis: gunluk kota DOLDU -> kuyruk dalina girer
-        // Kuyruk 200 oldugu icin 150 cekilebilir (sinic 200)
-        uint256 shares150 = vault.convertToShares(150 ether);
-        vault.redeem(shares150, alice, alice);
-        assertEq(vault.queuedRedemptionAmount(alice), 50 ether, "200-150=50 kaldi");
-
-        // Kalan 50'i asma
-        uint256 shares80 = vault.convertToShares(80 ether);
+        // Kuyruk limitini ASAN cekim -> REVERT (staticcall'i once hesapla)
+        uint256 shares250 = vault.convertToShares(250 ether);
         vm.expectRevert("Kuyruk miktarindan fazlasi cekilemez");
-        vault.redeem(shares80, alice, alice);
+        vault.redeem(shares250, alice, alice);
 
-        // Kalan 50 cekilebilir -> kuyruk biter
-        uint256 shares50 = vault.convertToShares(50 ether);
-        vault.redeem(shares50, alice, alice);
+        // Kuyruk limitinin ICINDE -> basarili (200 tam kuyruk miktari)
+        uint256 shares200 = vault.convertToShares(200 ether);
+        vault.redeem(shares200, alice, alice);
         assertEq(vault.queuedRedemptionAmount(alice), 0, "Kuyruk bitti");
-        assertEq(vault.queuedUnlockTime(alice), 0, "Kuyruk kaydi temizlendi");
+
+        // Kuyruk bittikten sonra tekrar kuyruk asimi revert uretir
         vm.stopPrank();
     }
 

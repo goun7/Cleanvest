@@ -158,6 +158,13 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
         bool instantAllowed = assets <= _dailyRemainingInstant(usedToday)
             && _instantRedemptionAllowed();
 
+        // GUVENLIK (kuyruk-onceligi): kullanicinin kuyrukta bekleyen miktari
+        // varsa anlik cekim ONCE kuyruktan duskurulur. Aksi halde kullanici
+        // kuyruk (200) + anlik kota (100) = 300 cekebilirdi (kota atlama).
+        if (queuedRedemptionAmount[owner] > 0) {
+            instantAllowed = false;
+        }
+
         if (!instantAllowed) {
             uint256 unlock = queuedRedemptionUnlock[owner];
             require(unlock != 0, "Once requestRedemption ile kuyruga girin");
