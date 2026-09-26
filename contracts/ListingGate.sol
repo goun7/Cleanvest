@@ -208,6 +208,9 @@ contract ListingGate is IListingGate, Ownable {
     function upgradeAuditTier(address projectToken, AuditTier newTier) external onlyAegisForge {
         AuditTier current = auditTier[projectToken];
         require(uint256(newTier) > uint256(current), "Yalnizca ileri yonlu yukseltme");
+        // Gecersiz kademe kontrolu (defense-in-depth): ABI dekoderi enum
+        // sinirlarini zaten dogruladigi icin harici cagrilarda buraya
+        // ulasilamaz. Yanlizca guvenlik katmani olarak birakildi.
         require(uint256(newTier) <= uint256(AuditTier.Priority), "Gecersiz kademe");
 
         auditTier[projectToken] = newTier;

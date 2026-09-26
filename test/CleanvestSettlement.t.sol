@@ -246,4 +246,19 @@ contract CleanvestSettlementTest is Test {
         vm.expectRevert("Kanit 32 bayt olmali");
         settlement.executeBatchSettlement(batch, bytes("short"));
     }
+
+    /// @notice registerSolver: sifir adres reddedilir (branch L171)
+    function testRevertRegisterSolverZero() public {
+        vm.prank(owner);
+        vm.expectRevert("Solver sifir olamaz");
+        settlement.registerSolver(address(0));
+    }
+
+    /// @notice registerSolver: ayni solver tekrar kaydedilemez (branch L172)
+    /// @dev setUp solver'i zaten kaydetti
+    function testRevertRegisterSolverDuplicate() public {
+        vm.prank(owner);
+        vm.expectRevert("Zaten kayitli");
+        settlement.registerSolver(solver);
+    }
 }

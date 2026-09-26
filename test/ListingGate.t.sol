@@ -273,6 +273,16 @@ contract ListingGateTest is Test {
         vm.stopPrank();
     }
 
+    /// @notice None kademesinden yukseltme yapilabilir (L211 baslangic yolu)
+    function testUpgradeFromNoneTier() public {
+        vm.startPrank(oracle);
+        // once None durumdan Scan'e
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+        gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.FuzzPatch);
+        vm.stopPrank();
+        assertEq(uint256(gate.getAuditTier(projectToken)), uint256(ListingGate.AuditTier.FuzzPatch));
+    }
+
     /// @notice Oracle disinda kademe yukseltemez
     function testRevertNonOracleUpgrade() public {
         vm.prank(oracle);
