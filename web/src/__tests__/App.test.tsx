@@ -116,6 +116,28 @@ describe("App — kullanicidan gelen UI akislari", () => {
     expect(pressed.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("risk seffafligi paneli render olur (akademik dayanakli)", () => {
+    const { container } = render(<App />);
+
+    // Panel basligi TR'de 'Risk Seffafligi'
+    const headings = container.querySelectorAll("h2");
+    const riskPanel = Array.from(headings).find((h) =>
+      h.textContent?.includes("Risk Seffafligi")
+    );
+    expect(riskPanel).toBeTruthy();
+
+    // 4 risk karti: junior/kota/T+2/test
+    const panel = riskPanel?.closest("section");
+    expect(panel).toBeTruthy();
+    const cards = panel?.querySelectorAll(".rounded-xl.border");
+    expect(cards?.length).toBeGreaterThanOrEqual(4);
+
+    // Junior tampon gosterilmeli (>= %3 kontrolu)
+    expect(panel?.textContent).toContain("Junior tampon");
+    // T+2 cikis garantisi
+    expect(panel?.textContent).toContain("T+2");
+  });
+
   it("footer taze test sayisini gosterir (stale degil)", () => {
     const { container } = render(<App />);
     const footer = container.querySelector("footer");
