@@ -258,6 +258,116 @@ RC:     0
 
 ---
 
+## EK — İNSANIN KENDİ ANVİL DOĞRULAMASI (5 dakika, "ETH kilitlenmedi"yi gör)
+
+> Hiçbir şeye güvenme — **kendin koş, kendin gör.** Bu komutlar yerel anvil'de
+> tam stack deploy + tohum atar ve **`cast balance` = 0** ile ETH'nin
+> kilitlenmediğini kanıtlar. ~5 dk sürer, gerçek para harcamaz (anvil test ETH).
+> **KANIT PROTOKOLÜ:** her adımın beklenen çıktısı `# →` ile işaretli.
+
+### Hazırlık (30 saniye)
+
+```bash
+cd "/home/gokun/projects/Yeni Fikirler/oncu_fikirler_havuzu_2026/26_Cleanvest_Sifir_Manipulasyonlu_Spot_Borsa_Ve_CleanFX"
+
+# forge/cast/anvil PATH'de DEĞİL — tam yol kullan
+export PATH="$HOME/.foundry/bin:$PATH"
+
+# Anvil'in varsayilan anahtari (test ETH, gercek degil)
+export PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
+export RPC=http://127.0.0.1:8545
+```
+
+### Adım 0 — Anvil başlat (ayrı terminal, açık kalsın)
+
+```bash
+anvil --port 8545 --block-time 2 --host 127.0.0.1 \
+  --mnemonic "test test test test test test test test test test test junk"
+# → "Listening on 127.0.0.1:8545" (AÇIK OLMALI — kapatma)
+```
+
+> Zaten açık bir anvil varsa ATLA. `cast block-number --rpc-url $RPC` çalışıyorsa
+> ayakta demektir. **Taze anvil** istersen önce `pkill -f anvil` (eski state gider).
+
+### Adım 1 — Deploy (6 sözleşme, ~5 saniye)
+
+```bash
+forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --unlocked \
+  2>&1 | grep -E "CleanUSD|Deployment tamamlandi"
+# → CleanUSD:      0x5FbDB2315678afecb367f032d93F642f64180AA3   (taze anvil'de bu)
+# → === Deployment tamamlandi (6 sozlesme) ===
+```
+
+**cUSD adresini yakala** (Deploy çıktısındaki `--- ADRESLER ---` bloğundan):
+
+```bash
+export CUSD_ADDR=$(forge script script/Deploy.s.sol --rpc-url $RPC --broadcast \
+  --unlocked 2>&1 | grep -m1 "^ *cUSD:" | grep -oE "0x[a-fA-F0-9]{40}")
+echo "$CUSD_ADDR"   # -> 0x... (her calistirmada degisir; YAZ)
+
+# dogrula:
+cast call $CUSD_ADDR "symbol()(string)" --rpc-url $RPC
+# -> "CUSD"  <- "no code" hatasi verirse anvil'in 2 saniyelik block'unu bekle
+#               (sleep 4) ve tekrar dene; tx henüz kazilmamis demektir
+```
+
+### Adım 2 — Bootstrap: tohum at (ETH GÖNDERMEDEN) ⭐
+
+```bash
+export CUSD_ADDR=$CUSD_ADDR   # zaten yukarida
+forge script script/Bootstrap.s.sol --rpc-url $RPC --broadcast --unlocked \
+  2>&1 | grep -E "BOOTSTRAP|juniorReserve|tvlCap|coverageBps|canMint|HAZIR|ONCHAIN"
+# → === BOOTSTRAP DOGRULAMA ===
+# → juniorReserve: 3000000000000000000000
+# → tvlCap:        100000000000000000000000
+# → canMint:       true
+# → === HAZIR: mint acik, cap $100k, junior %3 ===
+# → ONCHAIN EXECUTION COMPLETE & SUCCESSFUL.
+```
+
+### Adım 3 — ⭐ ASIL KANIT: ETH KİLİTLENMEDİ
+
+```bash
+cast balance $CUSD_ADDR --rpc-url $RPC
+# → 0        ← ETH SIFIR. Tohum ETH GÖNDERMEDI (amount parametresi ile).
+```
+
+> **Eski (bozuk) yöntemi karşılaştır:** `--value 3_000 ether` yapsaydık bu `3000`
+> ETH dönerdi ve **sonsuza kadar kilitli** kalırdı (CleanUSD'de çekme fonksiyonu
+> yok). **`0` olması düzeltmen (commit 615e171) çalıştığı anlamına gelir.**
+
+### Adım 4 — Onchain durumu doğrula (opsiyonel ama önerilir)
+
+```bash
+cast call $CUSD_ADDR "juniorReserve()(uint256)"   --rpc-url $RPC   # → 3000 ether (3000000000000000000000)
+cast call $CUSD_ADDR "tvlCap()(uint256)"          --rpc-url $RPC   # → 100000 ether (100000000000000000000000)
+cast call $CUSD_ADDR "canMint()(bool)"            --rpc-url $RPC   # → true
+cast call $CUSD_ADDR "juniorCoverageBps()(uint256)" --rpc-url $RPC  # TVL 0 → MAX (type(uint256).max)
+```
+
+### Adım 5 — (opsiyonel) Müşteri demosunu da koş
+
+```bash
+forge script script/Demo.s.sol --rpc-url $RPC --broadcast --unlocked \
+  2>&1 | grep -E "ADIM|getiri|ONCHAIN|ANLIK|KUYRUK|junior"
+# → 6 adım + yield %3.05 + anlik $10.000 (KUYRUK YOK) + $20.000 T+2
+# → === ONCHAIN EXECUTION COMPLETE & SUCCESSFUL ===
+```
+
+### İnsanın kendi kanıt bloğu (doldur, kaydet)
+
+```
+IDDIA:  Tohum ETH göndermiyor — CleanUSD'de ETH kilitlenmez
+KANIT:  cast balance $CUSD_ADDR --rpc-url $RPC
+RC:     0
+CIKTI:  ______________   (0 OLMALI — degilse --value ile eski kod calismis demektir)
+```
+
+> **Aman dikkat:** anvil'i kapatırsan tüm state gider (gerçek deploy değildir).
+> Mainnet deploy için **insan onayı** şart — bkz. KARAR 3.
+
+---
+
 ## KARAR FORMATI (insanın dolduracağı)
 
 ```
