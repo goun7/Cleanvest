@@ -342,6 +342,19 @@ contract ListingGateTest is Test {
         assertEq(priority, 4900, "Priority $4.900");
     }
 
+    /// @notice Fiyat karti IListingGate ARAYUZU uzerinden cagrilabilir
+    /// @dev ListingGate 'is IListingGate' oldugu icin cast ile erisim
+    ///      yapılabilmeli — bu, harici entegrasyonlarin somut tipten
+    ///      bagimsiz calismasini saglar (ARTAK-1 kapandi)
+    function testPriceCardViaInterface() public {
+        IListingGate asInterface = IListingGate(address(gate));
+        (uint256 scan, uint256 scanHuman, uint256 fuzzPatch, uint256 priority) = asInterface.getPriceCard();
+        assertEq(scan, 199, "Interface: Scan $199");
+        assertEq(scanHuman, 399, "Interface: ScanHuman $399");
+        assertEq(fuzzPatch, 990, "Interface: FuzzPatch $990");
+        assertEq(priority, 4900, "Interface: Priority $4.900");
+    }
+
     /// @notice Yeni ScanHuman kademeleri ileri yonlu yukseltilebilir (docs/40)
     function testScanHumanTierUpgradeable() public {
         // Basvuru -> ilk tarama Scan atar (recordAuditResultForToken ile)

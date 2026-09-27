@@ -11,3 +11,7 @@ web/node_modules/
 
 # Forge broadcast artifactlari
 broadcast/
+
+# Forge coverage ciktilari (kaynak degil — uretilir)
+lcov.info
+coverage/

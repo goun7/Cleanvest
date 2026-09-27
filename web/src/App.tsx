@@ -248,13 +248,20 @@ function App() {
       </section>
 
       {/* Risk seffafligi (akademik dayanakli - Bundi 2026) */}
-      <section className="mb-8 panel panel-hover p-6">
+      <section
+        className="mb-8 panel panel-hover p-6"
+        role="region"
+        aria-label={tt("riskPanel")}
+      >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">{tt("riskPanel")}</h2>
           <span className="stat-label">{tt("riskVerified")}</span>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
+          <div
+            className="rounded-xl border border-white/5 bg-white/[0.02] p-4"
+            role="status"
+          >
             <p className="stat-label">{tt("riskJunior")}</p>
             <p className="mt-1 font-mono text-lg font-semibold text-white">
               %{s ? s.juniorRatioPct.toFixed(1) : "…"}

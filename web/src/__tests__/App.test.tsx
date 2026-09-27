@@ -132,6 +132,14 @@ describe("App — kullanicidan gelen UI akislari", () => {
     const cards = panel?.querySelectorAll(".rounded-xl.border");
     expect(cards?.length).toBeGreaterThanOrEqual(4);
 
+    // WCAG 1.3.1: region role + aria-label (ekran okuyucu navigasyonu)
+    expect(panel?.getAttribute("role")).toBe("region");
+    expect(panel?.getAttribute("aria-label")).toContain("Risk");
+
+    // Junior karti canli durum (role=status)
+    const juniorCard = panel?.querySelector('[role="status"]');
+    expect(juniorCard).toBeTruthy();
+
     // Junior tampon gosterilmeli (>= %3 kontrolu)
     expect(panel?.textContent).toContain("Junior tampon");
     // T+2 cikis garantisi

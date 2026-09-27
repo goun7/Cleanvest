@@ -28,6 +28,16 @@ interface IListingGate {
     /// @notice Verified rozet gecerliligini kontrol eder.
     function isVerified(address projectToken) external view returns (bool);
 
+    /// @notice Denetim kademelerinin dolar fiyat kartini yayimlar (seffaf).
+    /// @dev docs/40 (2026-09-27): Scan $199 / ScanHuman $399 / FuzzPatch $990
+    ///      / Priority $4.900. Odeme off-chain alinir; zincir yalnizca
+    ///      kademeleri ve fiyat seffafligini kaydeder.
+    /// @return scan Scan kademesi ($199)
+    /// @return scanHuman Scan + insan triyaj kademesi ($399)
+    /// @return fuzzPatch FuzzPatch kademesi ($990)
+    /// @return priority Priority kademesi ($4.900)
+    function getPriceCard() external view returns (uint256 scan, uint256 scanHuman, uint256 fuzzPatch, uint256 priority);
+
     /// @notice AegisForge oracle yetkisini gunceller.
     function setAegisForgeOracle(address oracle) external;
 }
