@@ -137,7 +137,12 @@ içindedir, doğrulayıcı hile yapamaz.
 3. **48 invariant hedefinin 15'i.** 10 vault + 5 token = 15. Kalan 33
    henüz kodlanmadı; dürüst başlangıç için 15 makul.
 
-   > DÜZELTME (2026-09-27): Gerçek invariant sayısı **5** (`test/scusd_vault_invariants.t.sol:36,50,68,95,106`). "48" hedefinin 33'ü hiç kodlanmadı (yukarıdaki §6.3 itirafı). Bu satır tarihi kayıttır, güncel durum için `docs/36_IDDIALAR_TABLOSU.md`'ne bakın.
+   > DÜZELTME (2026-09-27): **"15" de gerçeği yansıtmıyor — gerçekte 5
+   > invariant var** (`test/scusd_vault_invariants.t.sol:36,50,68,95,106`:
+   > juniorCoverage, vaultAssets, redemptionNeverLocked, seedToTvlCap,
+   > allocationSums). "48" bir hedefti (33'ü hiç kodlanmadı); "15" ise o
+   > dönemin **ara değerlendirmesiydi** — bugün geçerli DEĞİL. Bu satır tarihi
+   > kayıttır, güncel durum için `docs/36_IDDIALAR_TABLOSU.md`'ne bakın.
 4. **ListingGate için alternatif sunuldu:** kaynak-dosya taraması için
    `scan --src-dir` (vaka #03'te pgHeal'de kullanıldı, 100/100 AAA).
 
