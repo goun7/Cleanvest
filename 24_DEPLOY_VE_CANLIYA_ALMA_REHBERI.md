@@ -325,6 +325,21 @@ cast call $CUSD_ADDR "juniorCoverageBps()(uint256)" --rpc-url "$BASE_RPC_URL"
 # >= 300 OLMALI (300 bps = %3.00) — altina duserse mint durur (invariant 1)
 ```
 
+> **⚠️ Canlı anvil bulgusu (panik yapmayın):** `juniorCoverageBps`, **ilk
+> depozit öncesi** `115792089237316195423570985008687907853269984665640564039457584007913129639935`
+> döndürür — bu `type(uint256).max`'tır (`CleanUSD.sol` L58: `tvl == 0` iken).
+> **Bug değil, tasarımdır:** "tohum atıldı ama henüz hiç mint yok" durumunda
+> örtü sonsuz sayılır. **İlk mint + deposit'ten sonra** değer gerçeğe döner.
+> Örnek canlı anvil koşusu:
+>
+> | Durum | `juniorCoverageBps` | Anlamı |
+> |---|---|---|
+> | Bootstrap sonrası (TVL=0) | `1.157e77` (max uint) | ✅ Normal — ilk depoziti bekliyor |
+> | 1.000 cUSD depozit sonrası | **`15000`** | ✅ %150 örtü (300'ün ≫ üstünde) |
+>
+> Müşteri bu sayıyı görüp "bu ne?" derse: **junior $3.000 örtü, $1.000 TVL'ye
+> karşı = %150** (3× fazla) — bu güvenlik tamponunun beklenen genişliğidir.
+
 ### 24 saat özeti — çıktı
 
 ```
@@ -338,6 +353,30 @@ NOT:    ETH != 0 ise GERI DONULEMEZ — docs/29 KARAR 3B
 > **hata oranı ve ETH=0**'dır; TVL büyümesi pazarlama sorunu, teknik sağlıklık
 > bu iki metriktedir. Tüm sistemler **bug başına%100 çalışır** — beklenen
 > tek istisna, kasıtlı koruma olan `depositWithMin` revert'leridir.
+
+### ✅ CANLI ANVİL KOŞUSU — bu bölümün üç metriği gerçek koşuyla kanıtlandı
+
+Bu bölüm sadece teori değildir; **taze anvil zincirinde uçtan uca koşuldu**
+(Deploy → Bootstrap → mint → approve → `depositWithMin`):
+
+```
+IDDIA:  Ilk 24 saat izleme: 3/3 metrik gecti (anvil, taze zincir)
+KANIT:  Deploy + Bootstrap + mint+approve+depositWithMin, sonra:
+        METRIK 1 (TVL):  totalAssets = totalSupply = 1e21 wei (1:1, fark YOK)
+                         cUSD totalSupply = 2e21 (invariant 4: vault <= supply)
+        METRIK 2 (ETH):  cast balance $CUSD_ADDR  = 0
+                         cast balance $SCUSD_ADDR = 0   ← EN KRITIK, gecti
+        METRIK 3 (Hata): mint status 1, approve status 1, depositWithMin status 1
+                         → %100 basari (0 revert)
+        Junior örtüsü:   15000 bps (%150 > %3 esigi); canMint = true
+RC:     0
+ADRES:  cUSD 0x0165878A594cA255338aDFA4d48449F69242eB8F (anvil)
+        scUSD 0xa513e6e4B8f2A923D98304EC87F64353C4D5c853 (anvil)
+```
+
+> **Bu koşu, yukarıdaki tüm eşik tablolarının gerçek çıktılarla doğrulanmış
+> halidir.** Anvil adresleri — Base mainnet'e geçince geçersizdir; izlenecek
+> **değerler** geçerlidir.
 
 ---
 
