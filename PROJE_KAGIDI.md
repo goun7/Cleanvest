@@ -3,10 +3,62 @@
 > **Hat:** 🦄 Unicorn Hattı (`01_unicorn` / CeFi-DeFi Hybrid Exchange, RWA & Zero-MEV Trading Infrastructure)  
 > **Konumlandırma:** Kripto ve FX Dünyasının İlk Kumar/Kaldıraç İçermeyen, Otomatik Getirili ve Denetimli Hibrit Spot Borsası  
 > **Slogan:** *"No Leverage. No Front-Running. No Idle Cash."*  
-> **Zaman Ufku:** 2026 Q4 Testnet & Gatekeeper Alpha ➔ 2027 Q1 Mainnet Launch (Omnichain Settlement)  
-> **Hukuki ve Mali Statü:** Non-Custodial Validium Architecture (Kullanıcı Fon Emaneti Yoktur), Senior-Junior Tranche RWA Modeli, 193 Sayılı GVK Madde 89/13 (%100 Yurtdışı Yazılım/Veri İhracatı Kazanç İstisnası, %0 KDV, %0 Gelir Vergisi)  
+> **Zaman Ufku:** 2026 Q4 Testnet & Gatekeeper Alpha ➔ 2027 Q1 Mainnet Launch 🗺️ *(Omnichain Settlement bir HEDEFTİR — mevcut üründe kod YOK)*  
+> **Hukuki ve Mali Statü:** Non-Custodial (kullanıcı fonları kendi cüzdanlarındaki $cUSD / $scUSD token'larıdır — emanet YOKTUR; "Validium Architecture" 🗺️ **YOL HARİTASI**, mevcut üründe Validium kodu YOK), Senior-Junior Tranche RWA Modeli, 193 Sayılı GVK Madde 89/13 (%100 Yurtdışı Yazılım/Veri İhracatı Kazanç İstisnası, %0 KDV, %0 Gelir Vergisi)  
 > **Sürüm:** 🛡️ **v1.0 — Enterprise-Sovereign (Bilimsel, Kriptografik, Finans Mühendisliği ve Red-Team Denetimli Master Doküman)**  
 > **Alan Adı / Marka:** `Cleanvest` (Web: `cleanvest.market` / `cleanvest.fi` — FX Motoru: `CleanFX` — Varlık: `CleanUSD` / `$cUSD`)
+
+---
+
+## ⚠️ DURUM RAPORU — MEVCUT ÜRÜN vs YOL HARİTASI (2026-09-27)
+
+> **DÜRÜST OKUMA ZORUNLU.** Bu doküman hem **mevcut ürünü** hem de **yol
+> haritasını** içerir. Aşağıdaki tablo, hangisinin hangisi olduğunu netleştirir.
+> **Müşteri sunumunda yalnızca "✅ MEVCUT" satırları kullanılmalıdır.**
+
+| Özellik | Durum | Kanıt |
+|---|---|---|
+| **ERC-4626 getiri kasası** ($scUSD, 3 kademe) | ✅ **MEVCUT** | `CleanFXVault.sol` + 174 test + %99.42 line coverage |
+| **$cUSD sabit $1.00, rebase YOK** | ✅ **MEVCUT** | `CleanUSD.sol` + `testNoRebaseFunction` |
+| **400ms FBA batch settlement** | ✅ **MEVCUT** | `CleanvestSettlement.sol` (CoW netting kısmi) |
+| **AegisForge denetim kapısı** (PoV_Hash) | ✅ **MEVCUT** | `ListingGate.sol` L28-32 (PoV_Hash taahhüdü) |
+| **Senior/Junior tranche** (junior ≥ %3 TVL buffer) | ✅ **MEVCUT** | `CleanUSD.sol` `JUNIOR_MIN_BPS=300` + fail-closed mint-halt (`canMint`) — otomatik kayıp yansıtma DEĞİL |
+| **Reserve yönetimi** (3 kademe) | ✅ **MEVCUT** | `ReserveManager.sol` — Tier0: %73 Aave / %15 Prime / %12 idle; BUIDL/OU SG yalnızca Tier2 |
+| **UniswapProxy artık hacim** (şeffaf kayma) | ✅ **MEVCUT** | `UniswapProxy.sol` |
+| **PQHaven USDC köprüsü** (Seçenek A) | ✅ **MEVCUT** | `test/PQHavenBridge.t.sol` + docs/34 (anvil kanıtı) |
+| **Validium / ZK-Proof settlement** | 🗺️ **YOL HARİTASI** | **Kodda YOK** (2027 Q1 hedefi) |
+| **Escape Hatch** (borsa kapansa da çıkış) | 🗺️ **YOL HARİTASI** | **Kodda YOK** |
+| **Privy / Web3Auth MPC giriş** | 🗺️ **YOL HARİTASI** | **Kodda YOK** (off-chain, frontend katmanı) |
+| **Omnichain settlement** | 🗺️ **YOL HARİTASI** | **Kodda YOK** (2027 Q1 hedefi) |
+| **RFQ solver ağı** (kurumsal toptancılar) | 🗺️ **YOL HARİTASI** | Sadece `UniswapProxy` (tek proxy) |
+
+> **Mevcut ürünün doğru tanımı (docs/35 §5 ile birebir):**
+> Mevcut ürün **ERC-4626 getiri kasası + FBA settlement + AegisForge denetim
+> kapısı + PQHaven USDC köprüsüdür (Seçenek A).** Kodda **6 sözleşme** vardır:
+> `CleanUSD`, `CleanFXVault`, `ListingGate`, `CleanvestSettlement`,
+> `ReserveManager`, `UniswapProxy`. Kâğıttaki vizyon (Validium, omnichain)
+> **yol haritasıdır, mevcut ürün değildir.**
+>
+> **Dürüst satış pozisyonu:** Bu bir "sıfır manipülasyon vault" olarak
+> **abartılamaz**; doğru konum **"denetimli getiri kasası"**dur.
+
+### 🔴 BİLİNEN 3 ZAYIF YÖN (kullanıcı duymalı — docs/35 §5 ile birebir)
+
+1. **Kapsam farkı — BU GÜNCELLEME İLE GİDERİLDİ:** Bu tablo, vaat ile kod
+   arasındaki farkı netleştirir. Artık "Validium" okuyan biri **yol haritası**
+   olarak görür, mevcut ürün olarak değil.
+2. **"Sıfır manipülasyon" tezi off-chain'de geçersizdir:** Sözleşmeler
+   manipülasyona kapalıdır, ANCAK fonların reserve'e aktarılması **operasyonel
+   bir adımdır**. Kanıtlandı (`e6a58b6` / `docs/34 §7`): owner
+   `depositReserve` çağırmazsa **7e9 USDC EOA'da birikir** ve reserve
+   değişmez — **anahtar yönetimi tek bir güven noktasıdır.** Riske karşı
+   çözüm: multisig (`transferOwnership` → Gnosis Safe; 6 sözleşmenin tamamı
+   `Ownable`). Bu adımı biz yapana kadar **risk bizdedir.**
+3. **Köprü getirisi müşteriye değil treasury'ye akar:** PQHaven köprüsü
+   **treasury getirisi** üretir, müşteri getirisi DEĞİL — "müşteri kazanır"
+   olarak sunulamaz. Dürüst konum: **"hazineniz için kurumsal getiri yönetimi"**
+   (müşteri = hazine yöneticisi; getiri = treasury'ye; bkz. `docs/24`'teki
+   15 hazne adayı).
 
 ---
 
@@ -33,13 +85,19 @@ Kripto piyasasında döngüsel bir psikolojik kural vardır: **Her kumar dalgas�
 * **Pazarlama Sloganı:** *"Stop Gambling. Start Investing. Your capital can never be liquidated here."*
 
 ### 2.2. Hibrit Kullanıcı Deneyimi (Web2 Sadeliği + Web3 Egemenliği)
-* **Giriş Katmanı:** Kullanıcı ne karmaşık seed phrase ezberlemek ne de merkezi borsaya pasaport yükleyip fonunu teslim etmek zorundadır. **Privy / Web3Auth MPC (Multi-Party Computation)** ile Google/Apple hesabı üzerinden saniyeler içinde non-custodial cüzdan oluşturulur.
+* **Giriş Katmanı:** Kullanıcı ne karmaşık seed phrase ezberlemek ne de merkezi borsaya pasaport yükleyip fonunu teslim etmek zorundadır. **Privy / Web3Auth MPC (Multi-Party Computation)** ile Google/Apple hesabı üzerinden saniyeler içinde non-custodial cüzdan oluşturulur. 🗺️ **YOL HARİTASI — bu frontend / off-chain katmandadır, sözleşmelerde KODU YOK; mevcut durumda standart bir cüzdanla (MetaMask vb.) bağlanılır.**
 * **CEX Arayüzü Hızı:** Emirler **400ms Frequent Batch Auction (FBA)** ile toplanıp tek fiyatla eşlenir; hız yarışı (HFT front-run) yapısal olarak imkansızdır.
-* **DEX Güvenliği:** Varlıklar kullanıcının kendi akıllı sözleşme kasasındadır. Cleanvest kapansa bile kullanıcı blokzincirdeki kaçış kapısından (Escape Hatch) parasını tek işlemle çeker.
+* **DEX Güvenliği:** Varlıklar kullanıcının kendi akıllı sözleşme kasasındadır. Cleanvest kapansa bile kullanıcı blokzincirdeki kaçış kapısından (Escape Hatch) parasını tek işlemle çeker. 🗺️ **YOL HARİTASI — "Escape Hatch" fonksiyonu kodda YOK. Mevcut gerçeği: $scUSD sahibi varlığını ERC-4626 withdraw ile çeker (redemption kuyruğu asla kilitli değildir); CleanUSD'de kullanıcı fonunu donduran pause ya da blacklist fonksiyonu YOKTUR.**
 
 ---
 
 ## 3. Sıfır Sermaye ile Piyasa Yapımı Mimarisi (CoW Netting + RFQ Solvers)
+
+> 🗺️ **BU BÖLÜM YOL HARİTASIDIR.** Aşağıdaki mimarinin **tamamı henüz
+> kodda YOK** — mevcut ürün yalnızca `CleanvestSettlement.sol` (400ms FBA
+> batch) ve `UniswapProxy.sol` (artık hacim) içerir. "Shielded Intent
+> Orderbook", "CoW Batch Netting", "RFQ Solver Ağı" ve "Validium Settlement"
+> **tasarımdır, implementasyon değildir.**
 
 Cleanvest, kurucunun kasasında tek kuruş market maker sermayesi olmadan kurumsal derinlik sunar:
 
@@ -100,6 +158,10 @@ Kullanıcı işlem yapmasa, parası vadesiz hesapta boş dursa bile:
 * Örnek: 10.000 $scUSD Kademe 1'de yıl sonunda **≈10.291** olur. "Hazine Bonosu destekli" rozeti yalnızca TVL ≥ $250k'da (OUSG eşiği) gösterilir.
 
 ### 4.3. Çok Katmanlı Risk İzolasyonu ve İflas Kalkanı (First-Loss Capital)
+
+> ✅ **MEVCUT OLAN:** Kıdemli-Ast (Senior-Junior) ayrımı ve **junior rezerv ≥ %3 TVL** zorunlu invariantı (`JUNIOR_MIN_BPS=300`, `CleanUSD.sol`) — mint sırasında ihlal edilirse **fail-closed olarak mint durur** (`canMint`, `invariantJuniorCoverageAfterMint` testiyle doğrulandı). $cUSD her zaman 1:1 USD sabittir, rebase YOKTUR.
+>
+> 🗺️ **AŞAĞIDAKİ DİYAGRAM YOL HARİTASIDIR.** Alt taraftaki "SIFIR KREDİ RİSKLİ KURUMSAL REZERV DAĞILIMI" kutusu **gerçek implementasyon DEĞİLDİR.** Deploy edilen Tier0 dağılımı: **%73 Aave / %15 Aave Prime / %12 idle** (`ReserveManager.sol`); BUIDL / OUSG yalnızca **Tier2** devresindedir (TVL ≥ $12.5M, Qualified Purchaser $5M minimum). **"Delta-Neutral Vadeli Fonlama Arbitrajı" implementasyonda HİÇ YOKTUR.** Ayrıca "kayıp otomatik olarak Junior dilime yansıtılır" waterfall akışı henüz YOKTUR — junior rezerv bugün bir **mint-gating tamponudur**; ve `rebalance()` bir muhasebe kaydıdır, fonların gerçekten hareket etmesi operatörün `supplyToAave()` çağrısına bağlıdır (bkz. sayfa başı **Bilinen 3 Zayıf Yön** #2).
 Terra/Luna veya Celsius facialarının tekrarlanmaması için **Kıdemli-Ast Dilim Mimarisi (Senior-Junior Tranche Waterfall)** zorunludur:
 
 ```
@@ -152,11 +214,11 @@ Açık tespit edildiğinde geliştiriciye satır numarası **asla bedava söylen
 
 | # | Patlama Alanı | 💥 Red Team Exploit Senaryosu | 🛡️ Blue Team Kriptografik Zırhı |
 |---|---|---|---|
-| **1** | **Solver Gizli Anlaşması (Collusion)** | RFQ toptancıları anlaşarak kullanıcılara bilerek kötü fiyat verir ve aradaki farkı paylaşır. | **ZK-Fair Price Bounds:** Oracle fiyatından %0.15'ten fazla sapan hiçbir teklif borsa motoru tarafından kabul edilmez; işlem atomik olarak iptal edilir. |
+| **1** | **Solver Gizli Anlaşması (Collusion)** | RFQ toptancıları anlaşarak kullanıcılara bilerek kötü fiyat verir ve aradaki farkı paylaşır. | 🗺️ **YOL HARİTASI — ZK-Fair Price Bounds:** Oracle fiyatından %0.15 sapan teklif reddi **kodda YOK** (RFQ Solver ağı henüz inşa edilmedi). Mevcut koruma: 400ms FBA batch ile tek fiyat eşleşmesi + artık hacim `UniswapProxy`'den geçer ve AMM kayması UI'da şeffaf gösterilir. |
 | **2** | **$cUSD Depeg ve İtfa Gecikmesi** | ABD Hazine piyasalarında likidite sıkışır, BlackRock BUIDL itfası 24 saat gecikir; kullanıcılar bank run yapar. | **Senior/Junior Waterfall + %10 Anlık Nakit:** İlk %10 nakit Aave/USDC havuzundan anında ödenir; olası kayıplar Junior First-Loss rezervi tarafından karşılanır. |
 | **3** | **Sığ Tahta (Cold-Start Gecikmesi)** | Yeni açılan paritelerde kullanıcı sayısı az olduğu için CoW eşleşmesi 30 saniye gecikebilir. | **Kademeli Zaman Aşımı (Dynamic Fallback):** 3 saniye içinde iç eşleşme olmazsa emir otomatik olarak onaylı RFQ toptancısına yönlendirilir; gecikme engellenir. |
 | **4** | **Banka On-Ramp Bloke Riski** | Bankalar döviz transferi yapan CleanFX hesaplarını "kripto işlemi" gerekçesiyle dondurur. | **Lisanslı EMI ve P2P Stablecoin Ortaklıkları:** Fonlar doğrudan borsanın hesabına değil; lisanslı Electronic Money Institution (EMI) ortaklarına ve yerel P2P takas noktalarına akar. |
-| **5** | **Regülasyon ve Menkul Kıymet Baskısı** | SEC veya MiCA, "bu borsa CEX'e benziyor, lisans almalısınız" der. | **Non-Custodial Validium Zırhı:** Borsa operatörünün kullanıcı cüzdanına erişimi teknik olarak imkansızdır; kod akıllı sözleşme üzerinde çalışır, emanet (custody) sıfırdır. |
+| **5** | **Regülasyon ve Menkul Kıymet Baskısı** | SEC veya MiCA, "bu borsa CEX'e benziyor, lisans almalısınız" der. | **Kısmen Mevcut + 🗺️ YOL HARİTASI:** Fon emaneti **YOKTUR** — kullanıcı $cUSD / $scUSD'yi kendi cüzdanında tutar (bu kısım gerçektir). Ama "Validium Zırhı" (operatörün bakiyeye yazamaması) henüz YOK; `CleanUSD`'de owner yalnızca `seedJunior` ve koruyucu fail-closed mint-halt yetkisine sahiptir — **kullanıcı fonunu donduran `pause` ya da `blacklist` fonksiyonu YOKTUR.** |
 | **6** | **Formal Doğrulama Yanılgısı (False Negatives)**| Akıllı sözleşmede AutoVerus'un invariant kurallarında tanımlanmamış sıra dışı bir mantık hatası kalır. | **Çift Motorlu Hibrit Analiz:** Z3 SMT çözücüsü sembolik olarak kanıtlarken; AegisForge 10.000 rastgele mutasyon testiyle (Mutation Testing) sözleşmeyi sarsar. |
 
 ---
@@ -170,4 +232,4 @@ Açık tespit edildiğinde geliştiriciye satır numarası **asla bedava söylen
 4. **B2B Güvenlik Denetim Geliri (Faz-1 nakit motoru):** Üç kademeli fiyatlandırma ($299 / $1.490 / $4.900) ile ilk müşteriler KENDİ PORTFÖYÜMÜZ (Unpump, Tamga, KÖK + 26 proje — sıfır CAC).
    * **Dürüst hedef: $5.000 – $15.000/ay** (Faz-1). Eski "$2×$4.900×30 = $294.000/ay" fantazisi tamamen **silindi** — varsayım zinciri kanıtlanmamış.
 5. **Toplam Finansal Hedef (12. Ay):** Günlük $15M spot ve FX hacmi + 100M $cUSD TVL + B2B Denetim = **Aylık $1.200.000+ Net Nakit Akışı.**
-6. **HITL Seviyesi:** **%0 (Tamamen Otonom Hibrit Akıllı Sözleşmeler ve ZK-Rollup).**
+6. **HITL Seviyesi (DÜRÜST DÜZELTME):** Eski "%0 (Tamamen Otonom Hibrit Akıllı Sözleşmeler ve ZK-Rollup)" iddiası **gerçek DEĞİLDİ.** Mevcut üründe **ZK-Rollup YOKTUR** ve operatöre **BAĞIMLIDIR**: (i) PQHaven köprüsü tek owner EOA'dan geçer (Zayıf Yön #1); (ii) `depositReserve` bir muhasebe kaydıdır — fonların Aave'e gerçekten gitmesi operatörün `supplyToAave()` disiplinine bağlıdır (Zayıf Yön #2); (iii) köprü + Aave getiri hazinede birikir, **müşteriye gitmez** (Zayıf Yön #3). %0 otonomi ve Validium / ZK settlement **2027 Q1 yol haritasıdır.**
