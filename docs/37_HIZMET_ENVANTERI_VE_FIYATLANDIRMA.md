@@ -85,13 +85,15 @@ $3.050/yıl; **protokol spread = $204/yıl** ($17.00/ay).
 | **CleanScore API sorgusu** | **$0** protokol için | `ListingGate.sol:334-335` `applicationFee() = 0` — sorgulayıcı kendi gas'ını öder |
 | **Başvuru (application)** | **$0** | `ListingGate.sol:333` "Harac modeli YOK - basvuru daima ucretsiz" |
 | **Aave V3 protokol komisyonu** | **Aave protokolüne** (Cleanvest değil) | `ReserveManager.sol:132-144` `supplyToAave` — Aave protokolü kendi reserve factor'ünü alır; Cleanvest bunu yönetmez |
-| **Base L2 gas** | **Düşük ama sıfır DEĞİL** | her `depositWithMin`/`requestRedemption` mainnet'te gas gerektirir; müşteri öder |
-| **RPC / indexleyici / sunucu** | **DOĞRULANMADI** | `docs/`'ta kanıt yok; Gate 3 öncesi **ölçülmesi GEREKİR** — varsayım bildirilmemelidir |
+| **Base L2 gas** | **$0.004–$0.017/müşteri/ay** | **ÖLÇÜLDÜ** (`docs/38`): `eth_gasPrice` = 0.006 gwei + 7 gas ölçümü; müşteri öder, protokol DEĞİL |
+| **RPC / indexleyici / sunucu** | **$0** — **ÖLÇÜLDÜ** | `docs/38 §4,6`: indexleyici **YOK** (grep sıfır çıktı), kendi RPC node'u **YOK** — müşteri kendi cüzdan RPC'sini kullanır |
 
-> **Sonuç:** "%100 marj teorik" iddiası **ancak teknik altyapı bazında**
-> geçerlidir — **insan işçiliği hariç.** AegisForge denetimi (Z3 SMT, fuzz,
-> remediation diff) insan mühendislik zamanı gerektirir; bu maliyet
-> **ölçülmemiştir** ve "%100 marj" hesabına **DAHİL EDİLEMEZ.**
+> **Sonuç:** "%100 marj" iddiası **ancak teknik altyapı bazında** geçerlidir —
+> **insan işçiliği hariç.** `docs/38` bunu **ölçtü**: teknik altyapı marjı
+> **%99.90–%99.97'dir** ($17.00 spread'e karşı $0.004–$0.017 müşteri gas).
+> Ama AegisForge denetimi (Z3 SMT, fuzz, remediation diff) **insan mühendislik
+> zamanı gerektirir**; bu maliyet **ölçülmemiştir** ve marj hesabına
+> **DAHİL EDİLEMEZ.**
 
 ---
 
@@ -134,8 +136,9 @@ hizmet üzerindeki etkisi:
 | **%100 marj (teknik altyapı bazında, insan işçiliği hariç)** | Teorik — kanıtlanmadı |
 
 > **Toplam müşteriye: $17.00/ay teklif (spread olarak) + opsiyonel $299–$4.900
-> denetim.** **$0 altyapı maliyeti (yalnızca teknik altyapı bazında, insan
-> işçiliği hariç)** — **%100 marj teorik** (gerçek maliyetler ölçülmedi).
+> denetim.** **$0 protokol altyapı maliyeti (ölçüldü, `docs/38 §6`) +
+> $0.004–$0.017 müşteri gas** — **teknik altyapı marjı %99.90–%99.97 (insan
+> işçiliği hariç, `docs/38 §7`).**
 >
 > 🔴 **Tüm fiyatlar USDC nominal olarak bir TEKLİFTİR — GERÇEK mainnet akışı
 > YOKTUR, henüz tahsil edilmemiştir.** $0 gerçek gelir, 0 gerçek müşteri
