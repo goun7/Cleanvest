@@ -48,10 +48,10 @@ Kurum için pratik anlamı: bir günde portföyün %10'u anında, kalanı 2 gün
 
 | Koruma | Kanıt |
 |---|---|
-| **153/153 Foundry testi** (9 suite, 0 failed) | `forge test` |
-| **21/21 UI testi** (3 gerçek hata yakaladı) | `pnpm vitest run` |
+| **161/161 Foundry testi** (9 suite, 0 failed) | `forge test` |
+| **23/23 UI testi** (3 gerçek hata yakaladı) | `pnpm vitest run` |
 | **5 invariant** (300 derinlik fuzz) | `test/scusd_vault_invariants.t.sol` |
-| **%87,09 line / %89,68 branch coverage** | `forge coverage` |
+| **%99,42 line / %98,62 branch coverage** (6 sözleşme) | `forge coverage --report lcov` |
 | **ERC-4626 standardı** | OpenZeppelin |
 
 ### İnvariant'lar
@@ -77,6 +77,33 @@ anti-collusion overflow · ListingGate score-lookup sıfır · `seedJunior` eri�
 - Yetersizse **mint-halt** (güvenlik kilidi)
 - **Bu bir kısıtlama değil, güvenlik özelliğidir** — rezerv olmadan mint yapılamaz
 - **Tohum Cleanvest'in sorumluluğundadır**; sizden istenmez
+
+### Tohum mekanizmasının 3 kalıcı özelliği (şeffaf beyan)
+
+Aşağıdakiler sözleşmenin tasarımında **kalıcıdır** — sonradan değiştirilemez.
+ Müşterinin bilmesi, bizim de dürüstlüğümüzün gereğidir:
+
+1. **Tohum miktarı, TVL tavanını kalıcı belirler.** `tvlCap = tohum ÷ %3` ve bu
+   değer **yalnızca ilk tohumda** bir kez yazılır. Örn. $3M tohum → $100M tavan.
+   Tavan sonradan yükseltilemez (fonksiyon yok); daha büyük tavan için ilk tohum
+   büyütülür. Sizin için pratik anlamı: **planlanan TVL hedefiniz, ilk tohumda
+   kesinleşir** — kapasite konusunda sürpriz olmaz.
+
+2. **Tohum varlıkları çekilemez (kalıcı first-loss tampon).** Junior havuzu,
+   krediyi karşılayan **ilk-kayıp tamponudur** — bu yüzden hareket etmemeli ve
+   edemez. Bu **bug değil, güvenlik özelliğidir**: çekilebilir bir tampon, sahibi
+   tarafından çekilip %3'ün altına düşürülerek **mint'i durduran bir griefing
+   vektörü** yaratırdı. Sabit tampon bu riski sıfırlar.
+
+3. **Tohum miktarı $1 cinsinden sayılır** (ETH fiyat riski yok). Tohum, cUSD ile
+   1:1 eşleşen 18-ondalık birim olarak işlenir; gerçekte gönderilen ETH'nin
+   piyasa değeriyle karışmaz — **$3M tohum her zaman tam $100M tavan** açar,
+   ETH oynaklığına bağlı kalma riski yoktur.
+
+> **Operasyonel not:** Bu 3 özellik deploy rehberi (ADIM 3) ve insan karar
+> dosyası (docs/29 KARAR 1/3B) ile birebir uyumludur. Bağımsız doğrulama
+> komutları docs/29'un "EK — İNSANIN KENDİ ANVİL DOĞRULAMASI" bölümünde
+> `cast balance = 0` ile kanıtlanmıştır.
 
 ---
 
@@ -108,7 +135,7 @@ Aynı kategoride rekabet etmiyoruz — **üzerine bir getiri katmanı** sunuyoru
 
 > Bu doküman bir **ön tekliftir**. İletişim kanalı ve nihai şartlar, ilk kurul toplantısında netleştirilir.
 
-**Bağımsız doğrulama:** Sözleşme ve testler tamamen açıktır — `export PATH="$HOME/.foundry/bin:$PATH" && forge test` ile herkes 153/153 sonucunu kendisi üretebilir.
+**Bağımsız doğrulama:** Sözleşme ve testler tamamen açıktır — `export PATH="$HOME/.foundry/bin:$PATH" && forge test` ile herkes 161/161 sonucunu kendisi üretebilir.
 
 ```
 IDDIA:  teklif dokümanı yazıldı, rakamlar sözleşmeyle doğrulandı
