@@ -111,8 +111,8 @@ Listeleme zorunludur: `ListingGate.upgradeAuditTier` (`ListingGate.sol` L208) il
 | Junior ≥ %3 (mint-halt) | `CleanUSD.sol` L46, L90 |
 | Çıkışlar asla kilitlenmez | `CleanUSD.sol` L104 |
 | Sıfır manipülasyon | FBA eşleştirme, RFQ netting, Chainlink oracle |
-| **153/153 Foundry testi** | `forge test` |
-| **21/21 UI testi** | `pnpm vitest run` |
+| **186/186 Foundry testi** | `forge test` |
+| **24/24 UI testi** | `pnpm vitest run` |
 | **5 invariant** (300 derinlik) | `test/scusd_vault_invariants.t.sol` |
 
 ### Bulunan ve Düzeltilen 5 Gerçek Hata
@@ -136,4 +136,4 @@ Her biri commit kanıtıyla: anti-collusion overflow · ListingGate score-lookup
 
 > Bu doküman onboarding rehberidir. Nihai şartlar kurul toplantısında netleşir.
 
-**Bağımsız doğrulama:** `export PATH="$HOME/.foundry/bin:$PATH" && forge test` — 153/153 sonucu herkes üretebilir.
+**Bağımsız doğrulama:** `export PATH="$HOME/.foundry/bin:$PATH" && forge test` — 186/186 sonucu herkes üretebilir.

@@ -9,7 +9,7 @@
 **Risk:** Sözleşmelerde keşfedilmemiş hata olabilir; fonlar kaybolabilir.
 
 **Azaltıcı:**
-- **153/153 Foundry testi** geçer (`forge test`), 0 failed
+- **186/186 Foundry testi** geçer (`forge test`), 0 failed
 - **5 invariant** 300 derinlik fuzz ile (`test/scusd_vault_invariants.t.sol`)
 - Coverage **%87,09 lines / %89,68 branches**
 - 5 gerçek hata bulundu ve **commit kanıtıyla** düzeltildi

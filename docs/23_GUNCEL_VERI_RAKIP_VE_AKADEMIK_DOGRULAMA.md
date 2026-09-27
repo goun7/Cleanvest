@@ -44,7 +44,7 @@ Tier blended getirileri güncel verilerle:
 | Tier 2 | %40 BUIDL + %33 Aave + %12 boş + %15 Prime | 313.0 bp → **%2.92 net** | örtüşür | ✓ |
 
 Net senior getiri: `r_senior = (R - j·r_j)/(1-j)` ile j=%3, r_j=%9.9.
-Sözleşme testi `testYieldCurveMatchesSpec` ile birebir doğrulanır: 153/153 (25 Eylül 2026 itibarıyla).
+Sözleşme testi `testYieldCurveMatchesSpec` ile birebir doğrulanır: 186/186 (26 Eylül 2026 itibarıyla).
 
 ---
 
@@ -223,7 +223,7 @@ Yazar: Nils Bundi (CBT 2026 / ESORICS 2026, Springer).
   **daha az koruma** anlamına gelir. **Ancak önemli bir fark var:**
   makale *operasyonel* riski (hack, bug, exploit) ölçüyor; junior havuzumuz
   *kredi/likidite* kaybını karşılar. Operasyonel risk için azaltıcılarımız:
-  153 test, %96.36 line coverage, 5 invariant (300 fuzz derinliği), 8 nonReentrant.
+  186 test, %96.97 line / %96.75 branch coverage, 5 invariant + 2 fuzz (256 runs), 8 nonReentrant.
   **Dürüst sonuç:** %3 junior operasyonel risk tek başına yetersiz olabilir;
   bu yüzden test+denetim katmanı var. Müşteriye %18 iddiası **yapılmaz**.
 - **Kod karşılığı:** `CleanUSD.sol` L46 (`JUNIOR_MIN_BPS = 300`), L90 (`canMint`).
@@ -277,7 +277,7 @@ Yazar: Magnus Hansson (q-fin.TR + cs.SE).
 | Kriter | Puan | Gerekçe |
 |---|---|---|
 | Sözleşme güvenliği | **98** | 1 kalıcı risk: `deposit()` minShares'siz (azaltıcılarla) |
-| Test kapsamı | **100** | 153/153 (forge) + 21/21 (vitest); coverage %87.09 lines / %89.68 branches / %96.59 funcs; 4 kontratta %100 lines+funcs; invariant 300 derinlik |
+| Test kapsamı | **100** | 186/186 (forge) + 24/24 (vitest); coverage %96.97 lines / %96.75 branches; 4 kontratta %100 lines+funcs; invariant 5 + 2 fuzz (256 runs) |
 | Teknik borç | **100** | `recordAuditResult` mapping ile kapatıldı; TODO=0 |
 | UI/UX | **96** | i18n TR/EN (kalıcı), mobil 390px doğrulandı (taşma yok), **22 UI testi** (a11y: label htmlFor + button type + aria-pressed); kalan: canlı deploy |
 | Veri güncelliği | **97** | Aave spot/7D metodoloji farkı dokümante edildi |

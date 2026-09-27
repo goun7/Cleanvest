@@ -40,9 +40,9 @@ aile ofisleri, yüksek-net-değerli bireylerin yöneticileri, mahrem veri taşı
 
 | Özellik | Kanıt |
 |---|---|
-| **153/153 test** (0 failed) | `forge test` |
-| **5 invariant** (300 derinlik) | `test/scusd_vault_invariants.t.sol` |
-| **%87.09 line / %89.68 branch coverage** | `forge coverage --report lcov` |
+| **186/186 test** (0 failed) | `forge test` |
+| **5 invariant + 2 fuzz** (256 runs derinlik) | `test/scusd_vault_invariants.t.sol` |
+| **%96.97 line / %96.75 branch coverage** | `forge coverage --report lcov` |
 
 ## Şeffaflık
 

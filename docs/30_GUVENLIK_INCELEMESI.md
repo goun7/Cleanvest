@@ -7,7 +7,7 @@
 
 > **Yöntem:** Her vektör için (1) teorik saldırı, (2) vault'taki koruma,
 > (3) **çalışan test** (commit kanıtı), (4) artık risk. Testlerin tümü
-> `forge test` ile yeşil (166/166).
+> `forge test` ile yeşil (186/186).
 
 ---
 

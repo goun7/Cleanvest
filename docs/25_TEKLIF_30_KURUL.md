@@ -32,10 +32,10 @@ elektronik-para kuruluşları, kurumsal hazine ekipleri ve B2B ödeme işlemcile
 
 | Özellik | Kanıt |
 |---|---|
-| **153/153 test** (0 failed) | `forge test` |
-| **21/21 UI test** + 5 gerçek hata | `vitest` |
-| **5 invariant** (300 derinlik) | `test/scusd_vault_invariants.t.sol` |
-| **%87.09 line / %89.68 branch coverage** | `forge coverage --report lcov` |
+| **186/186 test** (0 failed) | `forge test` |
+| **24/24 UI test** + a11y + risk paneli | `vitest` |
+| **5 invariant + 2 fuzz** (256 runs derinlik) | `test/scusd_vault_invariants.t.sol` |
+| **%96.97 line / %96.75 branch coverage** | `forge coverage --report lcov` |
 | **ERC-4626 standardı** | OpenZeppelin |
 | **ReentrancyGuard** | `CleanFXVault` |
 
