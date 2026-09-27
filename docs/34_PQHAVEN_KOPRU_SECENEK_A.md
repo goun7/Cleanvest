@@ -195,8 +195,122 @@ DOSYA:  docs/34_PQHAVEN_KOPRU_SECENEK_A.md
 
 **Kısıt uyumu:**
 - ✅ **HİÇBİR Solidity kodu değiştirilmedi** (`contracts/` dokunulmadı)
-- ✅ **166 forge test** altına düşmedi (aşağıda kanıt)
+- ✅ **174 forge test** (166+8 yeni köprü testi) — altına düşmedi
 - ✅ **`juniorCoverageBps` 1.157e77** tasarım notu korundu
 - ✅ Merkezi risk **açıkça** yazıldı, gizlenmedi
 - ✅ Multisig/TimeLock **sadece öneri** olarak sunuldu
 - ✅ Seçenek B "ileride multisig sonrası" olarak işaretlendi
+
+---
+
+## 7. ✅ CANLI ANVİL KOŞUSU — Seçenek A'nın Uçtan Uca Kanıtı
+
+Doküman yeterli değildi — **gerçek anvil tx'leriyle** kanıtlandı. Bu bölüm,
+3 metriğin ve merkezi riskin **somut çıktılarını** içerir.
+
+### Çalışma ortamı (anvil)
+
+| Bileşen | Adres (anvil) | Rol |
+|---|---|---|
+| USDC6 (mock, 6-desimal) | `0x5FbDB2315678afecb367f032d93F642f64180aa3` | Ödeme tokenı (gerçek Base USDC desimaliyle) |
+| ReserveManager | `0x0165878A594ca255338adfa4d48449F69242Eb8F` | Reserve (owner = anvil[0]) |
+| owner EOA | `0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266` | anvil[0] — Cleanvest deployer |
+| treasury EOA | `0x70997970C51812dc3A010C7d01b50e0d17dc79C8` | anvil[1] — PQHaven tek-kasa |
+| müşteri EOA | `0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC` | anvil[2] — PQHaven müşterisi |
+
+### Adım adım gerçek tx'ler (hepsi `status 1`)
+
+```
+[0] mint      owner→müşteri      2000000000 USDC6   status 1
+[1] transfer  müşteri→treasury   2000000000 USDC6   status 1   ← guard doğrular
+[2] transfer  treasury→owner     2000000000 USDC6   status 1   ← KÖPRÜ ADIMI
+[3] call      owner depositReserve(2000 ether)      status 1   ← 6→18 çevrim
+```
+
+### METRİK (a) — Guard Transfer event'ini GÖRÜR ✅
+
+`eth_getLogs` ile gerçek zincirden okundu (`mainnet_verify.py:77-145`'in aynısı):
+
+```
+Toplam Transfer event: 4
+  0: 0x000... → müşteri    val=2000000000
+  1: 0x000... → müşteri    val=2000000000
+  2: müşteri  → treasury   val=2000000000   [ÖDEME] musteri->treasury
+  3: treasury → owner      val=2000000000   [KÖPRÜ]  treasury->owner
+```
+
+**Köprü event'i guard'ın aradığı formatta mevcut** — `topics[1]=treasury`,
+`topics[2]=owner`, `data=2000000000` (USDC 6-desimal minor).
+
+### METRİK (b) — `idleBalance` arttı ✅
+
+```
+depositReserve öncesi:  0
+depositReserve sonrası: 2000000000000000000000  = tam 2000 ether
+```
+
+**Çevirim kanıtlandı:** `2000 USDC6 × 1e12 = 2000 ether` (6→18 desimal).
+
+### METRİK (c) — Fonlar reserve'e geçti ✅
+
+`depositReserve` **accounting-only** olduğu için USDC fiziksel olarak
+owner EOA'da kalır — **bu mevcut tasarımın doğal sonucudur** (Tier hesabı
+modeli, lead'in bağımsız doğrulaması). Gerçek fon hareketi `supplyToAave`
+yapar (ReserveManager L141: `usdc.transfer(aavePool)`):
+
+```
+owner USDC (depositReserve sonrası): 2000000000   ← accounting-only
+aavePool USDC (supplyToAave sonrası): 2000000000  ← GERÇEK transfer
+```
+
+> **Bu, Seçenek A'nın bir zayıflığı DEĞİL — mevcut sözleşmenin bilinen
+> yapısıdır.** Köprü, mevcut fonksiyonları **kullanır**, değiştirmez.
+
+### 🔴 MERKEZİ RİSK — GERÇEK TX'LERLE KANITLANDI ✅
+
+**Senaryo:** owner, gelen USDC'yi reserve'a aktarmaz (operasyonel disiplin
+yetersizliği veya anahtar ele geçmesi):
+
+```
+idleBalance öncesi:    2000000000000000000000  (2000 ether)
+[3 tx] müşteri→treasury→owner: 5000 USDC (hepsi status 1)
+owner depositReserve ÇAĞRILMADI
+owner USDC bakiye (BİRİKİM): 7000000000  (7e9 = 2000 + 5000 USDC)
+idleBalance (değişmedi):    2000000000000000000000  == öncesi
+[KANITLANDI] reserve'a girmiyor — fonlar owner'da birikiyor
+```
+
+**Risk gerçek:** 5000 USDC, owner EOA'da **birikti**, reserve **tamamen
+değişmedi**. Bu, §3'teki merkezi güven noktası uyarısını **somut kanıta**
+dönüştürür — teorik bir endişe değil, çalışan sistemde gözlemlenen
+davranıştır.
+
+> **Müşteri dürüstlüğü:** Bu kanıt, "sıfır manipülasyon" tezinin
+> **off-chain anahtar yönetimi** için geçerli olmadığını gösterir.
+> Çözüm multisig'dir (§3 önerisi: `transferOwnership` ile Gnosis Safe).
+
+### Köprü için yazılan KOD (test + script, sözleşme değil)
+
+| Dosya | Tür | İçerik |
+|---|---|---|
+| `test/PQHavenBridge.t.sol` | **Foundry testi** | 8 test — 3 metrik + risk + guard simülasyonu |
+| `script/PQHavenBridgeAnvil.s.sol` | **Anvil scripti** | Uçtan uca akış + console.log kanıtı |
+
+**Test sonucu:** `forge test` → **174 tests passed, 0 failed** (166 + 8).
+
+> **Kanıt notu:** Anvil'de `vm.startBroadcast(<address>)` ile impersonate
+> edilen tx'ler broadcast edilmez (simulation'da kalır). Bu yüzden **gerçek
+> kanıt `cast send` ile yapıldı** — her tx zincire işlendi, `eth_getLogs`
+> ile event'ler okundu. Script, insan-okunabilir demo ve **test coverage**
+> (174) için alıkoyuldu.
+
+### Kanıt Protokolü (güncellenmiş)
+
+```
+IDDIA:  Seçenek A CANLI anvil'de ispatlandi — 3 metrik + merkezi risk, gercek tx'lerle
+KANIT:  eth_getLogs (4 Transfer event) + cast call idleBalance (2000 ether)
+        + cast receipt status 1 (tum tx'ler) + forge test (174 passed)
+RC:     0
+COMMIT: (bu commit)
+DOSYA:  docs/34 + test/PQHavenBridge.t.sol + script/PQHavenBridgeAnvil.s.sol
+```
