@@ -242,6 +242,22 @@ Yazar: Ping Kuen Wong (Risk Management, q-fin.RM).
   matematiksel olarak kanıtlar.
 - **Kod karşılığı:** `contracts/RiskTransparency.sol` (profile + describe).
 
+**[D] arXiv:2609.02447 — "Price manipulation in nonlinear transient impact models: rigidity before memory and complete positivity after memory"**
+Yazar: Minhyeok Lee (Trading and Market Microstructure, q-fin.TR).
+
+- **Bulgusu:** Geçici etki modellerinde (transient impact) manipülasyona
+  yer olmaması için etki kanununun **lineer (delta=1)** olması GEREKİR.
+  Karekök etki (delta=1/2) **her çürüme üsteli için manipüle edilebilir**.
+  Gatheral'ın "yavaş-oran" koşulu (delta+gamma>=1) **delta=1 çizgisine
+  çöker**. Özetle: nonlineer etki <=> manipülasyon imkânı vardır.
+- **Cleanvest'e etkisi (KRITIK):** Bu, neden Uniswap'in sürekli ürün
+  eğrisi (constant-product) yerine **batch/FBA eşleştirme** tercih
+  ettiğimizin teorik doğrulamasıdır. CFMM'lerde büyük işlem sürekli
+  eğri boyunca nonlineer fiyat etkisi yaratır — makale bu etkinin
+  **yapısal olarak manipüle edilebilir** olduğunu kanıtlar.
+- **Kod karşılığı:** `contracts/UniswapProxy.sol` sadece TLDR/exit
+  köprüsü olarak; ana eşleştirme batch'tir (manipülasyon yüzeyi düşer).
+
 **[C] arXiv:2609.10407 — "dexamine: A Python package for Uniswap event data on Ethereum"**
 Yazar: Magnus Hansson (q-fin.TR + cs.SE).
 
@@ -266,7 +282,7 @@ Yazar: Magnus Hansson (q-fin.TR + cs.SE).
 | UI/UX | **96** | i18n TR/EN (kalıcı), mobil 390px doğrulandı (taşma yok), **22 UI testi** (a11y: label htmlFor + button type + aria-pressed); kalan: canlı deploy |
 | Veri güncelliği | **97** | Aave spot/7D metodoloji farkı dokümante edildi |
 | Rakip konumu | **95** | Tamamlayıcı katman; likidite soğuk başlama |
-| Akademik dayanak | **99** | 7 hakemli/arşiv makale + OWASP sınıflandırması, her biri sözleşmede somut karşılık (2 yeni 2026-09 makalesi eklendi) |
+| Akademik dayanak | **99** | 8 hakemli/arşiv makale + OWASP sınıflandırması, her biri sözleşmede somut karşılık (2 yeni 2026-09 makalesi eklendi) |
 | AI izi | **100** | Tarama sonucu iz yok |
 | HITL minimum | **95** | UI otomatik yenileme + otomatik minShares; deploy hala manuel |
 
@@ -315,6 +331,7 @@ Yazar: Magnus Hansson (q-fin.TR + cs.SE).
 - **[CANLI 09-26]** rwa.xyz OUSG (7D APY %3.53, AUM $392.7M): https://app.rwa.xyz/assets/OUSG
 - **[YENİ 09-2026]** Wong, *DisclosureBeta: A Measurement-Channel Theory for Regime-Conditioned Betas from LLM-Read Risk Disclosures*: https://arxiv.org/abs/2609.02900
 - **[CANLI 09-26]** rwa.xyz ana sayfa (Active Strategies trendi, $38.58B DAV): https://app.rwa.xyz/
+- **[YENİ 09-2026]** Lee, *Price manipulation in nonlinear transient impact models*: https://arxiv.org/abs/2609.02447
 - AiRaceX oracle detection, arXiv 2502.06348: https://arxiv.org/html/2502.06348v2
 - DeFiTrace oracle manipulation, ACM 2025: https://dl.acm.org/doi/full/10.1145/3817054
 - TOAD-ML oracle validation, Frontiers in Blockchain 2026: https://www.frontiersin.org/journals/blockchain/articles/10.3389/fbloc.2026.1903202/full
