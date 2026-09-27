@@ -80,9 +80,10 @@ Her an `juniorReserve ≥ TVL × %3` invariant'ı çalışır. İhlalde mint dur
 
 | Paket | Fiyat | İçerik |
 |---|---|---|
-| **Duo** | **$499** | Scan kademesi: 4 kademeli huni + PoV_Hash raporu |
-| **Pro** | **$790** | FuzzPatch: Scan + 10k metamorfik fuzz + remediation diff |
-| **Max** | **$990** | Priority: tümü + formal assurance + 30-gün SLA + öncelik |
+| **Scan** | **$199** | Otomatik rapor: 4 kademeli huni + PoV_Hash raporu |
+| **Scan + İnsan Triyaj** | **$399** | Scan + insan uzman incelemesi (opsiyonel) |
+| **FuzzPatch** | **$990** | Scan + 10k metamorfik fuzz + remediation diff |
+| **Priority** | **$4.900** | Tümü + formal assurance + SLA + öncelikli destek |
 
 Listeleme zorunludur: `ListingGate.upgradeAuditTier` (`ListingGate.sol` L208) ile doğrulanır.
 
@@ -92,8 +93,8 @@ Listeleme zorunludur: `ListingGate.upgradeAuditTier` (`ListingGate.sol` L208) il
 
 | Kalemler | Taahhüt |
 |---|---|
-| **Öncelikli yanıt** | Max paket: 4 saat (iş günü) |
-| **Standart yanıt** | Duo/Pro: 24 saat |
+| **Öncelikli yanıt** | Priority paketi: 4 saat (iş günü) |
+| **Standart yanıt** | Scan/FuzzPatch: 24 saat |
 | **Kritik güvenlik** | Tüm paketler: 1 saat (24/7) |
 | **Remediation diff** | Pro/Max: 48 saat |
 | **Formal assurance** | Max: 30 gün |
@@ -122,7 +123,7 @@ Her biri commit kanıtıyla: anti-collusion overflow · ListingGate score-lookup
 ## Onboarding Kontrol Listesi
 
 - [ ] anvil demo çalıştırıldı (`SUCCESSFUL`, rc=0)
-- [ ] Uygun paket seçildi (Duo/Pro/Max)
+- [ ] Uygun paket seçildi (Scan / Scan+İnsan / FuzzPatch / Priority)
 - [ ] TVL ve kademe eşleştirildi
 - [ ] AegisForge denetimi tamamlandı
 - [ ] Junior havuz yatırıldı (bizim tarafımızdan)
