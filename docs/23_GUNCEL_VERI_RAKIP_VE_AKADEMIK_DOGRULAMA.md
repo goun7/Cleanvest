@@ -50,7 +50,19 @@ Sözleşme testi `testYieldCurveMatchesSpec` ile birebir doğrulanır: 153/153 (
 
 ## II. Rakip Analizi — Gerçekçi Piyasa Konumu
 
-### Pazar Büyüklüğü
+### Pazar Büyüklüğü (2026-09-26 CANLI)
+
+**YENİ TREND — "Active Strategies" kategorisi büyüyor:** tokenize varlıklar
+artık pasif hazineye ek olarak **getiri üreten stratejileri** kapsıyor.
+rwa.xyz ana sayfası (2026-09-26 canlı): eurSAFO $1.5B, **sUSDe $1.3B**,
+SAFO $208.6M, MI4 $164.4M, **USCC $118.4M**, pEAK $101.7M. Bu kategori
+tokenize hazine pazarının ötesine geçen **yield-bearing ürün talebini**
+gösterir — Cleanvest scUSD tam olarak bu kategoride konumlanır.
+
+**Toplam tokenize varlık:** Distributed Asset Value **$38.58B** (-%0.84 30D),
+Represented Asset Value **$357.98B** (-%6.29 30D), Toplam holder
+**4.841.040** (+%58.65 30D). Holder artışı+%58.65 — tokenize ürünlere
+perakende talebi güçlü.
 
 Tokenize hazine ürünleri **$10-15B AUM** (Mayıs 2026, rwa.xyz). Kesinleştirilmiş
 değerler: eco.com raporu (rwa.xyz kaynağı) tokenize hazine kategorisinde **$10B**,
@@ -216,7 +228,21 @@ Yazar: Nils Bundi (CBT 2026 / ESORICS 2026, Springer).
   bu yüzden test+denetim katmanı var. Müşteriye %18 iddiası **yapılmaz**.
 - **Kod karşılığı:** `CleanUSD.sol` L46 (`JUNIOR_MIN_BPS = 300`), L90 (`canMint`).
 
-**[B] arXiv:2609.10407 — "dexamine: A Python package for Uniswap event data on Ethereum"**
+**[B] arXiv:2609.02900 — "DisclosureBeta: A Measurement-Channel Theory for Regime-Conditioned Betas from LLM-Read Risk Disclosures"**
+Yazar: Ping Kuen Wong (Risk Management, q-fin.RM).
+
+- **Bulgusu:** Risk açıklamaları (disclosure) ölçülebilir varlık fiyatlandırma
+  bilgisi taşır. LLM'leri "gürültülü ölçüm kanalı" olarak modelleyip,
+  açıklama kalitesini Fama-French beta tahmin hata bütçesine yazar.
+  **Açıklama teşvik önerisi:** daha iyi açıklama yapan firma için daha
+  kesin beta tahmini (düşük sermaye maliyeti).
+- **Cleanvest'e etkisi:** Yukarıdaki RiskTransparency özelliğimizin
+  teorik dayanağı. Standart risk açıklaması yalnızca regülasyon memnuniyeti
+  değil — **ölçülebilir piyasa değeri** olan bir bilgidir. Makale bunu
+  matematiksel olarak kanıtlar.
+- **Kod karşılığı:** `contracts/RiskTransparency.sol` (profile + describe).
+
+**[C] arXiv:2609.10407 — "dexamine: A Python package for Uniswap event data on Ethereum"**
 Yazar: Magnus Hansson (q-fin.TR + cs.SE).
 
 - **Bulgusu:** DEX olay verilerini (mempool, swap, tick) sistematik toplama
@@ -240,7 +266,7 @@ Yazar: Magnus Hansson (q-fin.TR + cs.SE).
 | UI/UX | **96** | i18n TR/EN (kalıcı), mobil 390px doğrulandı (taşma yok), **22 UI testi** (a11y: label htmlFor + button type + aria-pressed); kalan: canlı deploy |
 | Veri güncelliği | **97** | Aave spot/7D metodoloji farkı dokümante edildi |
 | Rakip konumu | **95** | Tamamlayıcı katman; likidite soğuk başlama |
-| Akademik dayanak | **99** | 6 hakemli/arşiv makale + OWASP sınıflandırması, her biri sözleşmede somut karşılık (2 yeni 2026-09 makalesi eklendi) |
+| Akademik dayanak | **99** | 7 hakemli/arşiv makale + OWASP sınıflandırması, her biri sözleşmede somut karşılık (2 yeni 2026-09 makalesi eklendi) |
 | AI izi | **100** | Tarama sonucu iz yok |
 | HITL minimum | **95** | UI otomatik yenileme + otomatik minShares; deploy hala manuel |
 
@@ -287,6 +313,8 @@ Yazar: Magnus Hansson (q-fin.TR + cs.SE).
 - **[YENİ 09-2026]** Hansson, *dexamine: A Python package for Uniswap event data on Ethereum*, arXiv q-fin.TR: https://arxiv.org/abs/2609.10407
 - **[CANLI 09-26]** rwa.xyz BUIDL (7D APY %3.62, 30D %3.49, AUM $2.24B): https://app.rwa.xyz/assets/BUIDL
 - **[CANLI 09-26]** rwa.xyz OUSG (7D APY %3.53, AUM $392.7M): https://app.rwa.xyz/assets/OUSG
+- **[YENİ 09-2026]** Wong, *DisclosureBeta: A Measurement-Channel Theory for Regime-Conditioned Betas from LLM-Read Risk Disclosures*: https://arxiv.org/abs/2609.02900
+- **[CANLI 09-26]** rwa.xyz ana sayfa (Active Strategies trendi, $38.58B DAV): https://app.rwa.xyz/
 - AiRaceX oracle detection, arXiv 2502.06348: https://arxiv.org/html/2502.06348v2
 - DeFiTrace oracle manipulation, ACM 2025: https://dl.acm.org/doi/full/10.1145/3817054
 - TOAD-ML oracle validation, Frontiers in Blockchain 2026: https://www.frontiersin.org/journals/blockchain/articles/10.3389/fbloc.2026.1903202/full
