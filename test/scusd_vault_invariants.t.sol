@@ -111,6 +111,59 @@ contract InvariantTest is Test {
             "INVARIANT: allocation toplami = 10000 bps"
         );
     }
+
+    /// @notice FUZZ: rastgele buyuk depozito pay fiyatini BOZAMAZ
+    /// @dev ERC-4626 inflation attack korumasi: pay fiyati >= 1
+    function testFuzzSharePriceNeverBelowOne(uint256 seedA, uint256 seedB) public {
+        vm.assume(seedA > 0 && seedA < 10_000 ether);
+        vm.assume(seedB > 0 && seedB < 10_000 ether);
+
+        cUSD.mint(address(0xA1), seedA);
+        vm.startPrank(address(0xA1));
+        cUSD.approve(address(vault), seedA);
+        vault.deposit(seedA, address(0xA1));
+        vm.stopPrank();
+
+        cUSD.mint(address(0xB0), seedB);
+        vm.startPrank(address(0xB0));
+        cUSD.approve(address(vault), seedB);
+        vault.deposit(seedB, address(0xB0));
+        vm.stopPrank();
+
+        uint256 price = (vault.totalAssets() * 1e18) / vault.totalSupply();
+        assertGe(price, 1e18, "Pay fyat >= 1 olmali");
+    }
+
+    /// @notice FUZZ: kullanici varligi kasadaki toplam varligi ASMAZ
+    /// @dev ERC-4626 soundness invariant'i
+    function testFuzzWithdrawNeverExceedsAssets(uint256 depositAmt, uint256 withdrawAmt) public {
+        vm.assume(depositAmt > 0 && depositAmt <= 50_000 ether);
+        vm.assume(withdrawAmt > 0 && withdrawAmt <= depositAmt);
+
+        cUSD.mint(address(0xC1), depositAmt);
+        vm.startPrank(address(0xC1));
+        cUSD.approve(address(vault), depositAmt);
+        vault.deposit(depositAmt, address(0xC1));
+        vm.stopPrank();
+
+        // Kuyruk-onceligi: cikis once requestRedemption gerektirir
+        vm.startPrank(address(0xC1));
+        vault.requestRedemption(withdrawAmt);
+        vm.stopPrank();
+
+        // T+2 bekleme suresi gecmeli
+        vm.warp(block.timestamp + 3 days);
+
+        vm.startPrank(address(0xC1));
+        uint256 shares = vault.convertToShares(withdrawAmt);
+        if (shares > 0 && shares <= vault.balanceOf(address(0xC1))) {
+            vault.redeem(shares, address(0xC1), address(0xC1));
+        }
+        vm.stopPrank();
+
+        uint256 userAssets = vault.convertToAssets(vault.balanceOf(address(0xC1)));
+        assertLe(userAssets, vault.totalAssets(), "Kullanici varligi kasayi asmaz");
+    }
 }
 
 /// @notice State'i rastgele ilerleten handler.
