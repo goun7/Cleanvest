@@ -7,14 +7,39 @@
 
 ## 1. Cleanvest'in Müşteri Teklifi (3-4 satır)
 
-> **Cleanvest, kurumsal hazinenin boşta duran USDC'sini ABD Hazine Bonosu
-> getirisine (BUIDL %3.47 / OUSG %3.44 / Aave %3.78) yatıran bir ERC-4626
-> kasadır.** Giriş 1:1'dir, **çıkış kapısı asla kilitlenmez** (günlük %10
+> **Cleanvest, kurumsal hazinenin boşta duran USDC'sini getiriye yatıran bir
+> ERC-4626 kasadır.** Giriş 1:1'dir, **çıkış kapısı asla kilitlenmez** (günlük %10
 > anlık, üstü T+2 kuyruk), getiriniz **koda bağlı üç kademede** (TVL < $250k'da
 > %3.05 → $250k–12.5M'da %2.91 → ≥$12.5M'da %2.92) kurumsal kompozisyonla
 > üretilir. **Sıfır manipülasyon:** rebase yok, kaldıraç yok, kurucu
 > sermayesi yok — ve müşteriyi **otomatik koruyan** bir slippage kalkanı
 > (`depositWithMin`) ERC-4626 donation attack'ine karşı aktiftir.
+
+**Mevcut ürünün doğru tanımı (PROJE_KAGIDI sayfa başı DURUM RAPORU ile birebir):**
+
+> **ERC-4626 getiri kasası + FBA settlement + AegisForge denetim kapısı +
+> PQHaven USDC köprüsü (Seçenek A).** Kodda **6 sözleşme** vardır:
+> `CleanUSD`, `CleanFXVault`, `ListingGate`, `CleanvestSettlement`,
+> `ReserveManager`, `UniswapProxy`.
+
+> 🗺️ **YOL HARİTASI (mevcut ürün DEĞİL):** Validium / ZK-Proof settlement,
+> Escape Hatch, Privy/Web3Auth MPC giriş, Omnichain settlement, RFQ solver ağı,
+> delta-neutral arbitraj — **hepsi kodda YOKTUR** (`docs/36` tablosuna bakın).
+
+**Rezerv kompozisyonu — HİÇBİR YERDE abartılmamalı (gerçek kod):**
+
+| TVL | Gerçek dağılım (`ReserveManager.sol:15-17`) | En yüksek varlık |
+|---|---|---|
+| **<$250k (Tier0)** | %73 Aave / %15 Prime / %12 idle | **Aave V3 (%3.78)** |
+| **$250k–$12.5M (Tier1)** | %40 OU SG / %33 Aave / %15 Prime / %12 idle | OU SG (%3.44) |
+| **≥$12.5M (Tier2)** | %40 BUIDL / %33 Aave / %15 Prime / %12 idle | BUIDL (%3.47) |
+
+> 🔴 **DÜRÜST DÜZELTME:** Yukarıdaki "ABD Hazine Bonosu getirisine yatırır"
+> cümlesi **Tier0 için DOĞRU DEĞİLDİR.** Bugün (Tier0) fonlar **Aave V3 + Aave
+> Prime**'dadır — **BlackRock BUIDL / Ondo USDG doğrudan alımı YOKTUR.**
+> BUIDL ancak **TVL $12.5M'ya ulaştığında** (Tier2) ve Qualified Purchaser
+> statüsüyle ($5M minimum) eklenir. **"Hazine Bonosu getiri ürünü" olarak
+> satılamaz** — doğrusu **"Aave üzerinden kurumsal getiri"**dir.
 
 **Müşterinin duygusal teklifi:** *"Stop gambling. Start investing. Your capital
 can never be liquidated here."* (PROJE_KAGIDI L33)
@@ -43,7 +68,7 @@ müşteri USDC → treasury (guard doğrular, 402/503)
 
 | # | Kazanç | Açıklama | Kanıt |
 |---|---|---|---|
-| **1** | **Hazine getirisi** | PQHaven'ın biriken USDC'si **Aave V3'e supply edilir** → Tier0'da yıllık **%3.05** (boşta = %0) | METRIK (b): idleBalance 2000 ether; (c): aavePool 2e9 USDC |
+| **1** | **Hazine getirisi** | PQHaven'ın biriken USDC'si **Aave V3'e supply edilir** → Tier0'da yıllık **%3.05** (boşta = %0) — **ABD Hazine Bonosu (BUIDL) DEĞİL** (bkz. §1 rezerv tablosu; BUIDL yalnızca Tier2) | METRIK (b): idleBalance 2000 ether; (c): aavePool 2e9 USDC |
 | **2** | **Güvenlik (fail-closed)** | Guard ödeme yoksa **402**, RPC hatasında **503** — ödemesiz-hizmet yanılgısı sıfır | `mainnet_guard.py:157-160` |
 | **3** | **Düşük minimum giriş** | BlackRock BUIDL **$5M** minimum; Cleanvest **$250k** ile aynı getiri katmanına erişim | docs/24 karşılaştırma tablosu |
 
@@ -154,24 +179,30 @@ Lead "dürüst ol" dedi. İşte kullanıcı duymalı:
 
 ### Zayıflık 1: PROJE_KAGIDI ile KOD arasında kapsam farkı
 
-**PROJE_KAGIDI'nın vaat ettiği, kodda OLMAYANlar:**
+**PROJE_KAGIDI'nın vaat ettiği, kodda OLMAYANlar** (2026-09-27 satır numaraları —
+PROJE_KAGIDI artık her yerde bunları 🗺️ **YOL HARİTASI** olarak işaretler):
 
 | Vaat | Kâğıtta | Kodda | Durum |
 |---|---|---|---|
-| **Validium / ZK-Proof settlement** | L78-80 "toplu ZK-Proof" | **0 dosya** | 🔴 YOK |
-| **Escape Hatch (borsa kapansa da para çekme)** | L38 | **0 dosya** | 🔴 YOK |
-| **Privy/Web3Auth MPC giriş** | L36 | **0 dosya** | 🔴 YOK |
-| **Omnichain settlement** | L6 | **0 dosya** | 🔴 YOK |
-| **CoW netting + RFQ solver ağı** | L42-82 | `CleanvestSettlement` (400ms FBA) | 🟡 KISMEN |
-| **Senior/Junior tranche waterfall** | L102-128 | `CleanUSD` junior %3 | 🟡 KISMEN |
+| **Validium / ZK-Proof settlement** | L137 "toplu ZK-Proof" + L29 tablo | **0 dosya** | 🔴 YOK (yol haritası) |
+| **Escape Hatch (borsa kapansa da para çekme)** | L90 + L30 tablo | **0 dosya** | 🔴 YOK (yol haritası) |
+| **Privy/Web3Auth MPC giriş** | L88 + L31 tablo | **0 dosya** | 🔴 YOK (yol haritası) |
+| **Omnichain settlement** | L6 + L32 tablo | **0 dosya** | 🔴 YOK (yol haritası) |
+| **CoW netting + RFQ solver ağı** | L104-138 (§3 banner ile işaretli) | `CleanvestSettlement` (400ms FBA) | 🟡 KISMEN |
+| **Senior/Junior tranche waterfall** | L160-186 (§4.3 banner ile işaretli) | `CleanUSD` junior %3 | 🟡 KISMEN |
+| **Rezerv: %75 BUIDL + %15 delta-neutral arbitraj** | L175-177 (§4.3 banner ile işaretli) | **%73 Aave / %15 Prime / %12 idle** | 🔴 YANLIŞ (düzeltildi) |
+| **"48 Güvenlik İnvariantı"** | eski L208 — **ÇIKARILDI** | **5 invariant** (`test/scusd_vault_invariants.t.sol`) | 🔴 YANLIŞ (çıkarıldı) |
+| **HITL "%0 (ZK-Rollup)"** | eski L235 — **DÜZELTİLDİ** | operatöre bağımlı | 🔴 YANLIŞ (düzeltildi) |
 
 **Kodda GERÇEKTE var olan 6 sözleşme:** CleanUSD, CleanFXVault, ListingGate,
 CleanvestSettlement, ReserveManager, UniswapProxy.
 
-> **Müşteriye dürüstçe:** Mevcut ürün **ERC-4626 getiri kasası + FBA settlement
-> + denetim kapısıdır**. Kâğıttaki vizyon (Validium, omnichain) **yol haritasıdır,
-> mevcut ürün değildir.** Bunu "sıfır manipülasyon vault" olarak satmak
-> **abartı olur**; "denetimli getiri kasası" doğrudur.
+> **Müşteriye dürüstçe:** Mevcut ürün **ERC-4626 getiri kasası + FBA settlement +
+> AegisForge denetim kapısı + PQHaven USDC köprüsüdür (Seçenek A).** Kâğıttaki
+> vizyon (Validium, omnichain) **yol haritasıdır, mevcut ürün değildir.** Bunu
+> "sıfır manipülasyon vault" olarak satmak **abartı olur**; "denetimli getiri
+> kasası" doğrudur. **Bu fark PROJE_KAGIDI sayfa başındaki DURUM RAPORU ile
+> resmi olarak KAPATILDI** (2026-09-27, commit `2fa2b54`).
 
 ### Zayıflık 2: "Sıfır manipülasyon" tezi off-chain'de geçersiz
 
@@ -201,22 +232,27 @@ müşteri getirisi DEĞİL. Bu, "müşteri kazanır" olarak sunulamaz.
 |---|---|
 | **Unpump x402** | Ödeme altyapısı (fail-closed 402/503, tek-kasa) |
 | **AegisForge** | Denetim motoru (PoV_Hash taahhüdü, 4 kademeli) |
-| **Cleanvest = ?** | **Getiri kasası + denetimli listeleme kapısı** |
+| **Cleanvest = ?** | **ERC-4626 getiri kasası + FBA settlement + AegisForge denetim kapısı + PQHaven USDC köprüsü (Seçenek A)** |
 
-**Cleanvest'in müşteri teklifi (özet):** Boşta duran kurumsal USDC'yi ABD
-Hazine Bonosu getirisine yatır, çıkış kapısını asla kilitleme, manipülasyonu
-sıfırla. **Ama dürüstçe:** mevcut ürün kâğıttaki vizyonun bir altkümesidir.
+**Cleanvest'in müşteri teklifi (özet):** Boşta duran kurumsal USDC'yi **Aave
+üzerinden kurumsal getiriye** (Tier0: %73 Aave / %15 Prime / %12 idle) yatır,
+çıkış kapısını asla kilitleme, manipülasyonu sıfırla. **Ama dürüstçe:** mevcut
+ürün kâğıttaki vizyonun bir altkümesidir — **ABD Hazine Bonosu (BUIDL) yalnızca
+Tier2'de, TVL ≥ $12.5M'da mevcuttur.**
 
 ---
 
 ## 7. Kanıt Protokolü
 
 ```
-IDDIA:  Is modeli ve denetim-oncesi kalite raporu yazildi — SIFIR Solidity degisikligi
+IDDIA:  docs/35 pitch'i PROJE_KAGIDI (YOL A) ile birebilir hizalandi
+        + docs/36_IDDIALAR_TABLOSU.md olusturuldu (20 iddia, file:line kanitli)
 KANIT:  git status --short contracts/ | wc -l → 0  +  forge test → 174 passed, 0 failed
 RC:     0
 COMMIT: (bu commit)
 DOSYA:  docs/35_IS_MODELI_VE_DENETIM_ONCESI_KALITE.md
+        docs/36_IDDIALAR_TABLOSU.md
+        PROJE_KAGIDI.md ("48" cikarildi + $1.2M notu)
 ```
 
 **Kısıt uyumu:**
@@ -224,4 +260,7 @@ DOSYA:  docs/35_IS_MODELI_VE_DENETIM_ONCESI_KALITE.md
 - ✅ **174 forge test** altına düşmedi (kanıt yukarıda)
 - ✅ **`juniorCoverageBps` 1.157e77** tasarım notu korundu (docs/34 §5)
 - ✅ **Dürüst:** 3 zayıf yön açıkça yazıldı (kullanıcı duymalı)
+- ✅ **"48 Güvenlik İnvariantı" ÇIKARILDI** — gerçeği **5** invariant
+- ✅ **docs/35 ↔ PROJE_KAGIDI birebir** (aynı mevcut-ürün tanımı + roadmap)
+- ✅ **$1.200.000+ hedefine** "0 gerçek müşteri, $0 gerçek gelir" notu eklendi
 - ✅ Rapor modu: sadece doküman, hiçbir kod

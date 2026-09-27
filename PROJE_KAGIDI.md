@@ -34,7 +34,7 @@
 
 > **Mevcut ürünün doğru tanımı (docs/35 §5 ile birebir):**
 > Mevcut ürün **ERC-4626 getiri kasası + FBA settlement + AegisForge denetim
-> kapısı + PQHaven USDC köprüsüdür (Seçenek A).** Kodda **6 sözleşme** vardır:
+> kapısı + PQHaven USDC köprüsü (Seçenek A).** Kodda **6 sözleşme** vardır:
 > `CleanUSD`, `CleanFXVault`, `ListingGate`, `CleanvestSettlement`,
 > `ReserveManager`, `UniswapProxy`. Kâğıttaki vizyon (Validium, omnichain)
 > **yol haritasıdır, mevcut ürün değildir.**
@@ -205,7 +205,7 @@ Cleanvest'te listelenmek isteyen her proje, portföyümüzdeki iki devrimsel mot
 Açık tespit edildiğinde geliştiriciye satır numarası **asla bedava söylenmez.**
 * Sistem, açığı sömüren bir istismar kanıtı üretir ve bunun **kriptografik özet hash'ini ($PoV\_Hash$)** zincire basar.
 * Başvuru sahibine şu otonom bildirim gider:
-  > *"Sözleşmeniz Cleanvest'in 48 Güvenlik İnvariantından 3 tanesinde KRİTİK SEVİYEDE BAŞARISIZ oldu (Fon Kaybı Riski). $PoV\_Hash$ zincirde mühürlenmiştir. Listeleme başvurunuz durdurulmuştur. Açığın istismar kodunu, düzeltme yamasını (remediation patch) ve 'Cleanvest Verified' yeşil mührünü almak için Güvenlik Paketi Bedeli: $4.900."*
+  > *"Sözleşmeniz Cleanvest'in güvenlik invariantlarında 3 tanesinde KRİTİK SEVİYEDE BAŞARISIZ oldu (Fon Kaybı Riski). $PoV\_Hash$ zincirde mühürlenmiştir. Listeleme başvurunuz durdurulmuştur. Açığın istismar kodunu, düzeltme yamasını (remediation patch) ve 'Cleanvest Verified' yeşil mührünü almak için Güvenlik Paketi Bedeli: $4.900."*
 * Proje açığını kapatmak ve Cleanvest'in güvenli yatırımcı kitlesine erişmek için bu bedeli öder. Cleanvest, hacimden bağımsız olarak **otonom bir siber güvenlik şirketine (SaaS)** dönüşür.
 
 ---
@@ -232,4 +232,5 @@ Açık tespit edildiğinde geliştiriciye satır numarası **asla bedava söylen
 4. **B2B Güvenlik Denetim Geliri (Faz-1 nakit motoru):** Üç kademeli fiyatlandırma ($299 / $1.490 / $4.900) ile ilk müşteriler KENDİ PORTFÖYÜMÜZ (Unpump, Tamga, KÖK + 26 proje — sıfır CAC).
    * **Dürüst hedef: $5.000 – $15.000/ay** (Faz-1). Eski "$2×$4.900×30 = $294.000/ay" fantazisi tamamen **silindi** — varsayım zinciri kanıtlanmamış.
 5. **Toplam Finansal Hedef (12. Ay):** Günlük $15M spot ve FX hacmi + 100M $cUSD TVL + B2B Denetim = **Aylık $1.200.000+ Net Nakit Akışı.**
+   * 🔴 **HENÜZ KANITLANMAMIŞ — 0 gerçek müşteri, $0 gerçek gelir.** Bu bir *hedef*tir, bir sonuç DEĞİL. Ürün henüz mainnet'te DEĞİL (anvil testnet kanıtı hariç); hacim, TVL ve denetim gelirlerinin hepsi **varsayıma dayalı bir projeksiyondur**. Hiçbir müşteriye "aylık $1.2M gelir" olarak **sunulamaz**. Gerçek durum: protokol hazinesi **$0 işlem geliri** ile başlar.
 6. **HITL Seviyesi (DÜRÜST DÜZELTME):** Eski "%0 (Tamamen Otonom Hibrit Akıllı Sözleşmeler ve ZK-Rollup)" iddiası **gerçek DEĞİLDİ.** Mevcut üründe **ZK-Rollup YOKTUR** ve operatöre **BAĞIMLIDIR**: (i) PQHaven köprüsü tek owner EOA'dan geçer (Zayıf Yön #1); (ii) `depositReserve` bir muhasebe kaydıdır — fonların Aave'e gerçekten gitmesi operatörün `supplyToAave()` disiplinine bağlıdır (Zayıf Yön #2); (iii) köprü + Aave getiri hazinede birikir, **müşteriye gitmez** (Zayıf Yön #3). %0 otonomi ve Validium / ZK settlement **2027 Q1 yol haritasıdır.**
