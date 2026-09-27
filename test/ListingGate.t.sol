@@ -333,11 +333,40 @@ contract ListingGateTest is Test {
     }
 
     /// @notice Fiyat karti seffaf ve gizli degil
+    /// @dev Fiyatlar docs/40 (2026-09-27) ile guncellendi
     function testPriceCard() public {
-        (uint256 scan, uint256 fuzzPatch, uint256 priority) = gate.getPriceCard();
-        assertEq(scan, 299, "Scan $299");
-        assertEq(fuzzPatch, 1490, "FuzzPatch $1.490");
+        (uint256 scan, uint256 scanHuman, uint256 fuzzPatch, uint256 priority) = gate.getPriceCard();
+        assertEq(scan, 199, "Scan $199");
+        assertEq(scanHuman, 399, "ScanHuman $399");
+        assertEq(fuzzPatch, 990, "FuzzPatch $990");
         assertEq(priority, 4900, "Priority $4.900");
+    }
+
+    /// @notice Yeni ScanHuman kademeleri ileri yonlu yukseltilebilir (docs/40)
+    function testScanHumanTierUpgradeable() public {
+        // Basvuru -> ilk tarama Scan atar (recordAuditResultForToken ile)
+        vm.startPrank(oracle);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+        assertTrue(uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.Scan), "Ilk tarama Scan");
+        // Scan -> ScanHuman ileri yonlu (izinli)
+        gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.ScanHuman);
+        assertTrue(uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.ScanHuman), "ScanHuman'a yukseltildi");
+        // ScanHuman hala tam audit DEGIL (fullAuditAvailable false kalmali)
+        assertFalse(gate.fullAuditAvailable(projectToken), "ScanHuman tam audit vermez");
+        vm.stopPrank();
+    }
+
+    /// @notice ScanHuman'a Scan atlandiktan sonra direkt gidilebilir ( downgrade YOK )
+    function testScanHumanSkippableButNotDowngrade() public {
+        vm.startPrank(oracle);
+        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+        // Scan -> FuzzPatch atlayabilir (ScanHuman'i atlamak serbest)
+        gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.FuzzPatch);
+        assertTrue(uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.FuzzPatch), "FuzzPatch'a atlandi");
+        // FuzzPatch -> ScanHuman geri DONULEMEZ (downgrade YOK)
+        vm.expectRevert("Yalnizca ileri yonlu yukseltme");
+        gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.ScanHuman);
+        vm.stopPrank();
     }
 
 

@@ -270,10 +270,12 @@ contract IntegrationTest is Test {
     }
 
     /// @notice Tum fiyatlar seffaf (gizli degil)
+    /// @dev Fiyatlar docs/40 (2026-09-27) ile guncellendi
     function testTransparentPricing() public {
-        (uint256 scan, uint256 fuzz, uint256 prio) = gate.getPriceCard();
-        assertEq(scan, 299, "Scan $299");
-        assertEq(fuzz, 1490, "FuzzPatch $1.490");
+        (uint256 scan, uint256 scanHuman, uint256 fuzz, uint256 prio) = gate.getPriceCard();
+        assertEq(scan, 199, "Scan $199");
+        assertEq(scanHuman, 399, "ScanHuman $399");
+        assertEq(fuzz, 990, "FuzzPatch $990");
         assertEq(prio, 4900, "Priority $4.900");
     }
 }

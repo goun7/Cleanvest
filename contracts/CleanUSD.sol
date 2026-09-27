@@ -3,6 +3,7 @@ pragma solidity ^0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./interfaces/ICleanUSD.sol";
 
@@ -16,7 +17,7 @@ import "./interfaces/ICleanUSD.sol";
 ///      2. TVL-Kapılı Sert Değişmez: JuniorReserve >= TVL * 3% ihlalinde
 ///         YENİ MINT DURUR. BURN ASLA DURMAZ (çıkışlar kilitlenmez).
 ///      3. Lansman tohumu: kurucu $3.000 → $100k TVL tavanı.
-contract CleanUSD is ICleanUSD, ERC20, Ownable {
+contract CleanUSD is ICleanUSD, ERC20, Ownable, ReentrancyGuard {
     /// @notice Junior havuzu (ilk zarar teminatlandırması).
     /// @dev Borsa komisyonları + %9.9 kaldıraçlı getiri ile organik büyür.
     uint256 public juniorReserve;
@@ -35,7 +36,7 @@ contract CleanUSD is ICleanUSD, ERC20, Ownable {
     event TvlCapRaised(uint256 newCap);
     event MintGateTriggered(uint256 juniorBps, uint256 tvl);
 
-    constructor() ERC20("Clean USD", "cUSD") Ownable(msg.sender) {
+    constructor() ERC20("Clean USD", "cUSD") Ownable(msg.sender) ReentrancyGuard() {
         tvlCap = 0; // Tohum öncesi kapalı
         capUnlocked = false;
     }
@@ -95,7 +96,7 @@ contract CleanUSD is ICleanUSD, ERC20, Ownable {
     ///      hard invariant (junior >= %3) yine korunur. juniorReserve
     ///      azalamadığından (yalnizca seedJunior ile artar) bu katman bugün
     ///      ölüdür ama kaldırılmaz — güvenlik katmanı olarak kalır.
-    function mint(address to, uint256 amount) external {
+    function mint(address to, uint256 amount) external nonReentrant {
         require(canMint(), "TVL-Kapili Degismez: Junior <%3, mint kilitli");
         require(totalSupply() + amount <= tvlCap, "TVL tavani asildi");
 
@@ -110,7 +111,7 @@ contract CleanUSD is ICleanUSD, ERC20, Ownable {
     /// @inheritdoc ICleanUSD
     /// @notice $cUSD yakar — ASLA KİLİTLENMEZ.
     /// @dev Çıkışlar her zaman açıktır. Yalnızca GİRİŞ kilitlenir.
-    function burn(uint256 amount) external {
+    function burn(uint256 amount) external nonReentrant {
         _burn(msg.sender, amount);
         // Burning, TVL'i düşürür → coverage oranını artırır → mint kapısını açabilir
     }

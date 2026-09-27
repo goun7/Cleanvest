@@ -70,18 +70,21 @@ contract ListingGate is IListingGate, Ownable {
     mapping(address => CleanScoreRecord) public cleanScoreRecords;
 
     /// @notice Token => tam denetim sunulabilir mi (kademeye bagli).
-    /// @dev $299 kademesi PoV_Hash raporu verir ama payload'a tam erisim YOK.
-    ///      $1.490 ve $4.900 kademeleri tam audit + remediation diff verir.
+    /// @dev $199/$399 kademeleri PoV_Hash raporu verir ama payload'a tam erisim YOK.
+    ///      $990 ve $4.900 kademeleri tam audit + remediation diff verir.
     mapping(address => bool) public fullAuditAvailable;
 
     /// @notice Denetim kademesi - AegisForge pricing.rs Tier enum'unun EVM karsiligi.
-    /// @dev Musteri sureci: ucretsiz basvuru -> Scan ($299) -> FuzzPatch ($1.490)
-    ///      -> Priority ($4.900). Yalnizca ileri yonlu yukseltme (downgrade YOK).
+    /// @dev Musteri sureci: ucretsiz basvuru -> Scan ($199) -> ScanHuman ($399)
+    ///      -> FuzzPatch ($990) -> Priority ($4.900). Yalnizca ileri yonlu
+    ///      yukseltme (downgrade YOK). Fiyatlar docs/40 H5 Fiyatlandirma Karari
+    ///      (2026-09-27) ile guncellendi: insan triyaj opsiyonel kademeye ayrildi.
     enum AuditTier {
-        None,       // basvuru yapildi, tarama yok
-        Scan,       // $299 - 4 kademe huni + PoV_Hash raporu
-        FuzzPatch,  // $1.490 - Scan + 10k metamorfik fuzz + remediation diff
-        Priority    // $4.900 - tumu + formal assurance + 30-gun SLA + oncelik
+        None,        // basvuru yapildi, tarama yok
+        Scan,        // $199 - 4 kademe huni + PoV_Hash raporu (otomatik)
+        ScanHuman,   // $399 - Scan + INSAN triyaj (opsiyonel, docs/04:90)
+        FuzzPatch,   // $990 - Scan + 10k metamorfik fuzz + remediation diff
+        Priority     // $4.900 - tumu + formal assurance + 30-gun SLA + oncelik
     }
 
     /// @notice Token => mevcut denetim kademesi.
@@ -98,11 +101,14 @@ contract ListingGate is IListingGate, Ownable {
     mapping(bytes32 => address) public applicationToken;
 
     /// @notice Kademelerin dolar fiyatları (sent Degil, tam dolar).
-    /// @dev Odeme off-chain alinir (fiat/kripto); zincir yalnizca kademe
+    /// @dev Odeme off-chain alinir (fiyat/kripto); zincir yalnizca kademe
     ///      yukseltmesini kaydeder. Haraç modeli YOK: dusuk kademe bile
     ///      listelemeyi engellemez, sirada oncelik kaybettirir.
-    uint256 public constant PRICE_SCAN = 299;
-    uint256 public constant PRICE_FUZZ_PATCH = 1490;
+    ///      Fiyatlar docs/40 (2026-09-27) ile guncellendi: zarar senaryosu
+    ///      Scan -$501 -> -$41 (-%92), FuzzPatch -$1510 -> -$510 (-%66).
+    uint256 public constant PRICE_SCAN = 199;
+    uint256 public constant PRICE_SCAN_HUMAN = 399;
+    uint256 public constant PRICE_FUZZ_PATCH = 990;
     uint256 public constant PRICE_PRIORITY = 4900;
 
     event TierUpgraded(address indexed projectToken, AuditTier fromTier, AuditTier toTier);
@@ -229,13 +235,13 @@ contract ListingGate is IListingGate, Ownable {
     }
 
     /// @notice Fiyat kartini zincirde yayimla (seffaf, gizli degil).
-    /// @return scan / fuzzPatch / priority dolar fiyatları
+    /// @return scan / scanHuman / fuzzPatch / priority dolar fiyatları
     function getPriceCard()
         external
         pure
-        returns (uint256 scan, uint256 fuzzPatch, uint256 priority)
+        returns (uint256 scan, uint256 scanHuman, uint256 fuzzPatch, uint256 priority)
     {
-        return (PRICE_SCAN, PRICE_FUZZ_PATCH, PRICE_PRIORITY);
+        return (PRICE_SCAN, PRICE_SCAN_HUMAN, PRICE_FUZZ_PATCH, PRICE_PRIORITY);
     }
 
     /// @notice Harf notu hesapla - AegisForge grade_for ile ayni bantlar.
