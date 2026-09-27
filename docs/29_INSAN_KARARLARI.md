@@ -11,6 +11,38 @@
 
 ---
 
+## 🚩 RED FLAGS — deploy'da yanlış gideni anında tanı
+
+> **Önce bunu oku.** Aşağıdaki 4 durum deploy'da oluşursa neyin yanlış
+> gittiğini, **geri dönülüp dönülemeyeceğini** ve ne yapman gerektiğini gösterir.
+> Hepsinin ortak özelliği: **önlemek geri almaktan kolaydır.**
+
+| # | Belirti (ne görürsün) | Ne yanlış gitti | Geri alınabilir mi? | Ne yap |
+|---|---|---|---|---|
+| 🔴 **1** | `cast call tvlCap` **hedefinden küçük** çıktı (örn. $1M beklerken $100k) | İlk tohum küçük atıldı. **tvlCap yalnızca ilk tohumda belirlenir** — sonradan tohum atmak junior'ı yükseltir ama tavanı **asla** değiştirmez | ❌ **HAYIR** — tavan o sözleşme için kalıcı | Yeni tohum **yeni cUSD adresi** ister (tüm deploy'u yenile). **Bu yüzden Karar 1'i DAĞITIMDAN ÖNCE ver** |
+| 🔴 **2** | `cast balance $CUSD_ADDR` **0 değil** (örn. `3000` ETH) | Tohum `--value` ile (eski yöntem) atıldı — gerçek ETH gönderildi | ❌ **HAYIR** — CleanUSD'de çekme fonksiyonu YOK, ETH **sonsuza** kilitli | Yeni cUSD ile baştan. Doğru yöntem: `seedJunior(<miktar>)` **--value'suz** |
+| 🔴 **3** | `cast call tvlCap` **0** çıktı, `canMint` **false** | Tohum hiç atılmadı (veya tx başarısız). Mint kapalı, **sadece giriş durur** | ✅ EVET — tohum at | `cast send $CUSD_ADDR "seedJunior(uint256)" 3000000000000000000000` (--value'suz) |
+| 🟠 **4** | `setOptimizeMode(true)` **revert** "feed bagli degil" | OPTIMIZE modu Aave feed'siz açılamaz (test ile kanıtlandı) | ✅ EVET — ya feed bağla **ya da atla** | **Öneri: ATLA** (SAFE mod). Yine de bağlamak istersen önce `setAaveUtilizationFeed` |
+
+### "Geri dönülemez" ne demek?
+
+Sözleşme **upgradeable değil** (proxy yok, `CleanUSD` tek başına). Adresi
+yayımlanınca içindeki kalıcı durum (tvanı, kilitli ETH) **değiştirilemez**.
+Tek çözüm **yeni adres** — yani kullanıcı sıfır olan temiz bir deploy. Bu yüzden:
+
+- **Karar 1'i (tohum) DAĞITIMDAN ÖNCE kesinleştir** — dağıtımdan sonra tavanı
+  değiştiremezsin. Hedef TVL = tohum × 33.3.
+- **ETH GÖNDERME** — `--value` asla kullanma. Doğrulama: `cast balance = 0`.
+- **OPTIMIZE'yi şimdi bağlama** — sonradan upgrade'siz bağlanabilir, ama
+  bağlayınca Aave >%92'de **anlık itfa T+2'ye düşer** (sosyalleşme riski).
+
+> **Doğrulama disiplini:** deploy'dan sonra yukarıdaki 4 satırı **mutlaka**
+> çalıştır. Belirti yoksa ✅ temiz; varsa dur ve yukarıdaki sütuna göre hareket et.
+> Komutların tamamı bu dosyanın **EK — İNSANIN KENDİ ANVİL DOĞRULAMASI**
+> bölümünde denenebilir (gerçek para harcamadan, anvil'de).
+
+---
+
 ## KARAR 1 — Tohum (seed) miktarı ⚠️ EN KRİTİK
 
 **Soru:** `seedJunior()` ile ne kadar tohum atılmalı?
@@ -345,14 +377,57 @@ cast call $CUSD_ADDR "canMint()(bool)"            --rpc-url $RPC   # → true
 cast call $CUSD_ADDR "juniorCoverageBps()(uint256)" --rpc-url $RPC  # TVL 0 → MAX (type(uint256).max)
 ```
 
-### Adım 5 — (opsiyonel) Müşteri demosunu da koş
+### Adım 5 — Müşteri demosunu koş (tam müşteri yolculuğu, önerilir)
+
+Demo, gerçek müşteri senaryosunu uçtan uca gösterir: **$100k yatırım → 1 yıl getiri
+ → anlık %10 çıkış → kalanı T+2 kuyruğu → junior invariant**. Satış demosudur.
 
 ```bash
 forge script script/Demo.s.sol --rpc-url $RPC --broadcast --unlocked \
-  2>&1 | grep -E "ADIM|getiri|ONCHAIN|ANLIK|KUYRUK|junior"
-# → 6 adım + yield %3.05 + anlik $10.000 (KUYRUK YOK) + $20.000 T+2
-# → === ONCHAIN EXECUTION COMPLETE & SUCCESSFUL ===
+  2>&1 | grep -E "\[[0-9]/6\]|bakiyesi|Vault TVL|kademe|getiri|Anlik|Kuyruk|kilitli|Coverage|ONCHAIN"
 ```
+
+**Beklenen çıktı (benim anvil koşumdan birebir — commit d279cfe):**
+
+```
+  [1/6] Deploy basliyor...
+  [2/6] Alice $100.000 yatiriyor...
+      Alice bakiyesi: 100000 scUSD
+      Vault TVL: 100000 cUSD
+      Aktif kademe: Tier 0 (Baslangic, %3.05)
+  [3/6] 1 yil ileri sariliyor (getiri birikimi)...
+      Senet getiri orani: 03.05
+  [4/6] Anlik cekis ($10.000 = gunluk %10 kota icinde)...
+      Anlik cikis: 10000 cUSD (KUYRUK YOK)
+  [5/6] Kalan cekis ($20.000) T+2 kuyruguna alinir...
+      Su an kilitli mi: true  <- CIKISLAR ASLA KILITLENMEZ
+  [6/6] Junior >= %3 invariant kontrolu...
+      Vault TVL: 90000 cUSD
+      Coverage (bps): 333 = % 3
+  === ONCHAIN EXECUTION COMPLETE & SUCCESSFUL ===
+```
+
+**Adımların anlamı (müşteriye anlatırken):**
+- **[1/6]** Demo kendi cUSD + vault'unu deploy eder, tohum atar (ETH'siz — aşağıya bak)
+- **[2/6]** Alice $100.000 yatırır → **100.000 scUSD** alır (1:1, ERC-4626)
+- **[3/6]** 1 yıl ileri sarılır → senet getirisi **%3.05** (Tier 0)
+- **[4/6]** $10.000 **anında** çıkar (günlük %10 kota içinde — **KUYRUK YOK**)
+- **[5/6]** Kalan $20.000 **T+2 kuyruğuna** alınır (likidite garantisi; çıkış
+  kilitli değil — **sıralı**)
+- **[6/6]** Junior ≥ %3 invariant **canlı kanıt**: 333 bps = %3 ≥ %3 ✓
+
+**Bonus kanıt — demo da ETH kitlemez:**
+
+```bash
+DEMO_CUSD=$(forge script script/Demo.s.sol --rpc-url $RPC --broadcast \
+  --unlocked 2>&1 | grep -m1 "cUSD:" | grep -oE "0x[a-fA-F0-9]{40}")
+cast balance $DEMO_CUSD --rpc-url $RPC
+# → 0   ← Demo'nun tohumu da ETH GÖNDERMIYOR (commit d279cfe, Bootstrap 615e171 ile ayni)
+```
+
+> **Tutarlılık:** Demo ve Bootstrap artık aynı tohum yöntemini kullanır (amount
+> parametresi, `--value`'suz). İkisinin de cUSD bakiyesi **0 ETH**'dir —
+> "ETH kilitlenmiyor" sözü hem likidite hem müşteri demo yolunda geçerlidir.
 
 ### İnsanın kendi kanıt bloğu (doldur, kaydet)
 
