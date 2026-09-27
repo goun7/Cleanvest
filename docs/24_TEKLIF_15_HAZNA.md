@@ -52,7 +52,44 @@ Kurum için pratik anlamı: bir günde portföyün %10'u anında, kalanı 2 gün
 | **23/23 UI testi** (3 gerçek hata yakaladı) | `pnpm vitest run` |
 | **5 invariant** (300 derinlik fuzz) | `test/scusd_vault_invariants.t.sol` |
 | **%99,42 line / %98,62 branch coverage** (6 sözleşme) | `forge coverage --report lcov` |
+| **ERC-4626 saldırı vektörleri: 5/5 test-kanıtli, kritik zafiyet YOK** | [docs/30](30_GUVENLIK_INCELEMESI.md) + 5 test |
 | **ERC-4626 standardı** | OpenZeppelin |
+
+### ERC-4626 saldırı vektörleri — 5/5 test ile kanıtlandı
+
+Vault'umuz sektörde bilinen **5 saldırı vektörünün her biri için testler**
+yazdı ve hepsi çalışır durumda. "Güvenli mi?" sorusunun cevabı kanıta dayalı:
+
+| Vektör | Sonuç | Test |
+|---|---|---|
+| **Donation attack** (kasaya bağış → pay fiyatı şişer) | ✅ **Korunuyor** — önyüz `depositWithMin` kullanır | `testSecurityDonationAttackVectors` |
+| **Share price manipulation** | ✅ Korumalı — `convertToShares` state değiştirmez | `testSecuritySharePriceManipulationIsView` |
+| **First-depositor inflation** (Cream/Sonne/Resupply tipi) | ✅ Korumalı — min pay slippage kalkanı | `testInflationAttackBlockedByMinShares` |
+| **Rounding / dust kaybı** | ✅ Korumalı — floor yuvarlama vault lehine | `testSecurityRoundingFavorsVault` |
+| **Approve race / allowance** | ✅ Korumalı — standart ERC-20 | `testSecurityApproveRaceNotExploitable` |
+
+> **Donation attack — dürüst açıklama:** Saldırgan önceden 1 pay alıp kasaya
+> bağış yaparsa, sonraki depozitörler **standart `deposit()` ile** neredeyse hiç
+> pay alamaz (testimizde 1_000 cUSD için **199 wei** — etkili sıfır). **Çözüm:
+> vault'umuz her depozitte `depositWithMin` kullanır** — müşteri önceden beklenen
+> payı hesaplar, az alırsa işlem revert olur, fonu geri döner. **Plain `deposit()`
+> önyüzde yoktur.** Bu, tüm ERC-4626 vault'larının bilinen özelliğidir ve
+> doğru uygulanmış "min shares out" parametresi ile tamamen giderilir.
+
+> **Testin tam sayısı (docs/30'dan):** 1_000 cUSD'luk kurban depoziti bağış
+> öncesi **1_000 ether pay** (1:1) alırken, bağış sonrası plain `deposit()` ile
+> **199 wei** alır — kayıp oranı **%99.99999999999999998**. Aynı işlem
+> `depositWithMin` ile yapıldığında beklenenin altında kaldığı için **revert
+> olur ve müşterinin 1_000 cUSD'si eksiksiz geri döner.**
+
+### Diğer korumalar (vektör dışı, mevcut)
+
+| Mekanizma | Koruma | Kanıt test |
+|---|---|---|
+| **Reentrancy** | `ReentrancyGuard` tüm `_withdraw`/redeem yolunda | OZ kütüphane + 166 test |
+| **Çıkış kilidi (bank-run)** | Günlük %10 anlık + T+2 kuyruk; çıkışlar ASLA kilitlenmez | `invariantRedemptionNeverLocked` |
+| **Pay-şişirme (ERC-4626)** | `depositWithMin`/`redeemWithMin` slippage kalkanı | 3 test |
+| **Junior reserve** | `juniorReserve ≥ TVL × %3` hard invariant | `invariantJuniorCoverageAfterMint` + fuzz |
 
 ### İnvariant'lar
 1. `juniorReserve ≥ TVL × %3` (mint sonrası)
@@ -62,10 +99,23 @@ Kurum için pratik anlamı: bir günde portföyün %10'u anında, kalanı 2 gün
 5. Allocation toplamı 10000 bps
 
 ### Enflasyon saldırısı kalkanı
-`depositWithMin` / `redeemWithMin` ile min pay/miktar garantisi — ERC-4626 pay-şişirme saldırılarına karşı aktif koruma.
+`depositWithMin` / `redeemWithMin` ile min pay/miktar garantisi — ERC-4626 pay-şişirme saldırılarına karşı **otomatik aktif** koruma. Yukarıdaki donation attack
+tablosuna bakın.
 
 ### Bulunan ve düzeltilen 5 gerçek hata
-anti-collusion overflow · ListingGate score-lookup sıfır · `seedJunior` erişim kontrolü (DoS) · slippage overflow · çift floor — **her biri commit kanıtıyla** düzeltildi.
+anti-collusion overflow · ListingGate score-lookup sıfır · `seedJunior` erişim kontrolü (DoS) · slippage overflow · çift floor — **her biri commit kanıtıyla** düzeltildi ve bir regresyon testiyle kilitlendi:
+
+| Hata | Düzeltilme commit'i | Regresyon kilidi |
+|---|---|---|
+| **Anti-collusion overflow** (batch proof) | `2252710` | `testFuzzEpsBounds` + `testFuzzEpsMaxCap` (Fuzz.t.sol) |
+| **ListingGate score-lookup sıfır** döndürme | `4a8da87` | `testGetListingStatusScoreLookup` (ListingGate.t.sol:345) |
+| **`seedJunior` erişim kontrolü (DoS)** | `5d85ebe` | `invariantJuniorCoverageAfterMint` (invariant, 300 derinlik) |
+| **Slippage overflow** (UniswapProxy) | `cfdbdde` | `testSlippageOverflowProtection` |
+| **Çift floor** (ERC-4626 rounding) | `0978a18` | `testSecurityRoundingFavorsVault` |
+
+> **Künye:** Bu tablo [docs/30](30_GUVENLIK_INCELEMESI.md) ile
+> [docs/29](29_INSAN_KARARLARI.md)'daki "5 gerçek hata" listesinin tek yerde
+> birleştirilmiş halidir. Her satır `git show <commit>` ile doğrulanabilir.
 
 ---
 

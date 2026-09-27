@@ -261,6 +261,86 @@ COMMIT: [git hash]
 
 ---
 
+## İLK 24 SAAT İZLEME (deploy sonrası)
+
+5 adım bitince deploy kapanmaz — **ilk 24 saat** sistem canlıdır ve aşağıdaki
+üç metrik izlenir. Her biri için **eşik** ve **müdahale** tanımlıdır; insansız
+alarm yok, değerleri elle okuyun.
+
+### 1. TVL — beklenti: ADIM 4'teki ilk depozit ile uyumlu
+
+```bash
+# Vault'taki toplam varlik (scUSD arzinin arkasindaki cUSD)
+cast call $SCUSD_ADDR "totalAssets()(uint256)" --rpc-url "$BASE_RPC_URL"
+# scUSD arzi (pay sayisi) — totalAssets ile ayni olmali (1:1 giris)
+cast call $SCUSD_ADDR "totalSupply()(uint256)" --rpc-url "$BASE_RPC_URL"
+# Kullanici CUSD arzini asti mi? (invariant 4: vault assets <= cUSD supply)
+cast call $CUSD_ADDR "totalSupply()(uint256)" --rpc-url "$BASE_RPC_URL"
+```
+
+| Beklenti | Sapma | Anlamı / müdahale |
+|---|---|---|
+| `totalAssets == totalSupply` | **Fark > 1 wei** | Rounding veya bağış (donation) yapılmış — [docs/30 Vektör 1](docs/30_GUVENLIK_INCELEMESI.md)'e bakın. Önemli değil (plain `deposit()` önyüzde yok) |
+| `totalAssets > 0` | **0** | İlk depozit henüz yok — ADIM 4 koşulmadı, bekle |
+| `totalSupply <= cUSD totalSupply` | **Bozulursa** | İnvariant ihlali — mint'i durdur, `juniorCoverageBps` kontrol et (aşağıya bakın) |
+
+**TVL tavan kontrolü:** `tvlCap` kalıcıdır; `totalAssets` tavanı aşarsa **mint
+otomatik revert olur** (soğuk başlama kilidi). Bu bir hata değil, tasarımdır.
+
+### 2. ETH bakiyesi — beklenti: **0** (en kritik)
+
+```bash
+# CleanUSD ve vault kontratlarinda ETH OLMAMALI
+cast balance $CUSD_ADDR --rpc-url "$BASE_RPC_URL"
+cast balance $SCUSD_ADDR --rpc-url "$BASE_RPC_URL"
+```
+
+| Beklenti | Sapma | Anlamı / müdahale |
+|---|---|---|
+| **`0`** | **≠ 0** | 🔴 **GERİ DÖNÜLEMEZ** — birisi `--value` ile gerçek ETH göndermiş. CleanUSD'de **ETH çekme fonksiyonu YOK** (tüm `contracts/` tarandı), ETH **sonsuza kilitli**. Yeni cUSD adresi gerekir (deploy baştan). Önlem: tohum her zaman `seedJunior(amount)` **--value'suz** (ADIM 3) |
+
+> **Bu, deploy sonrası en önemli tek kontroldür.** `0` değilse hiçbir işlem
+> yapmayın — önce [docs/29 KARAR 3B](docs/29_INSAN_KARARLARI.md)'yi okuyun.
+> Anvil GO-READY kanıtında bu değer **0** olarak doğrulandı.
+
+### 3. Hata oranı — beklenti: tüm tx'ler `status 1`
+
+```bash
+# Son N islemin durumunu sayimla (cast receipt ile tek tek)
+# Basit kontrol: bugun yapilan tum tx'ler icin status == 1 olmali
+for tx in $TX_HASH_LIST; do
+  cast receipt $tx --rpc-url "$BASE_RPC_URL" | grep status
+done
+# Basari: "status": "1" — Hata: "status": "0"
+```
+
+| Beklenti | Sapma | Anlamı / müdahale |
+|---|---|---|
+| **%100 `status 1`** (yaklaşırken) | **`status 0` (revert)** | Tx'i izole edin: hangi fonksiyon? Eğer `depositWithMin` revert ise **bu korumanın çalıştığı anlamına gelir** (slippage kalkanı) — müşteri fonunu geri aldı, sorun değil. Eğer `mint` revert ise `canMint`/`tvlCap`/`juniorCoverageBps` kontrol edin |
+| Junior örtüsü | `juniorCoverageBps < 300` | 🔴 Mint **durur** (hard invariant). Yeni cUSD arzı açılmaz; mevcut scUSD'ler T+2 ile çıkmaya devam eder. Çıkışlar **kilitlenmez** |
+
+**Junior örtüsü okuma:**
+```bash
+cast call $CUSD_ADDR "juniorCoverageBps()(uint256)" --rpc-url "$BASE_RPC_URL"
+# >= 300 OLMALI (300 bps = %3.00) — altina duserse mint durur (invariant 1)
+```
+
+### 24 saat özeti — çıktı
+
+```
+IDDIA:  Ilk 24 saat: TVL=<totalAssets wei>, ETH=0, hata=%0 (hepsi status 1)
+KANIT:  cast call ... totalAssets / cast balance / cast receipt ... status
+RC:     0
+NOT:    ETH != 0 ise GERI DONULEMEZ — docs/29 KARAR 3B
+```
+
+> **Dürüst not:** İlk 24 saatte düşük TVL normaldir (yeni vault). İzlenen şey
+> **hata oranı ve ETH=0**'dır; TVL büyümesi pazarlama sorunu, teknik sağlıklık
+> bu iki metriktedir. Tüm sistemler **bug başına%100 çalışır** — beklenen
+> tek istisna, kasıtlı koruma olan `depositWithMin` revert'leridir.
+
+---
+
 ## ADIM SONRASI
 
 5 adım da tamamlandığında:

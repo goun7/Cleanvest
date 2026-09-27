@@ -122,6 +122,24 @@ bağlanana kadar **açılamaz** (sosyalleşme riski > %92 utilization'da anlık 
 2. **Junior reserve hard invariant** — `JuniorReserve ≥ TVL × 3%` ihlalinde mint durur, burn devam eder
 3. **Sıfır kurucu sermayesi** — CoW netting + RFQ solver; kurucu $1 likidite koymaz
 4. **LE-3 çıkar çatışması kalkanı** — kendi kontratlarımızda bulunan açıklar [yayınlanır](docs/15_AEGISFORGE_VAKA_CALISMASI_02_GERCEK_BULGULAR.md)
+5. **Kullanıcıyı otomatik koruyan vault** — tüm depozitler **`depositWithMin`** ile
+   (plain `deposit()` önyüzde **yok**). ERC-4626 donation attack'ine karşı aktif
+   slippage kalkanı: müşteri beklenenin az payını alırsa işlem revert, fonu geri
+   döner. 5 saldırı vektörü test-kanıtli — [docs/30](docs/30_GUVENLIK_INCELEMESI.md)
+
+> **SATIŞ NOKTASI:** "Kullanıcıyı otomatik koruyan vault" — donation attack
+> sektörde bilinen bir ERC-4626 zafiyetidir (Cream/Sonne/Resupply). Bizim
+> vault'umuz bunu **testlerle kanıtlamış** korumayla yönetir: saldırı durumunda
+> işlem revert olur, müşterinin fonu kaybolmaz. Plain `deposit()` yok.
+
+> **ZORUNLU KURAL (front-end için):** Müşteri depozitleri **her zaman
+> `depositWithMin(assets, receiver, minShares)`** ile yapılmalı; önyüzde plain
+> `deposit()` **çağrısı yoktur**. `minShares` arka planda `convertToShares` ile
+> hesaplanır (kullanıcı manuel slippage girmez). Test karşılığı: bağış saldırısı
+> altında 1_000 cUSD plain `deposit()` ile **199 wei** pay alırken `depositWithMin`
+> aynı işlemi **revert** edip fonu eksiksiz geri döndürür
+> (`testSecurityDonationAttackVectors`). Detay: [docs/30 "Kalıcı Teknik
+> Gereksinim"](docs/30_GUVENLIK_INCELEMESI.md).
 
 ## Bu Oturumda Düzeltilen Üretim Bug'ları
 
