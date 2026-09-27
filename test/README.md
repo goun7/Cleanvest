@@ -1,6 +1,6 @@
 # Test Rehberi — Cleanvest
 
-**Son güncelleme:** 2026-09-27 (cleanvest-dev) · **Beklenen:** 161/161 Foundry + 23/23 vitest
+**Son güncelleme:** 2026-09-27 (cleanvest-dev) · **Beklenen:** 166/166 Foundry + 23/23 vitest
 
 > İnsanın deploy'dan önce **kendisi koşup doğrulayabileceği** komutlar. Her
 > komutun beklenen çıktısı `# →` ile işaretli. Hepsi ~1 dakikada biter.
@@ -14,7 +14,7 @@ export PATH="$HOME/.foundry/bin:$PATH"   # forge/cast/anvil burada, PATH'te degi
 
 ---
 
-## 1. Foundry — 161/161 (sözleşmeler, ~15 saniye)
+## 1. Foundry — 166/166 (sözleşmeler, ~15 saniye)
 
 ```bash
 forge test
@@ -23,7 +23,7 @@ forge test
 **Beklenen çıktı:**
 
 ```
-Ran 9 test suites in ...: 161 tests passed, 0 failed, 0 skipped (161 total tests)
+Ran 9 test suites in ...: 166 tests passed, 0 failed, 0 skipped (166 total tests)
 ```
 
 > **Doğrulama:** `0 failed` görmelisin. Aksi halde deploy'a GİTME — geri dön ve
@@ -92,7 +92,7 @@ forge coverage --report lcov
 
 | Dosya | Test | Kapsam |
 |---|---|---|
-| `CleanFXVault.t.sol` | 28 | ERC-4626 vault: getiri eğrisi, T+2 kuyruk, anlık kota, optimize feed |
+| `CleanFXVault.t.sol` | 33 | ERC-4626 vault: getiri eğrisi, T+2 kuyruk, anlık kota, optimize feed, **5 güvenlik testi** |
 | `CleanUSD.t.sol` | 16 | Mint/burn, junior %3 invariant, tvlCap, seedJunior erişim kontrolü |
 | `CleanvestSettlement.t.sol` | 21 | Budish FBA settlement, emir eşleşme, HEX borsa |
 | `Fuzz.t.sol` | 10 | Fuzz testleri (tamsayı taşma, sınırlar) |
@@ -101,7 +101,7 @@ forge coverage --report lcov
 | `ReserveManager.t.sol` | 31 | Aave/OUSG/BUIDL katmanı, tier geçişleri, devre-kesici |
 | `scusd_vault_invariants.t.sol` | 1 | **5 invariant × 300 derinlik** fuzz (actor-based; tek test, içerde 5 özellik) |
 | `UniswapProxy.t.sol` | 13 | Swap proxy, slippage, router katmanı |
-| **Toplam** | **161** | |
+| **Toplam** | **166** | |
 
 Vitest (web): 3 dosya / 23 test — UI bileşenleri + **erişilebilirlik** dahil.
 

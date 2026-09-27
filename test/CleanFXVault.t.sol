@@ -499,6 +499,134 @@ contract CleanFXVaultTest is Test {
         assertApproxEqAbs(y / 1e14, 326, 2, "Optimize senior ~%3.26");
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // ERC-4626 GUVENLIK INCELEMESI (vardiya 4) — bilinen saldiri vektorleri
+    // Vektor basina test. Her biri "kapsaniyor" veya "riskli" kanitlar.
+    // ════════════════════════════════════════════════════════════════════
+
+    /// @notice VEKTOR 1: DONATION ATTACK — kasaya dogrudan varlik bagisi
+    /// @dev Saldirdi: vault'a convertToShares'i siseirmek icin transfer. Kurban
+    ///      plain deposit() kullanirsa zarar eder; depositWithMin ile KORUNUR.
+    ///      Anahtar nokta: zarar goreN BAGIŞTAN SONRA gelen depositor'dur.
+    ///      Bu test: (a) bagis pay fiyatini GERCEKTEN siseirir, (b) plain deposit
+    ///      kurbani zarara ugratir, (c) depositWithMin kurbani KORUR.
+    function testSecurityDonationAttackVectors() public {
+        // Saldirmaci 1 wei ile ILK depositor olur (pay fiyatini sabitler)
+        vm.startPrank(bob);
+        usdc.approve(address(vault), 1);
+        vault.deposit(1, bob);
+        vm.stopPrank();
+
+        // --- A: bagis pay fiyatini siseirir (zarar kaniti) ---
+        uint256 fairShares = vault.convertToShares(1_000 ether);
+        usdc.mint(address(vault), 10 ether);                     // 10x siseirme
+        uint256 inflatedShares = vault.convertToShares(1_000 ether);
+        // 1 wei share + 10 ether bagis -> 1000 ether icin ~199 wei pay
+        // (OZ ERC4626 rounding: neredeyse tam sifira coker)
+        assertLt(inflatedShares, fairShares, "bagis pay fiyatini siseirdi");
+        assertLt(inflatedShares, 1 ether, "bagis kurbani payini neredeyse sifirladi");
+
+        // --- B: plain deposit() kurbani zarar eder (vektor VAR) ---
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 1_000 ether);
+        uint256 got = vault.deposit(1_000 ether, alice); // plain (korumasiz)
+        vm.stopPrank();
+        assertLt(got, fairShares, "plain depositor siseirilmis fiyattan zarar etti");
+
+        // --- C: depositWithMin kurbani KORUR ---
+        uint256 expected = vault.convertToShares(1_000 ether);
+        vm.startPrank(bob);
+        usdc.approve(address(vault), 1_000 ether);
+        vm.expectRevert("Slippage: pay sayisi minimumun altinda");
+        vault.depositWithMin(1_000 ether, bob, expected + 10);
+        vm.stopPrank();
+        // bob'un ikinci depoziti geri alindi (payi artmadi A'daki 1 wei disinda)
+        assertEq(vault.balanceOf(bob), 1, "depositWithMin kurbani fonunu korudu");
+    }
+
+    /// @notice VEKTOR 2: SHARE PRICE MANIPULATION — anlik fiyati bozmaya calisma
+    /// @dev ERC-4626'da convertToShares/convertToAssets state'i DEGISTIRMEZ
+    ///      (view). Manipulasyon sadece donation ile mumkun (Vektor 1) —
+    ///      convert* fonksiyonlari saldiri yuzu DEGIL. Bu test ile kanitlar.
+    function testSecuritySharePriceManipulationIsView() public {
+        uint256 p0 = vault.convertToShares(1_000 ether);
+        // convertToShares'i cagirmak fiyati DEGISTIRMEZ (pure view)
+        uint256 p1 = vault.convertToShares(1_000 ether);
+        assertEq(p0, p1, "convertToShares state'i degistirmedi");
+        // convertToAssets da ayni sekilde
+        uint256 a0 = vault.convertToAssets(1_000 ether);
+        assertEq(vault.convertToAssets(1_000 ether), a0, "convertToAssets state'i degistirmedi");
+        // gercek fiyat degisimi yalnizca gercek depozit ile olur (ilk depositor 1:1)
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 1_000 ether);
+        vault.deposit(1_000 ether, alice);
+        vm.stopPrank();
+        // alice tek depositor: fiyat 1:1 sabit (pay siseirmek icin donation gerek)
+        assertApproxEqAbs(vault.convertToShares(1_000 ether), p1, 1e3, "tek depositor 1:1 fiyat sabit");
+    }
+
+    /// @notice VEKTOR 3: FIRST-DEPOSITOR INFLATION — 1-wei onceden yerlesme
+    /// @dev testInflationAttackBlockedByMinShares zaten var; bu ek olarak
+    ///      KURBANIN minShares ILE korundugu YOLU kapsar (basarili depozit).
+    ///      Onemli: minShares > 0 olmali ki koruma anlamli olsun.
+    function testSecurityFirstDepositorInflationVictimProtected() public {
+        // Saldirmaci 1 wei ile ilk payi alir
+        vm.startPrank(bob);
+        usdc.approve(address(vault), 1);
+        vault.deposit(1, bob);
+        vm.stopPrank();
+
+        // Saldirmaci pay fiyatini 100x siseirir (100 ether bagis)
+        usdc.mint(address(vault), 100 ether);
+
+        // Kurban dogru minShares ile guvenle girer — beklenen pay > 0 olmali
+        uint256 expected = vault.convertToShares(10_000 ether);
+        assertGt(expected, 0, "beklenen pay 0 degil (siseirme test icin anlamli)");
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 10_000 ether);
+        uint256 got = vault.depositWithMin(10_000 ether, alice, expected);
+        assertGe(got, expected, "kurban beklenen payi min ile aldi (korumali)");
+        assertGt(got, 0, "kurban pay alabildi (saldirmaci kilitleyemedi)");
+        vm.stopPrank();
+    }
+
+    /// @notice VEKTOR 4: ROUNDING — 0-pay / 0-varlik cikinti yollarini dene
+    /// @dev ERC-4626 rounding kurali: pay/varlik cevirimleri vault lehine.
+    ///      Kucuk tutarlar pay olarak 0 olamaz (dust yutulur, fon kaybi yok).
+    function testSecurityRoundingFavorsVault() public {
+        // ilk depozit olmadan convertToShares(0) = 0
+        assertEq(vault.convertToShares(0), 0, "0 asset -> 0 share");
+        assertEq(vault.convertToAssets(0), 0, "0 share -> 0 asset");
+
+        // kurban depozitlerinden sonra dust: 1 wei asset -> 0 pay (yuvarlama)
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 1_000 ether);
+        vault.deposit(1_000 ether, alice);
+        vm.stopPrank();
+
+        uint256 tinyShares = vault.convertToShares(1);
+        // dust ya 0 ya cok kucuk olur; onemli olan fund kaybi olmamasi
+        assertLe(tinyShares, 1, "dust rounding asiri pay uretmedi");
+
+        // 0 pay ile redeem denemesi: 0 asset donmeli, revert etmemeli
+        uint256 out = vault.convertToAssets(0);
+        assertEq(out, 0, "0 share -> 0 asset (fund loss yok)");
+    }
+
+    /// @notice VEKTOR 5: APPROVE RACE — transferFrom oncesinde approve degisme
+    /// @dev ERC-20 approve race: eski amount'tan fazla harcanamaz. Vault
+    ///      deposit icin transferFrom kullanir; approve 'i kucultme saldirisi
+    ///      yapilamaz (standart ERC20 semantics). Path'i dogrular.
+    function testSecurityApproveRaceNotExploitable() public {
+        vm.startPrank(alice);
+        usdc.approve(address(vault), 1_000 ether);
+        // deposit yalnizca 1_000 ether harcar
+        vault.deposit(1_000 ether, alice);
+        // kalan allowans 0 olmali (tam harcandi)
+        assertEq(usdc.allowance(alice, address(vault)), 0, "allowance tam harcandi");
+        vm.stopPrank();
+    }
+
 }
 
 

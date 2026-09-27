@@ -4,7 +4,33 @@
 **Amaç:** Kalan 3.6 puanlık operasyonel kısmı **insan için 5 dakikalık** copy-paste
 adımlara indirmek. Her adımın doğrulama komutu vardır.
 
-**Önkoşul:** Kod tarafı 100/100 — `forge test` 161/161 rc=0, deploy simülasyonu temiz.
+**Önkoşul:** Kod tarafı 100/100 — `forge test` 166/166 rc=0, deploy simülasyonu temiz.
+
+> ## ✅ GO-READY — uçtan uca anvil'de koşuldu (taze zincir)
+>
+> **İnsan "GO" dediği an bu rehberin 5 adımı çalışmaya hazır.** Kanıt: tüm
+> adımlar **taze anvil zincirinde sırayla koşuldu**, her adımın expected
+> output'u aşağıda "GO-READY kanıtı" ile işaretli. Herhangi bir adımda
+> sapma olursa dur ve [docs/29 RED FLAGS](docs/29_INSAN_KARARLARI.md)'a bak.
+>
+> | Adım | Komut | Kanıtlanan sonuç (anvil) |
+> |---|---|---|
+> | 1 Deploy | `forge script script/Deploy.s.sol --broadcast` | rc=0, 6 sözleşme, cUSD `0x5FbDB…` |
+> | 2 Frontend | `addresses.json` + `pnpm build` | rc=0, banner kalkar |
+> | 3 Tohum | `Bootstrap.s.sol` (ADIM 3) | `HAZIR: mint acik, cap $100k, junior %3`, **ETH=0** |
+> | 4 Mint+deposit | `mint` → `approve` → `depositWithMin` | `status 1` ×3, `totalSupply = 1e21` |
+> | 5 Feed | (ATLA önerisi) | — |
+>
+> **ETH kilitlenmedi kanıtı:** `cast balance $CUSD_ADDR` = **0** (Bootstrap
+> sonrası). Önceki `--value` yöntemi 3.000 ETH'yi sonsuza kilitlerdi —
+> düzeltme commit `615e171` + `d279cfe` ile kanıtlandı.
+>
+> **Tek komut ile tüm test + canlı doğrulama** (insan GO'dan önce koşabilir):
+> ```bash
+> export PATH="$HOME/.foundry/bin:$PATH"
+> forge test && cd web && npx vitest run && cd ..
+> # → 166 passed / 0 failed + 23 passed (regresyon yok)
+> ```
 
 > ⚠️ **OKUMADAN DEPLOY ETME:** [docs/29_INSAN_KARARLARI.md](docs/29_INSAN_KARARLARI.md)
 > — 3 **geri dönülemez** kısıt var: (1) tohum miktarı **kalıcı TVL tavanını**
@@ -136,14 +162,26 @@ cast call $CUSD_ADDR "tvlCap()(uint256)" --rpc-url "$BASE_RPC_URL"
 
 ## ADIM 4 — İlk Mint ile scUSD'i Canlandır (30 saniye)
 
-Herhangi bir kullanıcı:
+> **Önkoşul:** Kullanıcının cUSD'ye sahip olması gerekir. Production'da müşteri
+> cUSD'yi takas/kanal ile alır; aşağıda **owner'ın kullanıcıya mint** ettiği
+> demo akışı var (canMint ADIM 3'ten sonra true olur).
+
+**4a) Owner, kullanıcıya cUSD mintler:**
+
+```bash
+cast send $CUSD_ADDR "mint(address,uint256)" $USER_ADDR 1000000000000000000000 \
+  --rpc-url "$BASE_RPC_URL" --private-key "$OWNER_PK"
+```
+
+**4b) Kullanıcı scUSD vault'a yatırır (slippage kalkanlı):**
 
 ```bash
 # 1) cUSD onayi
 cast send $CUSD_ADDR "approve(address,uint256)" $SCUSD_ADDR 1000000000000000000000 \
   --rpc-url "$BASE_RPC_URL" --private-key "$USER_PK"
 
-# 2) Slippage-korumali depozito (ERC-4626 kalkani)
+# 2) Slippage-korumali depozito (ERC-4626 kalkani — donation attack'a karsi)
+#    minAssets: 1000 cUSD'nin %99.9'u (1e18 tolerans)
 cast send $SCUSD_ADDR "depositWithMin(uint256,address,uint256)" \
   1000000000000000000000 $USER_ADDR 999000000000000000000 \
   --rpc-url "$BASE_RPC_URL" --private-key "$USER_PK"
@@ -151,9 +189,25 @@ cast send $SCUSD_ADDR "depositWithMin(uint256,address,uint256)" \
 
 **Doğrulama:**
 ```bash
+# kullanicinin cUSD bakiyesi (mint sonrasi)
+cast call $CUSD_ADDR "balanceOf(address)(uint256)" $USER_ADDR --rpc-url "$BASE_RPC_URL"
+# 1000000000000000000000 OLMALI (1000 cUSD)
+
+# allowance (approve sonrasi)
+cast call $CUSD_ADDR "allowance(address,address)(uint256)" $USER_ADDR $SCUSD_ADDR --rpc-url "$BASE_RPC_URL"
+# 1000000000000000000000 OLMALI (1000 cUSD)
+
+# scUSD arzı (deposit sonrasi)
 cast call $SCUSD_ADDR "totalSupply()(uint256)" --rpc-url "$BASE_RPC_URL"
-# > 0 OLMALI
+# 1000000000000000000000 OLMALI (1000 scUSD — 1:1 giris)
 ```
+
+> **GO-READY kanıtı (anvil, taze zincir):** yukarıdaki tüm komutlar
+> sırayla koşuldu — `status 1 (success)` her birinde, `totalSupply = 1e21`.
+> Ayrıca `Demo.s.sol` aynı akışı 6 adımda script ile gösterir (bkz.
+> [docs/29](docs/29_INSAN_KARARLARI.md) "EK — ANVİL DOĞRULAMASI" Adım 5).
+> **Güvenlik:** `depositWithMin` donation attack'e karşı slippage kalkanıdır —
+> plain `deposit` KULLANILMAZ (docs/30 Vektör 1).
 
 ---
 

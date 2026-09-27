@@ -48,7 +48,7 @@ Kurum için pratik anlamı: bir günde portföyün %10'u anında, kalanı 2 gün
 
 | Koruma | Kanıt |
 |---|---|
-| **161/161 Foundry testi** (9 suite, 0 failed) | `forge test` |
+| **166/166 Foundry testi** (9 suite, 0 failed) | `forge test` |
 | **23/23 UI testi** (3 gerçek hata yakaladı) | `pnpm vitest run` |
 | **5 invariant** (300 derinlik fuzz) | `test/scusd_vault_invariants.t.sol` |
 | **%99,42 line / %98,62 branch coverage** (6 sözleşme) | `forge coverage --report lcov` |
@@ -148,7 +148,7 @@ Aynı kategoride rekabet etmiyoruz — **üzerine bir getiri katmanı** sunuyoru
 
 > Bu doküman bir **ön tekliftir**. İletişim kanalı ve nihai şartlar, ilk kurul toplantısında netleştirilir.
 
-**Bağımsız doğrulama:** Sözleşme ve testler tamamen açıktır — `export PATH="$HOME/.foundry/bin:$PATH" && forge test` ile herkes 161/161 sonucunu kendisi üretebilir.
+**Bağımsız doğrulama:** Sözleşme ve testler tamamen açıktır — `export PATH="$HOME/.foundry/bin:$PATH" && forge test` ile herkes 166/166 sonucunu kendisi üretebilir.
 
 ```
 IDDIA:  teklif dokümanı yazıldı, rakamlar sözleşmeyle doğrulandı

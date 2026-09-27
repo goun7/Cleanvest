@@ -1,7 +1,7 @@
 # 29 — İNSAN KARAR DOSYASI (sabah oku → "go" yaz)
 
 **Tarih:** 2026-09-27 · **Hazırlayan:** cleanvest-dev (otonom vardiya)
-**Kod durumu:** 161/161 Foundry + 23/23 vitest yeşil · %99.42 line / %98.62 branch coverage
+**Kod durumu:** 166/166 Foundry + 23/23 vitest yeşil · %99.42 line / %98.62 branch coverage
 **Canlı doğrulama:** Demo.s.sol + Bootstrap.s.sol anvil'de rc=0 (ONCHAIN EXECUTION COMPLETE)
 
 > Üç operasyonel karar seni bekliyor. Kod tarafı bitti; bunlar **değer/operasyon**
@@ -20,7 +20,7 @@
 | # | Adım | Ne kanıtlar | Süre | Nerede |
 |---|---|---|---|---|
 | **1** | **RED FLAGS'ı oku** — hangi hatanın geri dönülemez olduğunu öğren | Yanlış tavan/ETH'nin geri alınamayacağını bilirsin | 3 dk | 👇 bu dosya, aşağısı |
-| **2** | **Testleri koş** — `forge test` (161/161) + `cd web && npx vitest run` (23/23) | Kodun beklenen gibi çalıştığını **sen** doğrularsın | 2 dk | [test/README.md](../test/README.md) |
+| **2** | **Testleri koş** — `forge test` (166/166) + `cd web && npx vitest run` (23/23) | Kodun beklenen gibi çalıştığını **sen** doğrularsın | 2 dk | [test/README.md](../test/README.md) |
 | **3** | **Anvil'de ETH=0 kanıtla** — Deploy → Bootstrap → `cast balance` | Tohumun ETH kitlemediğini **bizzat** görürsün | 5 dk | 👇 bu dosya, "EK — ANVİL DOĞRULAMASI" |
 | **4** | **4 kararı ver** — tohum / feed / ETH / go (aşağıdaki kutuları doldur) | Operasyonel parametreleri belirler, geri dönülemez olanları DAĞITIMDAN ÖNCE | 10 dk | 👇 bu dosya, "KARAR FORMATI" |
 | **5** | **GO de + deploy** — 24_DEPLOY rehberini adım adım çalıştır | Canlı üretim Base mainnet'te | ~2 saat | [24_DEPLOY_VE_CANLIYA_ALMA_REHBERI.md](../24_DEPLOY_VE_CANLIYA_ALMA_REHBERI.md) |
@@ -206,7 +206,7 @@ CleanUSD'deki `juniorReserve` bir **güvenlik tamponu sayacıdır**; gerçek ser
 
 | # | Şart | Durum | Kanıt |
 |---|---|---|---|
-| 1 | Tüm Foundry testleri yeşil | ✅ | `forge test` → 161/161, rc=0 |
+| 1 | Tüm Foundry testleri yeşil | ✅ | `forge test` → 166/166, rc=0 |
 | 2 | Tüm vitest testleri yeşil | ✅ | `cd web && npx vitest run` → 23/23, rc=0 |
 | 3 | Coverage eşiği (≥%95 branch) | ✅ | %98.62 branch (6 sözleşme) |
 | 4 | Müşteri demosu CANLI | ✅ | Demo.s.sol anvil rc=0, 6 adım, "ONCHAIN EXECUTION COMPLETE" |
@@ -225,7 +225,7 @@ cd "/home/gokun/projects/Yeni Fikirler/oncu_fikirler_havuzu_2026/26_Cleanvest_Si
 git status --clean && git log --oneline -1
 
 # 2. Testleri son kez koş (regresyon yok)
-~/.foundry/bin/forge test                    # 161 passed, 0 failed
+~/.foundry/bin/forge test                    # 166 passed, 0 failed
 
 # 3. Owner key'i soğuk cüzdan'dan al, env'e
 export OWNER_PK="<SOĞUK CUZDAN PRIVATE KEY>"
@@ -485,5 +485,5 @@ KARAR 3 (go):     [  ] GO — deploy başlat
                    [  ] BEKLE — sebep: _________________________________
 ```
 
-**İmza:** cleanvest-dev otonom vardiya, 2026-09-27 · 161/161 + 23/23 yeşil ·
+**İmza:** cleanvest-dev otonom vardiya, 2026-09-27 · 166/166 + 23/23 yeşil ·
  Demo + Bootstrap CANLI rc=0 · commit: son HEAD
