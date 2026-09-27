@@ -5,6 +5,8 @@ import "forge-std/Test.sol";
 import "../contracts/RiskTransparency.sol";
 import "../contracts/CleanUSD.sol";
 import "../contracts/CleanFXVault.sol";
+import "../contracts/ReserveManager.sol";
+import "../contracts/interfaces/IUtilizationFeed.sol";
 
 /// @title RiskTransparency Testleri
 /// @notice Akademik dayanak: Bundi 2026 (CBT/ESORICS) "disclosure" onerisi.
@@ -14,6 +16,8 @@ import "../contracts/CleanFXVault.sol";
 contract RiskTransparencyTest is Test {
     CleanUSD cusd;
     CleanFXVault vault;
+
+    address founder = address(0xCAFE);
 
     function setUp() public {
         cusd = new CleanUSD();
@@ -58,13 +62,41 @@ contract RiskTransparencyTest is Test {
         assertTrue(p.juniorBufferAdequate, "Max tampon yeterli");
     }
 
-    /// @notice Optimize modu aciklandigi gibi gosterilmeli (reserve bagli)
-    function testProfileOptimizeFlag() public {
-        // ReserveManager bagli degilse optimize false gosterilir
+    /// @notice Reserve bagli degilse optimize ve CB gosterilmez
+    function testProfileNoReserve() public {
         RiskTransparency.RiskProfile memory p =
             RiskTransparency.profile(address(vault), address(0));
         assertFalse(p.optimizeModeEnabled, "Reserve yoksa optimize false");
         assertEq(p.utilizationCircuitBreakerBps, 0, "Reserve yoksa CB gosterilmez");
+    }
+
+    /// @notice GERCEK ReserveManager bagliyinda optimize + CB gosterilir
+    /// @dev Bu test L53 acik dalini kapatir (reserve != address(0))
+    function testProfileWithRealReserve() public {
+        ReserveManager reserve = new ReserveManager(address(cusd));
+
+        RiskTransparency.RiskProfile memory p =
+            RiskTransparency.profile(address(vault), address(reserve));
+        // Varsayilan: optimize kapali (SAFE mod)
+        assertFalse(p.optimizeModeEnabled, "Varsayilan optimize kapali");
+        // CB esigi gosterilmeli (reserve bagli)
+        assertEq(p.utilizationCircuitBreakerBps, 9200, "CB %92 gosterilir");
+    }
+
+    /// @notice Optimize mod acilinca flag guncellenmeli
+    function testProfileOptimizeEnabled() public {
+        ReserveManager reserve = new ReserveManager(address(cusd));
+        RTMockFeed feed = new RTMockFeed(8000);
+
+        vm.startPrank(address(this));
+        reserve.setAaveUtilizationFeed(address(feed));
+        reserve.setOptimizeMode(true);
+        vm.stopPrank();
+
+        RiskTransparency.RiskProfile memory p =
+            RiskTransparency.profile(address(vault), address(reserve));
+        assertTrue(p.optimizeModeEnabled, "Optimize acik");
+        assertEq(p.utilizationCircuitBreakerBps, 9200, "CB %92");
     }
 
     /// @notice Insan-okur aciklama dogru format vermeli
@@ -95,4 +127,11 @@ contract RiskTransparencyTest is Test {
         }
         return false;
     }
+}
+
+/// @notice Yerel test feed'i (IUtilizationFeed'a uygun)
+contract RTMockFeed is IUtilizationFeed {
+    uint256 private _util;
+    constructor(uint256 u) { _util = u; }
+    function utilizationBps() external view returns (uint256) { return _util; }
 }
