@@ -11,6 +11,28 @@
 
 ---
 
+## ✅ İNSANIN YAPACAĞI 5 ŞEY — sıralı checklist
+
+> Tüm akışın özeti. **~30 dk.** Her adımda ne yapacağını, neyi kanıtlamış
+> olacağını ve süreyi yazdım. Adımları sırayla yap; atlayan adım geri dönülemez
+> hatayı gizleyebilir.
+
+| # | Adım | Ne kanıtlar | Süre | Nerede |
+|---|---|---|---|---|
+| **1** | **RED FLAGS'ı oku** — hangi hatanın geri dönülemez olduğunu öğren | Yanlış tavan/ETH'nin geri alınamayacağını bilirsin | 3 dk | 👇 bu dosya, aşağısı |
+| **2** | **Testleri koş** — `forge test` (161/161) + `cd web && npx vitest run` (23/23) | Kodun beklenen gibi çalıştığını **sen** doğrularsın | 2 dk | [test/README.md](../test/README.md) |
+| **3** | **Anvil'de ETH=0 kanıtla** — Deploy → Bootstrap → `cast balance` | Tohumun ETH kitlemediğini **bizzat** görürsün | 5 dk | 👇 bu dosya, "EK — ANVİL DOĞRULAMASI" |
+| **4** | **4 kararı ver** — tohum / feed / ETH / go (aşağıdaki kutuları doldur) | Operasyonel parametreleri belirler, geri dönülemez olanları DAĞITIMDAN ÖNCE | 10 dk | 👇 bu dosya, "KARAR FORMATI" |
+| **5** | **GO de + deploy** — 24_DEPLOY rehberini adım adım çalıştır | Canlı üretim Base mainnet'te | ~2 saat | [24_DEPLOY_VE_CANLIYA_ALMA_REHBERI.md](../24_DEPLOY_VE_CANLIYA_ALMA_REHBERI.md) |
+
+**Akışın kuralı:** Adım 1 ve 4 **DAĞITIMDAN ÖNCE** bitmeli — Adım 5'ten sonra
+ yanlış tohum miktarı veya kilitli ETH **geri alınamaz** (sözleşme upgradeable
+ değil). Adım 2 ve 3 istediğin kadar tekrarlanabilir (anvil parasız).
+
+> **Şimdi:** Adım 1 ile başla — aşağıdaki 🚩 RED FLAGS tablosunu oku (3 dk).
+
+---
+
 ## 🚩 RED FLAGS — deploy'da yanlış gideni anında tanı
 
 > **Önce bunu oku.** Aşağıdaki 4 durum deploy'da oluşursa neyin yanlış

@@ -100,6 +100,19 @@ Aşağıdakiler sözleşmenin tasarımında **kalıcıdır** — sonradan deği�
    piyasa değeriyle karışmaz — **$3M tohum her zaman tam $100M tavan** açar,
    ETH oynaklığına bağlı kalma riski yoktur.
 
+**↔ RED FLAGS ile çapraz bağlantı** (deploy'da yanlış gideni tanı —
+ [docs/29](29_INSAN_KARARLARI.md) 🚩 bölümü):
+
+| Bu özellik | Deploy'daki belirti | Geri alınabilir mi? |
+|---|---|---|
+| **1. Tavan kalıcı** | `tvlCap` hedefinden küçük çıkarsa | ❌ **HAYIR** — yeni cUSD adresi gerekir (tüm deploy'u yenile) |
+| **2. Çekilemez tampon** | `cast balance` ≠ 0 (ETH gönderildiyse) | ❌ **HAYIR** — ETH sonsuza kilitli |
+| **3. $1 cinsinden** | — | ✅ **Korunma** — `--value` ile ETH göndermezsen bu risk doğmaz |
+
+> Bu tablo teklif ile teknik dokümanlar arasında **tek yerde** birleştirilmiştir:
+> her kalıcı özellik, deploy'da nasıl bir belirtiye karşılık geldiğini ve geri
+> alınıp alınamayacağını gösterir. Detay: docs/29 🚩 RED FLAGS.
+
 > **Operasyonel not:** Bu 3 özellik deploy rehberi (ADIM 3) ve insan karar
 > dosyası (docs/29 KARAR 1/3B) ile birebir uyumludur. Bağımsız doğrulama
 > komutları docs/29'un "EK — İNSANIN KENDİ ANVİL DOĞRULAMASI" bölümünde
