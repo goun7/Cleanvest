@@ -59,11 +59,15 @@ contract Demo is Script {
         // Deploy + tohum TEK broadcast blokunda (replay tutarlili icin).
         // seedJunior broadcast disinda olursa --broadcast replay'inde
         // kaybolur, juniorReserve=0 kalir, mint "Junior <%3" revert alir.
+        // NOT: amount PARAMETRESI ile (msg.value'suz) — Bootstrap 615e171 ile
+        // ayni neden: {value: 3_000 ether} gercek ETH'yi CleanUSD'de SONSUZA
+        // kilitler (cekme fonksiyonu yok). Test ETH bile kilitlenmemeli; demo
+        // cUSD'nin ETH bakiyesi 0 olmali (docs/29 EK dogrulama ile uyumlu).
         vm.startBroadcast(vm.addr(pk));
 
         cusd = new CleanUSD();
         vault = new CleanFXVault(address(cusd));
-        cusd.seedJunior{value: 3_000 ether}(0);
+        cusd.seedJunior(3_000 ether);
         vm.stopBroadcast();
         console.log("    cUSD:", address(cusd));
         console.log("    scUSD (vault):", address(vault));
