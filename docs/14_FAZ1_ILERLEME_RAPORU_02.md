@@ -65,6 +65,8 @@ Kod ve yorumlarda **açıkça "ZK-SNARK değil"** yazılı (yasak #2 koda işlen
 ## 🔄 Devam Edenler
 
 - **AutoVerus ajanı** → LE-3 vaka çalışması: 3 kontratımızı Z3 SMT ile tarıyor (48 invariant'dan kaçı "proven"?)
+
+> DÜZELTME (2026-09-27): Gerçek invariant sayısı **5** (`test/scusd_vault_invariants.t.sol:36,50,68,95,106`). "48" hedefinin 33'ü hiç kodlanmadı (`docs/19` §6.3 itirafı). Bu satır tarihi kayıttır, güncel durum için `docs/36_IDDIALAR_TABLOSU.md`'ne bakın.
 - **AegisForge ajanı** → çekirdek derleniyor; CLI entegrasyonu
 
 ## ⏳ Sonraki Adım Önerisi
