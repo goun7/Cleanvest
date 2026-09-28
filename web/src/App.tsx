@@ -35,6 +35,23 @@ function App() {
   const [state, setState] = useState<VaultState | null>(null);
   const [tab, setTab] = useState<"deposit" | "redeem">("deposit");
   const [lang, setLangState] = useState<Lang>(() => getLang());
+  // SADE/PRO mod (kullanici onayi): sade = yalnizca islem paneli;
+  // pro = tum paneller (getiri egrisi, cikis kapisi, risk seffafligi).
+  const [proMode, setProMode] = useState<boolean>(() => {
+    if (typeof localStorage !== "undefined") {
+      return localStorage.getItem("cleanvest-pro") === "1";
+    }
+    return false;
+  });
+  const toggleProMode = useCallback(() => {
+    setProMode((prev) => {
+      const next = !prev;
+      if (typeof localStorage !== "undefined") {
+        localStorage.setItem("cleanvest-pro", next ? "1" : "0");
+      }
+      return next;
+    });
+  }, []);
   const tt = (key: string, params?: Record<string, string | number>) => t(lang, key, params);
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
@@ -123,16 +140,27 @@ function App() {
             <p className="text-sm text-slate-400">{tt("subtitle")}</p>
           </div>
         </div>
-        <div className="flex items-center gap-3">
+        {/* SADE/PRO mod toggle + dil secici */}
+        <div className="flex items-center gap-2">
           <button
             type="button"
-            className="btn-ghost w-auto px-3 py-2 text-xs font-mono"
-            onClick={() => { const l = lang === "tr" ? "en" : "tr"; setLang(l); setLangState(l); }}
-            aria-label={`Switch to ${lang === "tr" ? "English" : "Türkçe"}`}
-            title={`Switch to ${lang === "tr" ? "English" : "Türkçe"}`}
+            onClick={toggleProMode}
+            aria-pressed={proMode}
+            className="btn-ghost rounded-lg border border-white/15 px-3 py-1.5 text-xs font-medium"
+            title={tt(proMode ? "modeProTip" : "modeSimpleTip")}
           >
-            {lang.toUpperCase()}
+            {proMode ? tt("modePro") : tt("modeSimple")}
           </button>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="btn-ghost w-auto px-3 py-2 text-xs font-mono"
+              onClick={() => { const l = lang === "tr" ? "en" : "tr"; setLang(l); setLangState(l); }}
+              aria-label={`Switch to ${lang === "tr" ? "English" : "Türkçe"}`}
+              title={`Switch to ${lang === "tr" ? "English" : "Türkçe"}`}
+            >
+              {lang.toUpperCase()}
+            </button>
           {account && s?.loaded ? (
             <span className="chip bg-fx-yield/15 text-fx-yield">
               <span className="h-1.5 w-1.5 rounded-full bg-fx-yield" /> {tt("connected")}
@@ -151,6 +179,7 @@ function App() {
               {account.slice(0, 6)}…{account.slice(-4)}
             </span>
           )}
+          </div>
         </div>
       </header>
 
@@ -191,7 +220,8 @@ function App() {
         />
       </section>
 
-      {/* Getiri egrisi paneli */}
+      {/* Getiri egrisi paneli - SADE modda gizli */}
+      {proMode && (
       <section className="mb-8 grid gap-4 lg:grid-cols-3">
         <div className="panel panel-hover p-6 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
@@ -247,8 +277,11 @@ function App() {
           </div>
         </div>
       </section>
+      )}
 
-      {/* Risk seffafligi (akademik dayanakli - Bundi 2026) */}
+      {/* Risk seffafligi (akademik dayanakli - Bundi 2026) - SADE modda gizli */}
+      {/* Risk seffafligi (akademik dayanakli - Bundi 2026) - SADE modda gizli */}
+      {proMode && (
       <section
         className="mb-8 panel panel-hover p-6"
         role="region"
@@ -294,6 +327,7 @@ function App() {
           {tt("riskNote")}
         </p>
       </section>
+      )}
 
       {/* Islem paneli */}
       <section className="panel panel-hover p-6">
@@ -383,7 +417,7 @@ function App() {
       </section>
 
       <footer className="mt-8 text-center text-xs text-slate-600">
-        Cleanvest · {tt("footer")} · 186/186 Foundry tests · <span className="font-mono">rc=0</span>
+        Cleanvest · {tt("footer")} · 215/215 Foundry tests · <span className="font-mono">rc=0</span>
       </footer>
     </div>
   );

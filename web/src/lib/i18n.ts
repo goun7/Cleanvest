@@ -7,6 +7,10 @@ type Dict = Record<string, string>;
 
 const tr: Dict = {
   subtitle: "Manipülasyona dayanıklı spot borsa ve getiri kasası",
+  modeSimple: "Sade Mod",
+  modePro: "Pro Mod",
+  modeSimpleTip: "Yalnızca alım satım paneli — yeni başlayanlar için",
+  modeProTip: "Tüm paneller: getiri eğrisi, çıkış kapısı, risk şeffaflığı",
   live: "Canlı",
   connected: "Bağlı",
   liveNoData: "Veri bekleniyor",
@@ -68,6 +72,10 @@ const tr: Dict = {
 
 const en: Dict = {
   subtitle: "Zero-manipulation spot exchange and yield vault",
+  modeSimple: "Simple",
+  modePro: "Pro",
+  modeSimpleTip: "Trading panel only — for beginners",
+  modeProTip: "All panels: yield curve, exit gate, risk transparency",
   live: "Live",
   connected: "Connected",
   liveNoData: "Awaiting data",

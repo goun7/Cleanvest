@@ -20,6 +20,8 @@ describe("App — kullanicidan gelen UI akislari", () => {
   beforeEach(() => {
     localStorage.clear();
     localStorage.setItem("cleanvest-lang", "tr");
+    // Pro mod varsayilan: panel bekleyen testler icin (Sade mod panelleri gizler)
+    localStorage.setItem("cleanvest-pro", "1");
   });
 
   it("cuzdan baglamadan stat kartlari ve getiri egrisi render olur", async () => {
@@ -161,5 +163,43 @@ describe("App — kullanicidan gelen UI akislari", () => {
     render(<App />);
     const ranges = screen.getAllByText(/\$250k|12\.5M/i);
     expect(ranges.length).toBeGreaterThanOrEqual(2);
+  });
+
+  // SADE/PRO mod toggle (kullanici onayi, docs/44)
+  it("SADE mod panelleri gizler, PRO mod gosterir", async () => {
+    localStorage.setItem("cleanvest-pro", "0");
+    const user = userEvent.setup();
+    render(<App />);
+
+    // Sade moddayiz: getiri egrisi YOK, buton "Pro Mod"a gecisi gosterir
+    expect(screen.queryByText(/Dürüst Getiri Eğrisi/i)).not.toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: /Sade Mod/i });
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
+
+    // Pro mod'a gec
+    await user.click(toggle);
+
+    // Artik paneller gorunur
+    expect(screen.getByText(/Dürüst Getiri Eğrisi/i)).toBeInTheDocument();
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+    expect(localStorage.getItem("cleanvest-pro")).toBe("1");
+  });
+
+  it("PRO mod'dan SADE mod'a geri donus calisir", async () => {
+    localStorage.setItem("cleanvest-pro", "1");
+    const user = userEvent.setup();
+    render(<App />);
+
+    // Pro moddayiz: paneller var, buton "Pro Mod" gosterir (mevcut durumu)
+    expect(screen.getByText(/Dürüst Getiri Eğrisi/i)).toBeInTheDocument();
+    const toggle = screen.getByRole("button", { name: /Pro Mod/i });
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
+
+    // Sade mod'a gec
+    await user.click(toggle);
+
+    // Paneller gizlendi
+    expect(screen.queryByText(/Dürüst Getiri Eğrisi/i)).not.toBeInTheDocument();
+    expect(localStorage.getItem("cleanvest-pro")).toBe("0");
   });
 });
