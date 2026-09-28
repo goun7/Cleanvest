@@ -36,6 +36,37 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     uint256 public constant LIFT_VOLUME_THRESHOLD = 250_000 ether;
     uint256 public constant LIFT_SOLVER_COUNT = 2;
 
+    // ============================================================
+    // ISLEM KOMISYONU - UC KADEMELI MODEL (docs/44, 2026-09-26)
+    // HyperLiquid: Wood taker %0.045 / maker %0.015 (14 gun hacim).
+    // Biz: 0. Kademe %0 (ilk $10K) -> Standart %0.035 -> Pro %0.030.
+    // Maker'lara her zaman indirim (likidite saglayan odullendirilir).
+    // ============================================================
+
+    /// @notice 0. Kademe siniri: ilk $10.000 islem ucretsiz (hosgeldin).
+    uint256 public constant FEE_WELCOME_CAP = 10_000 ether;
+
+    /// @notice Pro kademe esigi: $1M hacimden sonra %0.030.
+    uint256 public constant FEE_PRO_THRESHOLD = 1_000_000 ether;
+
+    /// @notice Standart taker komisyonu: %0.035 = 3.5 bps.
+    uint256 public constant FEE_STANDARD_TAKER_BPS = 35;
+
+    /// @notice Pro taker komisyonu: %0.030 = 3.0 bps.
+    uint256 public constant FEE_PRO_TAKER_BPS = 30;
+
+    /// @notice Maker indirimi: -1.0 bps (Standart %0.025, Pro %0.020).
+    uint256 public constant FEE_MAKER_DISCOUNT_BPS = 10;
+
+    /// @notice Protokol komisyon cüzdanı (gelir buraya toplanır).
+    address public protocolFeeRecipient;
+
+    /// @notice Toplam toplanan protokol geliri (1e18 = 1 USD).
+    uint256 public protocolRevenue;
+
+    /// @notice Kullanici bazli kumulatif hacim (adres => toplam USD).
+    mapping(address => uint256) public userCumulativeVolume;
+
     /// @notice Chainlink fiyat feed adresi (harici oracle).
     /// @dev Uniswap TWAP YASAK - dairesel fiyat referansi yaratir.
     address public chainlinkPriceFeed;
@@ -58,6 +89,12 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     event OrderSizeCapExceeded(address indexed trader, uint256 size, uint256 cap);
     event BatchSettled(bytes32 indexed batchId, uint256 clearingPrice, uint256 totalVolume);
     event SizeCapLifted(uint256 rollingVolume, uint256 solverCount);
+
+    /// @notice Protokol komisyon cüzdanı değişti.
+    event ProtocolFeeRecipientSet(address indexed oldRecipient, address indexed newRecipient);
+
+    /// @notice İşlem komisyonu toplandı (zincirde saydam muhasebe).
+    event FeeRevenueRecorded(address indexed solver, uint256 volume, uint256 fee, bool isMaker);
     event SolverRegistered(address indexed solver);
     event ChainlinkFeedSet(address indexed feed);
 
@@ -190,5 +227,77 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     /// @notice Batch'in kesinlestigini kamusal olarak sorgula.
     function isBatchSettled(bytes32 batchId) external view returns (bool) {
         return batchSettled[batchId];
+    }
+
+    // ============================================================
+    // ISLEM KOMISYONU - UC KADEMELI (docs/44)
+    // ============================================================
+
+    /// @inheritdoc ICleanvestSettlement
+    /// @notice Kullanıcının ödediği işlem komisyonu (bps).
+    /// @dev Model (HyperLiquid araştırması 2026-09-26):
+    ///      - 0. Hoşgeldin: ilk $10K hacim %0 (sıfır komisyon pazarlaması)
+    ///      - 1. Standart: %0.035 (35 bps... HAYIR, 3.5 bps DEĞİL)
+    ///        DİKKAT: 1 bps = %0.01. Yani %0.035 = 3.5 bps DEĞİL, 35 bps DEĞİL
+    ///        %0.035 = 3.5 bps. Ama Solidity tamsayılar: 3.5 bps = 35/10.
+    ///        Çözüm: 35 centi-bps (0.1 bps birim) DEĞİL - 35 bps = %0.35 YANLIŞ.
+    ///        DOĞRU: %0.035 → 3.5 bps. Tamsayı için 35 (0.1 bps birimi) tutuyoruz
+    ///        ve hesaplamada 1e18 USD * 35 / 10000 / 10 = doğru ücret verir.
+    ///        BASITLEŞTİRME: bps yerine yüzbinde (1e5 = %100) kullanıyoruz:
+    ///        %0.035 = 35 / 100000 = 35 (1e-5 birim).
+    function tradingFeeBps(uint256 cumulativeVolume, bool isMaker)
+        external
+        view
+        override
+        returns (uint256 feeBps)
+    {
+        // 0. Kademe: ilk $10K islem ucretsiz (hosgeldin)
+        if (cumulativeVolume < FEE_WELCOME_CAP) {
+            return 0;
+        }
+
+        // 2. Pro: $1M+ hacim
+        if (cumulativeVolume >= FEE_PRO_THRESHOLD) {
+            // Pro taker %0.030 = 30 (1e-5 birim); maker -10 = 20
+            return isMaker ? FEE_PRO_TAKER_BPS - FEE_MAKER_DISCOUNT_BPS : FEE_PRO_TAKER_BPS;
+        }
+
+        // 1. Standart: %0.035 = 35 (1e-5 birim); maker -10 = 25
+        return isMaker ? FEE_STANDARD_TAKER_BPS - FEE_MAKER_DISCOUNT_BPS : FEE_STANDARD_TAKER_BPS;
+    }
+
+    /// @notice Protokol komisyon cüzdanını ayar (sahip).
+    function setProtocolFeeRecipient(address recipient) external onlyOwner {
+        require(recipient != address(0), "Komisyon cuzuDani sifir olamaz");
+        address old = protocolFeeRecipient;
+        protocolFeeRecipient = recipient;
+        emit ProtocolFeeRecipientSet(old, recipient);
+    }
+
+    /// @notice Batch'ten toplanan komisyonu kaydet (solver cagirir).
+    /// @dev Bu, gelirin zincirde saydam kaydidir. Gercek token transfer
+    ///      RFQ solver tarafindan yapilir; burada yalnizca MUHASEBE tutulur.
+    ///      ONCE hacim guncellenir, SONRA fee hesaplanir: boylece kullanici
+    ///      welcome sinirini gectiginde ayni batch'te standart feeye gecer
+    ///      (aksi takdirde 2 batch'e bolunmus gibi welcome'da kalirdi).
+    function recordFeeRevenue(uint256 volume, bool isMaker) external onlySolver {
+        require(protocolFeeRecipient != address(0), "Komisyon cuzuDani ayarli degil");
+
+        // Once kumulatif hacmi guncelle (sinir gecisi dogru kademeye)
+        uint256 newVolume = userCumulativeVolume[msg.sender] + volume;
+        userCumulativeVolume[msg.sender] = newVolume;
+
+        uint256 feeRate = this.tradingFeeBps(newVolume, isMaker);
+        // 1e-5 birim: fee = volume * rate / 100000
+        uint256 fee = (volume * feeRate) / 100_000;
+
+        protocolRevenue += fee;
+
+        emit FeeRevenueRecorded(msg.sender, volume, fee, isMaker);
+    }
+
+    /// @notice Kullanici kumulatif hacmini sorgula (kademeyi gormek icin).
+    function userVolume(address user) external view returns (uint256) {
+        return userCumulativeVolume[user];
     }
 }

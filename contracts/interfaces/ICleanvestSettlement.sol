@@ -28,4 +28,21 @@ interface ICleanvestSettlement {
     /// @notice Soğuk başlangıç emir tavanı (Faz 3 açılışında $5.000/emir).
     /// @dev Tahta likiditesi arttıkça tavan otomatik kalkar (lift trigger).
     function orderSizeCap() external view returns (uint256);
+
+    /// @notice Kullanıcının ödediği işlem komisyonu (bps).
+    /// @dev ÜÇ KADEMELİ model (docs/44, HyperLiquid araştırması 2026-09-26):
+    ///      0. Hoşgeldin: %0 (ilk $10.000 hacim) — sıfır komisyon pazarlaması
+    ///      1. Standart:  %0.035 (3.5 bps... 35 bps = %0.35 DEĞİL, 3.5 bps)
+    ///      2. Pro:      %0.030 ($1M+ hacim)
+    ///      Maker'lara %0.010 indirim (likidite sağlayan ödüllendirilir).
+    /// @param cumulativeVolume Kullanıcının toplam hacmi (1e18 = 1 USD)
+    /// @param isMaker İşlem maker mı (limit emir) yoksa taker mı
+    /// @return feeBps Komisyon oranı (1 bps = %0.01)
+    function tradingFeeBps(uint256 cumulativeVolume, bool isMaker) external view returns (uint256 feeBps);
+
+    /// @notice Protokol komisyon cüzdanı (fee'ler buraya toplanır).
+    function protocolFeeRecipient() external view returns (address);
+
+    /// @notice Toplam toplanan protokol geliri (1e18 = 1 USD).
+    function protocolRevenue() external view returns (uint256);
 }
