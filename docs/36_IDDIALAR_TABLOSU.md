@@ -135,3 +135,5 @@ DOSYA:  docs/36_IDDIALAR_TABLOSU.md
 - ✅ **%73 Aave / %15 Prime / %12 idle** tabloya dahil edildi
 - ✅ **$1.200.000+ hedefine "HENÜZ KANITLANMAMIŞ" notu** eklendi
 - ✅ Rapor modu: sadece doküman, hiçbir kod
+- ✅ **3. parti denetim gerekliliği** açıkça belirtildi (docs/24, 25, 27, 41)
+  — dahili test bağımsız denetimin YERİNE GEÇMEZ

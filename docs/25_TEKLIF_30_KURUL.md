@@ -43,6 +43,12 @@ elektronik-para kuruluşları, kurumsal hazine ekipleri ve B2B ödeme işlemcile
 
 - **$107M TVL için $3.2M junior havuz** önceden gereklidir (mint-halt koruması)
 - Anlık %10 çıkış + T+2 kuyruk (likidite garantisi)
+- **3. PARTİ DENETİM GEREKLİDİR** — mevcut denetim (docs/41) manuel kod
+  incelemesi + 186 test + %96.75 branch coverage ile yapılmıştır; bu
+  off-chain bağımsız denetimin **YERİNE GEÇMEZ**. Kurumsal ölçekte
+  yatırımdan önce bağımsız bir güvenlik firmasından denetim alınacaktır.
+  Bu dokümanda sunulan tüm rakamlar `forge test` ile herkes tarafından
+  **tekrar üretilebilir** (açık kanıt).
 
 ---
 

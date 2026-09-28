@@ -200,6 +200,12 @@ Aynı kategoride rekabet etmiyoruz — **üzerine bir getiri katmanı** sunuyoru
 
 **Bağımsız doğrulama:** Sözleşme ve testler tamamen açıktır — `export PATH="$HOME/.foundry/bin:$PATH" && forge test` ile herkes 186/186 sonucunu kendisi üretebilir.
 
+**DÜRÜST SINIR — 3. parti denetim:** Mevcut kalite kanıtı (186 test, %96.75
+branch, docs/41 derin denetim) dahili olarak üretilmiştir. Bu, bağımsız bir
+güvenlik firmasının yerini **TUTMAZ**; yatırımdan önce bağımsız denetim
+alınması önerilir. Mevcut tüm iddialar açık kod + tekrar üretilebilir
+komutlarla kanıtlıdır.
+
 ```
 IDDIA:  teklif dokümanı yazıldı, rakamlar sözleşmeyle doğrulandı
 KANIT:  test -f docs/24_TEKLIF_15_HAZNA.md && grep -c "250k" docs/24_TEKLIF_15_HAZNA.md

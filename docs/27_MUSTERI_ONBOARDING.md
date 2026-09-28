@@ -137,3 +137,8 @@ Her biri commit kanıtıyla: anti-collusion overflow · ListingGate score-lookup
 > Bu doküman onboarding rehberidir. Nihai şartlar kurul toplantısında netleşir.
 
 **Bağımsız doğrulama:** `export PATH="$HOME/.foundry/bin:$PATH" && forge test` — 186/186 sonucu herkes üretebilir.
+
+**DÜRÜST BİLGİ — 3. parti denetim:** Mevcut test/coverage kanıtı dahilidir
+(docs/41 derin denetim: 186 test, %96.75 branch). Bağımsız bir güvenlik
+firmasından denetim alınana kadar **kurumsal ölçekte büyük mevduat**
+beklenmelidir. Tüm iddialar açık kod ile tekrar üretilebilir.

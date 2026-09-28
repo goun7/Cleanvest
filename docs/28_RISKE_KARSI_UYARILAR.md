@@ -129,3 +129,9 @@
 > Bu doküman müşteri paketinin bir parçasıdır ve kurul öncesi imzalanmalıdır.
 
 **Bağımsız doğrulama:** Tüm satır atıfları `contracts/` altında doğrulanabilir.
+
+**RİSK 8 — DAHİLİ DENETİM SINIRI:** Mevcut güvenlik kanıtı dahilidir: 186 test,
+%96.75 branch coverage, 5 invariant + 2 fuzz (256 runs), docs/41 derin denetim.
+Bunlar bağımsız bir güvenlik firmasının **YERİNE GEÇMEZ**. Akıllı sözleşme
+risklerinin tam azaltılması için 3. parti denetim **açıkça gerekli** ve
+büyük mevduat öncesi alınmalıdır.
