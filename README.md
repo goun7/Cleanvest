@@ -7,9 +7,19 @@
 Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getirili stabilcoin
 ($cUSD/$scUSD) sunan bir kripto ekosistemidir. Bu depo **sözleşme katmanını** içerir.
 
-> **Kapsam notu:** AegisForge denetim motorunun Rust çekirdeği
-> [`07_Temporit_.../crates/aegisforge/`](../07_Temporit_DeFi_Metamorfik_Yaris_Durumu_Avcisi/)
-> içindedir. Bu depo yalnızca EVM sözleşmelerini ve deployment altyapısını barındırır.
+> **Kapsam notu (DÜRÜST):** AegisForge denetim motorunun Rust çekirdeği
+> **bu deponun parçası DEĞİLDİR** — ayrı bir projede olması amaçlanmıştır:
+> [`07_Temporit_.../`](../07_Temporit_DeFi_Metamorfik_Yaris_Durumu_Avcısı/).
+> **Ancak kanıtlanmıştır ki o proje de bu motoru içermiyor:** tarama
+> (2026-09-28) o depada yalnızca **tek bir Rust dosyası** bulmuştur
+> (`crates/aegisforge/examples/probe.rs`, 42 satır) — `lib.rs`, `src/`
+> ve `Cargo.toml` YOK, yani o dosya **derlenemez bile**.
+>
+> **Sonuç:** AegisForge Rust çekirdeği **henüz mevcut DEĞİLDİR**. Bu depo
+> yalnızca EVM sözleşmelerini, deployment altyapısını ve **zincir üzerinde
+> çalışan** AegisForge etkileşim noktalarını (`ListingGate` oracle ABI,
+> `PoV_Hash` şeması) barındırır. "Denetim motoru" ifadesi satışta
+> kullanılırsa **üretici kodun olmadığı** belirtilmelidir.
 
 ---
 
@@ -221,6 +231,23 @@ Denetim turları yapmadan "bitti" denseydi bunlar canlıda patlardı:
 > **tasarım niyetidir, uygulanmamıştır.** Üretim öncesi: (1) gerçek
 > Merkle ağacı + kök üreticisi yazılmalı, (2) kök yaprak imzalarıyla
 > bağlanmalı, (3) test batch'leri gerçek kökle üretilmeli.
+
+> **Testlerin durumu ("187 passed" rozeti nasıl okunmalı):**
+> Mevcut 21 `CleanvestSettlement` testi `orderCommitmentRoot` için
+> **sabit bir değer** kullanır (`test/CleanvestSettlement.t.sol:16`):
+> ```solidity
+> bytes32 constant COMMIT_ROOT = keccak256("merkle-orders-1");
+> ```
+> Yani testler **gerçek kullanıcı emirlerinden Merkle ağacı kurmaz** —
+> sabit bir string'in özetini kök olarak kabul eder. Sonuç: testler
+> `executeBatchSettlement`'ın **kendi iç tutarlılığını** (commitment-scheme
+> eşleşmesi, sıfır-kök reddi, anti-collusion, FBA kilidi) doğru doğrular,
+> ama **"kullanıcı emirleri köke gerçekten bağlı mı?" sorusunu
+> test-kanıtlı yapmaz** — çünkü üretici olmadığı için bağlanacak şey yok.
+>
+> **"Test-kanıtlı" satış noktası bu açıdan zayıflar:** batch settlement'in
+> güvenliği test ile doğrulanmıştır, ama **emir taahhüdü zinciri
+> doğrulanmamıştır.** Rozet yanlış anlaşılmasın — bu notu taşıyor.
 
 ## Frontend — scUSD Dashboard (`web/`)
 
