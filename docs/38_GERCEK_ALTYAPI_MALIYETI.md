@@ -160,7 +160,7 @@ Gas fiyatı **0.006 gwei** (yukarıdaki canlı okuma) ile:
 
 > **SONUÇ:** **%99.90–%99.97 marj** — teknik altyapı bazında, **insan işçiliği
 > hariç.** Müşteri başına **$0.004–$0.017'lik gas maliyeti**, $17.00'lık spread'e
-> göre **%0.03–%0.10'dur.** Ama **AegisForge denetim hizmeti (H5) insan mühendislik
+> göre **%0.03–%0.10'dur.** Ama **CleanAudit denetim hizmeti (H5) insan mühendislik
 > zamanı gerektirir** — bu maliyet **ölçülmedi** ve "%100 marj" hesabına
 > **DAHİL EDİLEMEZ.**
 >
@@ -176,7 +176,7 @@ Gas fiyatı **0.006 gwei** (yukarıdaki canlı okuma) ile:
 | Kale | Durum | Nasıl Ölçülür? |
 |---|---|---|
 | **Gerçek adet/müşteri/ay** | 🔴 **ÖLÇÜLMEDİ** | İlk gerçek müşteride (Gate 3) üretim RPC log'ları |
-| **AegisForge insan işçiliği saati** | 🔴 **ÖLÇÜLMEDİ** | Z3/fuzz/remediation süresinin loglanması |
+| **CleanAudit insan işçiliği saati** | 🔴 **ÖLÇÜLMEDİ** | Z3/fuzz/remediation süresinin loglanması |
 | **Üretim Base gas fiyatı** | 🟡 Anlık okuma (0.006 gwei) | L1 gas fee oranına bağlı — üretimde dalgalanır |
 | **Indexleyici maliyeti** | ✅ **$0** (yok) | — |
 | **Kendi RPC node maliyeti** | ✅ **$0** (yok) | — |

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 /// @title IListingGate - Cleanvest Listeleme Kapis Arayuzu
-/// @notice AegisForge denetimini gecmeden listelemeyi zorunlu kilar.
+/// @notice CleanAudit denetimini gecmeden listelemeyi zorunlu kilar.
 /// @dev Master sartname: "Odeme ya da listelenme" harac modeli YOK -
 ///      denetim ZORUNLU'dur ama ucretsiz tarama vardir. Rozet $4.900 ile gelir.
 interface IListingGate {
@@ -10,16 +10,16 @@ interface IListingGate {
     enum ListingStatus {
         None, // basvuru yok
         Pending, // denetim bekliyor
-        Verified, // AegisForge tarafindan dogrulandi
+        Verified, // CleanAudit tarafindan dogrulandi
         Rejected // kritik acik bulundu, listelenemez
     }
 
     /// @notice Bir proje icin listeleme basvurusu yapar.
-    /// @dev AegisForge denetimini tetikler. Basvuru UCRETSIZDIR (haraç YOK).
+    /// @dev CleanAudit denetimini tetikler. Basvuru UCRETSIZDIR (haraç YOK).
     function applyForListing(address projectToken, string calldata projectName) external returns (bytes32 applicationId);
 
-    /// @notice AegisForge motoru tarafindan cagrilir - denetim sonucunu kaydeder.
-    /// @dev Yalnizca yetkili AegisForge oracle cagirabilir.
+    /// @notice CleanAudit motoru tarafindan cagrilir - denetim sonucunu kaydeder.
+    /// @dev Yalnizca yetkili CleanAudit oracle cagirabilir.
     function recordAuditResult(bytes32 applicationId, bool passed, uint256 cleanScore) external;
 
     /// @notice Proje listeleme durumunu sorgular (kamusal, ucretsiz).
@@ -38,6 +38,6 @@ interface IListingGate {
     /// @return priority Priority kademesi ($4.900)
     function getPriceCard() external view returns (uint256 scan, uint256 scanHuman, uint256 fuzzPatch, uint256 priority);
 
-    /// @notice AegisForge oracle yetkisini gunceller.
-    function setAegisForgeOracle(address oracle) external;
+    /// @notice CleanAudit oracle yetkisini gunceller.
+    function setCleanAuditOracle(address oracle) external;
 }

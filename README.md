@@ -1,13 +1,13 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**EVM sözleşme + frontend katmanı tamamlandı** · AegisForge **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test/coverage sayıları için tek kaynak: [`docs/43_TEST_DURUMU_TEK_KAYNAK.md`](docs/43_TEST_DURUMU_TEK_KAYNAK.md) (taze: 187 Foundry + 28 vitest · 7 sözleşme) · TODO/placeholder sıfır
+**EVM sözleşme + frontend katmanı tamamlandı** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test/coverage sayıları için tek kaynak: [`docs/43_TEST_DURUMU_TEK_KAYNAK.md`](docs/43_TEST_DURUMU_TEK_KAYNAK.md) (taze: 187 Foundry + 28 vitest · 7 sözleşme) · TODO/placeholder sıfır
 
 > 🔢 **Sayıların üretimi:** README'e giren her sayı [`scripts/readme_stats.py`](scripts/readme_stats.py) tarafından koddan üretilir — elle girilmez. Çalıştırma: `python3 scripts/readme_stats.py`
 
 Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getirili stabilcoin
 ($cUSD/$scUSD) sunan bir kripto ekosistemidir. Bu depo **sözleşme katmanını** içerir.
 
-> **Kapsam notu (DÜRÜST):** AegisForge denetim motorunun Rust çekirdeği
+> **Kapsam notu (DÜRÜST):** CleanAudit denetim motorunun Rust çekirdeği
 > **bu deponun parçası DEĞİLDİR** — ayrı bir projede olması amaçlanmıştır:
 > [`07_Temporit_.../`](../07_Temporit_DeFi_Metamorfik_Yaris_Durumu_Avcısı/).
 > **Ancak kanıtlanmıştır ki o proje de bu motoru içermiyor:** tarama
@@ -15,9 +15,9 @@ Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getiril
 > (`crates/aegisforge/examples/probe.rs`, 42 satır) — `lib.rs`, `src/`
 > ve `Cargo.toml` YOK, yani o dosya **derlenemez bile**.
 >
-> **Sonuç:** AegisForge Rust çekirdeği **henüz mevcut DEĞİLDİR**. Bu depo
+> **Sonuç:** CleanAudit Rust çekirdeği **henüz mevcut DEĞİLDİR**. Bu depo
 > yalnızca EVM sözleşmelerini, deployment altyapısını ve **zincir üzerinde
-> çalışan** AegisForge etkileşim noktalarını (`ListingGate` oracle ABI,
+> çalışan** CleanAudit etkileşim noktalarını (`ListingGate` oracle ABI,
 > `PoV_Hash` şeması) barındırır. "Denetim motoru" ifadesi satışta
 > kullanılırsa **üretici kodun olmadığı** belirtilmelidir.
 
@@ -28,7 +28,7 @@ Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getiril
 ```
                     ┌─────────────────────────────────────────┐
                     │            LISTING GATE (Faz-1)         │
-                    │  AegisForge denetimi ZORUNLU            │
+                    │  CleanAudit denetimi ZORUNLU            │
                     │  CleanScore KAMUSAL ve UCRETSIZ         │
                     │  PoV_Hash taahhüdü (ZK-SNARK DEGIL)     │
                     └─────────────────────────────────────────┘
@@ -55,7 +55,7 @@ Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getiril
 |---|---|---|
 | [`CleanUSD`](contracts/CleanUSD.sol) | $1.00 sabit ödeme stabilcoini. **Rebase yok**; junior reserve ≥ TVL×%3 hard invariant | 16 |
 | [`CleanFXVault`](contracts/CleanFXVault.sol) | ERC-4626 getiri kasası; 3 kademeli reserve, T+2 itfa kuyruğu, utilization devre-kesici | 33 |
-| [`ListingGate`](contracts/ListingGate.sol) | AegisForge denetimi zorunlu; AuditTier ($199/$399/$990/$4.900), CleanScore kamusal API | 36 |
+| [`ListingGate`](contracts/ListingGate.sol) | CleanAudit denetimi zorunlu; AuditTier ($199/$399/$990/$4.900), CleanScore kamusal API | 36 |
 | [`CleanvestSettlement`](contracts/CleanvestSettlement.sol) | 400ms Budish FBA; orderCommitmentRoot, boyut-farklı anti-collusion, **commitment scheme** ile batch bütünlüğü | 21 |
 | [`ReserveManager`](contracts/ReserveManager.sol) | 3 kademeli reserve dağılımı; SAFE mod %12 idle, OPTIMIZE feed kilidi | 31 |
 | [`UniswapProxy`](contracts/UniswapProxy.sol) | Artık hacim yönlendirme; **kayma gizlenmez**, UI'da şeffaf | 13 |
@@ -207,7 +207,7 @@ Denetim turları yapmadan "bitti" denseydi bunlar canlıda patlardı:
 > kökü"*dür. **Bu kökü üreten kod var mı?**
 >
 > Kardeş proje `07_Temporit_DeFi_Metamorfik_Yaris_Durumu_Avcısı/`
-> (README kapsam notu: "AegisForge denetim motorunun Rust çekirdeği
+> (README kapsam notu: "CleanAudit denetim motorunun Rust çekirdeği
 > içindedir") tarandı:
 > ```
 > $ find . -type f | grep -v .git/      →  crates/aegisforge/examples/probe.rs

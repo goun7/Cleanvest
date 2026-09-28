@@ -1,7 +1,7 @@
 # 35 — İş Modeli ve "Denetim-Öncesi Kalite" Örnek Raporu
 
 **Tarih:** 2026-09-27 · **Mod:** 🟢 **RAPOR — SIFIR Solidity değişikliği**
-**Soru:** "Unpump x402 = ödeme; AegisForge = denetim; **Cleanvest = ?**"
+**Soru:** "Unpump x402 = ödeme; CleanAudit = denetim; **Cleanvest = ?**"
 
 ---
 
@@ -17,7 +17,7 @@
 
 **Mevcut ürünün doğru tanımı (PROJE_KAGIDI sayfa başı DURUM RAPORU ile birebir):**
 
-> **ERC-4626 getiri kasası + FBA settlement + AegisForge denetim kapısı +
+> **ERC-4626 getiri kasası + FBA settlement + CleanAudit denetim kapısı +
 > PQHaven USDC köprüsü (Seçenek A).** Kodda **7 sözleşme** vardır:
 > `CleanUSD`, `CleanFXVault`, `ListingGate`, `CleanvestSettlement`,
 > `ReserveManager`, `UniswapProxy`.
@@ -111,25 +111,25 @@ iki sistemi **tek bir ekonomik döngüye** koyar: ödeme alınır → getiri ür
 
 ---
 
-## 4. Denetim-Öncesi Kalite Paketi — AegisForge ile Paketleme
+## 4. Denetim-Öncesi Kalite Paketi — CleanAudit ile Paketleme
 
-**AegisForge PoV_Hash + Cleanvest vault = ?**
+**CleanAudit PoV_Hash + Cleanvest vault = ?**
 
 ### Önerilen paket: **"Vault Denetim-Öncesi Kalite Raporu"**
 
-AegisForge bir projenin **sözleşmesini** denetler (PoV_Hash ile bulguları
+CleanAudit bir projenin **sözleşmesini** denetler (PoV_Hash ile bulguları
 taahhüt eder). Cleanvest'in ekleyeceği katman: **vault'un kendisinin
-denetim-öncesi kanıt dosyası** — yani AegisForge'u beklemeden **hazır
+denetim-öncesi kanıt dosyası** — yani CleanAudit'u beklemeden **hazır
 kalite kanıtı**.
 
-| Bileşen | AegisForge tarafı | Cleanvest tarafı |
+| Bileşen | CleanAudit tarafı | Cleanvest tarafı |
 |---|---|---|
 | **Hedef** | Başvuran projenin sözleşmesi | Cleanvest'in **kendi** vault'u |
 | **PoV_Hash** | `SHA256(payload \| target \| salt \| ts)` — bulgular taahhüt | **Aynı şema**: `SHA256("cleanvest-quality-v1" \| test-listesi \| coverage \| commit)` |
 | **Bulgular** | Kritik/Yüksek/Orta/Düşük sayısı (kamusal) | **0 kritik, 0 yüksek** (5 vektör test-kanıtli) |
 | **Kanıt** | Exploit örneği (satır numarası gizli) | `forge test` 186/186 + `forge coverage` %96.97 line |
 
-### Somut paket içeriği (AegisForge'a eklenebilir)
+### Somut paket içeriği (CleanAudit'a eklenebilir)
 
 ```
 Cleanvest Vault Denetim-Oncesi Kalite Raporu v1
@@ -155,20 +155,20 @@ Bilinen riskler (gizli DEGIL):
   - OPTIMIZE modu feed bagliyken acilir
 ```
 
-### AegisForge ile nasıl birleşir?
+### CleanAudit ile nasıl birleşir?
 
-**AegisForge bir projeyi listelemek için denetler.** Cleanvest'in vault'u
+**CleanAudit bir projeyi listelemek için denetler.** Cleanvest'in vault'u
 **listelenecek bir proje DEĞİL** — o **paranın saklandığı kasadır**. Bu yüzden
 paket şu şekilde çalışır:
 
-1. **AegisForge, ListingGate'e** bir projenin PoV_Hash'ini yazar (mevcut akış)
-2. **Cleanvest'in vault raporu**, AegisForge'un **CleanScore kamusal
+1. **CleanAudit, ListingGate'e** bir projenin PoV_Hash'ini yazar (mevcut akış)
+2. **Cleanvest'in vault raporu**, CleanAudit'un **CleanScore kamusal
    API'sine** ek bir kanıt olarak yayınlanabilir — böylece bir proje
-   "Cleanvest'te listelenmek için AegisForge'dan geçti" derken,
+   "Cleanvest'te listelenmek için CleanAudit'dan geçti" derken,
    **kasasının da denetlendiği** kanıtlanır
 
 > **Dürüst sınırlama:** Bu paket **henüz uygulanmadı** — sadece raporudur.
-> AegisForge'nun PoV_Hash şemasına bir Cleanvest raporu **eklemek**, AegisForge
+> CleanAudit'nun PoV_Hash şemasına bir Cleanvest raporu **eklemek**, CleanAudit
 > çekirdeğinde (Rust) değişiklik gerektirir; bu Cleanvest'in kapsamı dışındadır.
 
 ---
@@ -199,7 +199,7 @@ CleanvestSettlement, ReserveManager, UniswapProxy, RiskTransparency
 (yeni: akademik dayanaklı risk açıklaması).
 
 > **Müşteriye dürüstçe:** Mevcut ürün **ERC-4626 getiri kasası + FBA settlement +
-> AegisForge denetim kapısı + PQHaven USDC köprüsüdür (Seçenek A).** Kâğıttaki
+> CleanAudit denetim kapısı + PQHaven USDC köprüsüdür (Seçenek A).** Kâğıttaki
 > vizyon (Validium, omnichain) **yol haritasıdır, mevcut ürün değildir.** Bunu
 > "sıfır manipülasyon vault" olarak satmak **abartı olur**; "denetimli getiri
 > kasası" doğrudur. **Bu fark PROJE_KAGIDI sayfa başındaki DURUM RAPORU ile
@@ -232,8 +232,8 @@ müşteri getirisi DEĞİL. Bu, "müşteri kazanır" olarak sunulamaz.
 | Soru | Cevap |
 |---|---|
 | **Unpump x402** | Ödeme altyapısı (fail-closed 402/503, tek-kasa) |
-| **AegisForge** | Denetim motoru (PoV_Hash taahhüdü, 4 kademeli) |
-| **Cleanvest = ?** | **ERC-4626 getiri kasası + FBA settlement + AegisForge denetim kapısı + PQHaven USDC köprüsü (Seçenek A)** |
+| **CleanAudit** | Denetim motoru (PoV_Hash taahhüdü, 4 kademeli) |
+| **Cleanvest = ?** | **ERC-4626 getiri kasası + FBA settlement + CleanAudit denetim kapısı + PQHaven USDC köprüsü (Seçenek A)** |
 
 **Cleanvest'in müşteri teklifi (özet):** Boşta duran kurumsal USDC'yi **Aave
 üzerinden kurumsal getiriye** (Tier0: %73 Aave / %15 Prime / %12 idle) yatır,

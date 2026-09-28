@@ -76,7 +76,7 @@ Her an `juniorReserve ≥ TVL × %3` invariant'ı çalışır. İhlalde mint dur
 
 ---
 
-## Fiyatlandırma (AegisForge ile)
+## Fiyatlandırma (CleanAudit ile)
 
 | Paket | Fiyat | İçerik |
 |---|---|---|
@@ -125,7 +125,7 @@ Her biri commit kanıtıyla: anti-collusion overflow · ListingGate score-lookup
 - [ ] anvil demo çalıştırıldı (`SUCCESSFUL`, rc=0)
 - [ ] Uygun paket seçildi (Scan / Scan+İnsan / FuzzPatch / Priority)
 - [ ] TVL ve kademe eşleştirildi
-- [ ] AegisForge denetimi tamamlandı
+- [ ] CleanAudit denetimi tamamlandı
 - [ ] Junior havuz yatırıldı (bizim tarafımızdan)
 - [ ] Çıkış kapısı test edildi (anlık %10 + T+2)
 - [ ] Risk dokümanı okundu ve imzalandı

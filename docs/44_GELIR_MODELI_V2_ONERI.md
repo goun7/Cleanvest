@@ -80,7 +80,7 @@ kazanir. **Iki taraf da kazanir.**
 
 ## 4. CleanAudit Isim Degisimi (ONAYLANDI)
 
-**AegisForge -> CleanAudit**
+**CleanAudit -> CleanAudit**
 
 Kodda **27 dosyada** geciyor (contract'lar, test'ler, doc'lar, UI i18n).
 Degisiklik plani:

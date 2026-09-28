@@ -19,7 +19,7 @@ alınmıştır — **YOL HARİTASI veya VAAT DEĞİL hiçbir hizmet fiyatlandır
 | **H2** | **Korumalı Giriş Kalkanı** (ERC-4626 donation attack koruması) | `CleanFXVault.sol:203` `depositWithMin(assets, receiver, minShares)` | "İlk yatıranda hisse fiyatı manipülasyonu yapamaz — 199 wei kayıp örneği test edildi" | **Her depozit için slippage limiti** (müşteri belirler) | **H2 = H1'in içinde ÜCRETSİZ** (ayrı fiyat YOK) |
 | **H3** | **Anlık Çıkış Garantisi** (günlük %10 anlık, üstü T+2) | `CleanFXVault.sol:38` `DAILY_INSTANT_CAP_BPS=1000` (%10), `:109` `redemptionGate()`, `:227` `requestRedemption` | "Çekim talebiniz asla reddedilmez — kotayı aşan kısım T+2 kuyruğuna alınır ama VAAT DEĞİL kilitlenmez" | **Günlük anlık kota: TVL'nin %10'u** (`:38,256`) | **H3 = H1'in içinde ÜCRETSİZ** (çekim ücreti YOK) |
 | **H4** | **Rezerv Yönetimi** (3 kademe kurumsal dağılım) | `ReserveManager.sol:15-17` (Tier0/1/2 dağılımı), `:108` `rebalance`, `:132` `supplyToAave` | "Fonlarınız TVL kademesine göre Aave/Prime veya OUSG/BUIDL'e dağıtılır — **dağılım koda kilitli**" | **Rezerv toplam varlığı** (`:102` `totalReserveAssets`) | **Rezerv yönetim payı (spread)** — bkz. §2 |
-| **H5** | **Denetim Kapısı** (AegisForge PoV_Hash ile listeleme) | `ListingGate.sol:28-30` PoV_Hash şeması, `:144` `recordAuditResult`, `:191` `cleanScore >= 70` kontrolü | "Projeniz ancak PoV_Hash taahhüdüyle ve CleanScore ≥ 70 ile listelenir — karar on-chain, insan kararı DEĞİL" | **PoV_Hash taahhüdü** (SHA-256, zincirde) | **3 kademe: $299 / $1.490 / $4.900** — bkz. §3 |
+| **H5** | **Denetim Kapısı** (CleanAudit PoV_Hash ile listeleme) | `ListingGate.sol:28-30` PoV_Hash şeması, `:144` `recordAuditResult`, `:191` `cleanScore >= 70` kontrolü | "Projeniz ancak PoV_Hash taahhüdüyle ve CleanScore ≥ 70 ile listelenir — karar on-chain, insan kararı DEĞİL" | **PoV_Hash taahhüdü** (SHA-256, zincirde) | **3 kademe: $299 / $1.490 / $4.900** — bkz. §3 |
 | **H6** | **Kamusal CleanScore API** (haraç modeli YOK) | `ListingGate.sol:253` `getCleanScore`, `:334-335` `applicationFee() = 0`, `:12` yorum | "Herkes herhangi bir ödeme yapmadan projenizin güvenlik skorunu sorgulayabilir" | **Her sorgu** (view, gas ücreti ödeyen sorgulayıcı) | **ÜCRETSİZ — koda kilitli** (`:334-335` `return 0`) |
 
 > **Toplam 6 hizmet.** 5'i ücretli kademeler (H1/H4 spread, H5 kademe fiyatı),
@@ -49,7 +49,7 @@ $3.050/yıl; **protokol spread = $204/yıl** ($17.00/ay).
 
 ---
 
-## 3. Denetim Kapısı Fiyatlandırması — H5 (AegisForge)
+## 3. Denetim Kapısı Fiyatlandırması — H5 (CleanAudit)
 
 `ListingGate.sol:77-84` ve `:208` `upgradeAuditTier` ile kodlanmış 3 kademe:
 
@@ -91,7 +91,7 @@ $3.050/yıl; **protokol spread = $204/yıl** ($17.00/ay).
 > **Sonuç:** "%100 marj" iddiası **ancak teknik altyapı bazında** geçerlidir —
 > **insan işçiliği hariç.** `docs/38` bunu **ölçtü**: teknik altyapı marjı
 > **%99.90–%99.97'dir** ($17.00 spread'e karşı $0.004–$0.017 müşteri gas).
-> Ama AegisForge denetimi (Z3 SMT, fuzz, remediation diff) **insan mühendislik
+> Ama CleanAudit denetimi (Z3 SMT, fuzz, remediation diff) **insan mühendislik
 > zamanı gerektirir**; bu maliyet **ölçülmemiştir** ve marj hesabına
 > **DAHİL EDİLEMEZ.**
 

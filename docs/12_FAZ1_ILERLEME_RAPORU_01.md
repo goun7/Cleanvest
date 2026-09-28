@@ -11,7 +11,7 @@
 - Dosya: `plugins-src/dsh-team-bridge/lib/index.js` — iki `ctx.inject` dizisine `agents` + `session-controller` eklendi
 - Kanal açıldı: 5 takım üyesine görev dağıtımı çalışıyor
 
-### 2. AegisForge CLI Çekirdeği (Rust) — ÇALIŞIYOR
+### 2. CleanAudit CLI Çekirdeği (Rust) — ÇALIŞIYOR
 `aegisforge/` dizininde, **13/13 test geçti, release binary hazır**:
 
 - **PoV Hash Taahhüdü** (`oracle/pov.rs`): `SHA256(ExploitPayload ‖ Bytecode ‖ Timestamp)` — **ZK-SNARK DEĞİL** (koda işlenmiş yasak, yorumlarda açık)

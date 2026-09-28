@@ -94,7 +94,7 @@ Kendi portföyümüzü kendimiz denetlemek **çatışma yaratır:** "Kendi proje
 **İtibar, temiz skordan DEĞIL, açıklanan bulgudan gelir.** Vaka çalışması şunu içermeli:
 1. **Gerçek kritik bulguları ve CVE-benzeri kayıtları yayınla** ( Unpump'da 3 kritik bulundu)
 2. **Açık düzeltme diff'leri** + AutoVerus Z3 ispatıyla kapatıldığını kanıtla
-3. **Düzeltmenin üçüncü-taraf re-verification'ı** ( AegisForge dış bir doğrulayıcı veya kamu bug-bounty ile)
+3. **Düzeltmenin üçüncü-taraf re-verification'ı** ( CleanAudit dış bir doğrulayıcı veya kamu bug-bounty ile)
 
 "Temiz" değil, **"bulduk, yayınladık, kapattık, kanıtladık"** dış müşteri için güvenilir vaka çalışmasıdır.
 
@@ -104,7 +104,7 @@ Kendi portföyümüzü kendimiz denetlemek **çatışma yaratır:** "Kendi proje
 
 1. **LE-1 redemption katmanını** `$scUSD` vault sözleşmesine uygula ( en kritik)
 2. **LE-2 lift-trigger** parametrelerini FBA motoruna config olarak yaz
-3. **LE-3 denetim şablonunu** AegisForge'a uygula → Unpump.cash üzerinde **ilk kamu denetimini** çalıştır
+3. **LE-3 denetim şablonunu** CleanAudit'a uygula → Unpump.cash üzerinde **ilk kamu denetimini** çalıştır
 4. `08_...` ve `09_...`'daki master-şartname revizyon taleplerini ( E1/E2/E3 + `orderCommitmentRoot`) resmi olarak ilet
 
 ---

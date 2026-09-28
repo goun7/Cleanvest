@@ -39,7 +39,7 @@ forge script script/Deploy.s.sol:Deploy \
 | 2 | CleanFXVault | `0xd5a4...0f89` | asset = CleanUSD |
 | 3 | ReserveManager | `0x2FC5...0e66` | Aave katmani |
 | 4 | CleanvestSettlement | `0x26b4...ff0A` | HEX borsa |
-| 5 | ListingGate | `0x6565...4d3D` | AegisForge zorunlu |
+| 5 | ListingGate | `0x6565...4d3D` | CleanAudit zorunlu |
 | 6 | UniswapProxy | `0xFBa2...6989` | artık hacim |
 
 ## Deploy Sonrasi Adimlar
@@ -58,10 +58,10 @@ cleanUSD.seedJunior{value: 3_000 ether}(0);
 - `mint()` yalnızca `juniorReserve * 10000 >= tvl * 300` iken çalışır
 - `burn()` **asla** kilitlenmez
 
-### 2. AegisForge Oracle Baglama
+### 2. CleanAudit Oracle Baglama
 
 ```solidity
-listingGate.setAegisForgeOracle(AEGISFORGE_ORACLE);
+listingGate.setCleanAuditOracle(AEGISFORGE_ORACLE);
 ```
 
 Bu olmadan **hiçbir proje** listelenemez (listing gate kapalı).

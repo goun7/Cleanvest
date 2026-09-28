@@ -118,7 +118,7 @@ $\epsilon$, emir boyutunun mevcut zincir-üstu likiditeye oranıyla ölçeklenir
 
 ### 3.1 Gerçek: Somut Dış Müşteri Listem YOK
 
-Antigravity soruyu keskin sordu: *"$15k-$30k junior sermayesini Faz-1 AegisForge satışlarından toplayacak müşteri listen hazır mı?"*
+Antigravity soruyu keskin sordu: *"$15k-$30k junior sermayesini Faz-1 CleanAudit satışlarından toplayacak müşteri listen hazır mı?"*
 
 **Cevabım: HAYIR.** Ve nedenini de sayalım:
 - İtibarsız, kamu geçmişi olmayan bir güvenlik CLI'sını VC destekli DeFi projelerine satmak (onlar zaten CertiK/OpenZeppelin ile çalışıyor) → dönüşüm **çok düşük**.
@@ -138,7 +138,7 @@ Antigravity soruyu keskin sordu: *"$15k-$30k junior sermayesini Faz-1 AegisForge
 
 Master şartname **beş projeyi**, portföy havuzu **26 projeyi** listeler. Hepsi akıllı sözleşme içerir ve hepsi denetime ihtiyaç duyar:
 
-> **AegisForge'un ilk müşterileri: Unpump.cash, Tamga Protocol, KÖK Network ve portföydeki diğer projelerdir.**
+> **CleanAudit'un ilk müşterileri: Unpump.cash, Tamga Protocol, KÖK Network ve portföydeki diğer projelerdir.**
 
 - **Anında, sıfır CAC, sıfır satış döngüsü.** Kardeş projelerin sözleşmelerini tarar, bulguları raporlar, yamaları uygularız.
 - **Kamu Kanıtı Üretir:** Her iç denetim, dış müşteri için **görünebilir, doğrulanabilir, isimlendirilmiş bir vaka çalışması** olur. "Unpump.cash'i taradık, 3 kritik bulduk, kapattık" — satış buna benzer, hayali bir demoya değil.

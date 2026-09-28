@@ -17,7 +17,7 @@ Hiçbir görev beklenmedi — kuyruktaki her madde tamamlanana kadar çalışıl
 |---|---|---|---|---|
 | 1 | CleanUSD | 9/9 | 2 | REBASE YOK, hard invariant (Junior ≥ TVL×3%) |
 | 2 | CleanFXVault | 17/17 | 2 | 3 kademeli, T+2 itfa (**kritik bug düzeltildi**) |
-| 3 | ListingGate | 27/27 | 1 | AegisForge zorunlu + PoV + CleanScore API + tier |
+| 3 | ListingGate | 27/27 | 1 | CleanAudit zorunlu + PoV + CleanScore API + tier |
 | 4 | CleanvestSettlement | 17/17 | 3 | 400ms FBA, orderCommitmentRoot, boyut-farklı ε |
 | 5 | ReserveManager | 14/14 | 2 | 3 kademeli reserve, OPTIMIZE devre-kesici |
 | 6 | UniswapProxy | 8/8 | 3 | Artık hacim, **şeffaf kayma** (gizlenmez) |
@@ -32,7 +32,7 @@ Talimat eski snapshot'tan gelmiş — düzeltmeler zaten commit `62aeeed`'de. Di
 - 10ms/500ms → **400ms FBA**
 - $294k/ay fantazisi → **$5k–15k/ay**
 
-### 2. 🟠 AegisForge Yol Düzeltmesi ✅
+### 2. 🟠 CleanAudit Yol Düzeltmesi ✅
 `docs/13`'teki `26_Cleanvest/aegisforge` → `07_Temporit/crates/aegisforge` olarak düzeltildi. Diğer tüm referanslar temiz.
 
 ### 3. 🟠 Faz-1 Sözleşme Tarafı ✅ (27/27)
@@ -73,14 +73,14 @@ Talimat eski snapshot'tan gelmiş — düzeltmeler zaten commit `62aeeed`'de. Di
 | KÖK/Tamga bekleme yok | %100 EVM, harici bağımlılık yok |
 | %4.8 vaadi yok | %3.05/2.91/2.92 kilitli |
 
-## 🔄 AegisForge Ajanı Eş Zamanlı Çalıştı
+## 🔄 CleanAudit Ajanı Eş Zamanlı Çalıştı
 
 Commit geçmişinde (benim commit'lerim dışında):
 - `421ff3a` — Vaka #03 pgHeal: **100/100 AAA** (temiz)
 - `1466cd4` — Vaka 02B abstraction düzeltmesi (FP %90→%0)
 - `1f26caf` — Vaka #04 Sester kendi reposuna taşındı
 
-Talimatındaki "Vaka #3 pgHeal AegisForge ajanında yapılıyor" uyumu sağlandı.
+Talimatındaki "Vaka #3 pgHeal CleanAudit ajanında yapılıyor" uyumu sağlandı.
 
 ## Kalan Alanlar (Sözleşme Tarafı Bitti)
 

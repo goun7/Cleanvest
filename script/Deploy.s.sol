@@ -27,7 +27,7 @@ library DeploymentConfig {
         address aavePrimePool;     // Aave Prime Pool
         address chainlinkFeed;     // Chainlink USDC/USD feed
         address uniswapRouter;     // Uniswap V3 SwapRouter
-        address aegisForgeOracle;  // AegisForge motor adresi (off-chain imzaci)
+        address cleanAuditOracle;  // CleanAudit motor adresi (off-chain imzaci)
     }
 }
 
@@ -53,7 +53,7 @@ contract Deploy is Script {
             aavePrimePool: vm.envOr("AAVE_PRIME_POOL", address(0)),
             chainlinkFeed: vm.envOr("CHAINLINK_FEED", address(0)),
             uniswapRouter: vm.envOr("UNISWAP_ROUTER", address(0)),
-            aegisForgeOracle: vm.envOr("AEGISFORGE_ORACLE", address(0))
+            cleanAuditOracle: vm.envOr("AEGISFORGE_ORACLE", address(0))
         });
 
         string memory network = vm.envOr("NETWORK", string("local-test"));
@@ -94,10 +94,10 @@ contract Deploy is Script {
         }
         console.log("CleanvestSettlement:", address(deployed.settlement));
 
-        // 5. ListingGate (AegisForge zorunlu)
+        // 5. ListingGate (CleanAudit zorunlu)
         deployed.gate = new ListingGate();
-        if (cfg.aegisForgeOracle != address(0)) {
-            deployed.gate.setAegisForgeOracle(cfg.aegisForgeOracle);
+        if (cfg.cleanAuditOracle != address(0)) {
+            deployed.gate.setCleanAuditOracle(cfg.cleanAuditOracle);
         }
         console.log("ListingGate:", address(deployed.gate));
 

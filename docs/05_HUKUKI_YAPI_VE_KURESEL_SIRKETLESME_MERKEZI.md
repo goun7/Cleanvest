@@ -24,7 +24,7 @@ Bir kripto ve FX platformu için yargı alanı (jurisdiction) seçimi; **kurucun
 │                                      ▼ (Aylık Yazılım Hizmet Faturası - Gelir Transferi)    │
 │  ┌───────────────────────────────────────────────────────────────────────────────────────┐  │
 │  │ 2. GELİŞTİRİCİ ŞİRKET (DEVCO - TÜRKİYE ŞAHIS ŞİRKETİ / GVK 89/13)                     │  │
-│  │ - Yalnızca yazılım kodlar, arayüzü barındırır ve B2B AegisForge denetimlerini yürütür.│  │
+│  │ - Yalnızca yazılım kodlar, arayüzü barındırır ve B2B CleanAudit denetimlerini yürütür.│  │
 │  │ - Protokol Vakfı'na yazılım ihraç eder; gelen döviz geliri 193 Sayılı GVK Madde       │  │
 │  │   89/13 kapsamında %100 GELİR VERGİSİNDEN VE KDV'DEN İSTİSNADIR (%0 Vergi!).          │  │
 │  └───────────────────────────────────┬───────────────────────────────────────────────────┘  │

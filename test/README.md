@@ -97,7 +97,7 @@ forge coverage --report lcov
 | `CleanvestSettlement.t.sol` | 21 | Budish FBA settlement, emir eşleşme, HEX borsa |
 | `Fuzz.t.sol` | 10 | Fuzz testleri (tamsayı taşma, sınırlar) |
 | `Integration.t.sol` | 8 | Uçtan uca entegrasyon (vault ↔ cUSD ↔ reserve) |
-| `ListingGate.t.sol` | 33 | AegisForge audit tier, kadir, enum decoder savunması |
+| `ListingGate.t.sol` | 33 | CleanAudit audit tier, kadir, enum decoder savunması |
 | `ReserveManager.t.sol` | 31 | Aave/OUSG/BUIDL katmanı, tier geçişleri, devre-kesici |
 | `scusd_vault_invariants.t.sol` | 1 | **5 invariant × 300 derinlik** fuzz (actor-based; tek test, içerde 5 özellik) |
 | `UniswapProxy.t.sol` | 13 | Swap proxy, slippage, router katmanı |

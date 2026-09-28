@@ -100,7 +100,7 @@ getiri katmanı**. Benzersiz değer teklifi:
 2. **Junior %3 risk izolasyonu** — senior getirisi ayrılmış havuzdan dağıtılır
 3. **Çıkışlar kilitlenmez** — invariant olarak kodlanmış (rakiplerde yok)
 4. **Anti-kollüsyon spot borsa** — RFQ batch netting ile eps şeffaflığı
-5. **Sıfır manipülasyon** — CleanScore ile AegisForge doğrulaması
+5. **Sıfır manipülasyon** — CleanScore ile CleanAudit doğrulaması
 
 **Zayıf yönler (dürüst itiraf):**
 - Min. TVL eşiğinde rakiplerden **daha az kurumsal** ($250k vs BUIDL $5M — ama
@@ -203,7 +203,7 @@ tek seferlik büyük çekilişi engeller, (c) junior %3 havuzu alt katmanı koru
 ### Diğer Akademik Bulgular (zaten kapsanan)
 
 1. **Reentrancy** — CEI düzenlemesi + `nonReentrant` (8 yerde) ✓
-2. **Access control** — 24/27 fonksiyon `onlyOwner`/`onlySolver`/`onlyAegisForge`;
+2. **Access control** — 24/27 fonksiyon `onlyOwner`/`onlySolver`/`onlyCleanAudit`;
    3'ü bilinçli herkese açık (mint/burn/applyForListing), invariant ile korunuyor ✓
 3. **Integer overflow** — `Math.mulDiv` ile (UniswapProxy slippage); böl-önce-çarp
    (antiCollusionBound) ✓

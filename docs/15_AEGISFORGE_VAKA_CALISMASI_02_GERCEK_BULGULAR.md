@@ -1,7 +1,7 @@
 # AEGISFORGE VAKA ÇALIŞMASI #2 — DOGFOOD: Cleanvest Kontratları (Gerçek Bulgular)
 
 **Tarih:** 2026-09-25  
-**Motor:** AegisForge v0.4.0 (4 kademeli süzgeç, bundled z3-src 501.0)  
+**Motor:** CleanAudit v0.4.0 (4 kademeli süzgeç, bundled z3-src 501.0)  
 **Kanal:** `aegisforge scan --file <artifact> --tier scan`  
 **LE-3 kuralı uyarınca PUBLİK** — çıkar-çatışması kalkanı
 
@@ -9,7 +9,7 @@
 
 ## Özet
 
-AegisForge'u **kendi kontratlarımızda** çalıştırdık. Motor **gerçek bulgular üretti** — 3 CRITICAL, 5 HIGH ve 0/100 CleanScore. Bu rapor, bulguları olduğu gibi yayınlıyor ve **hangilerinin gerçek, hangilerinin yanlış-pozitif olduğunu kanıtlıyor.**
+CleanAudit'u **kendi kontratlarımızda** çalıştırdık. Motor **gerçek bulgular üretti** — 3 CRITICAL, 5 HIGH ve 0/100 CleanScore. Bu rapor, bulguları olduğu gibi yayınlıyor ve **hangilerinin gerçek, hangilerinin yanlış-pozitif olduğunu kanıtlıyor.**
 
 ## Tarama Sonuçları
 
@@ -23,7 +23,7 @@ AegisForge'u **kendi kontratlarımızda** çalıştırdık. Motor **gerçek bulg
 
 **AF-INV-01 counterexample (CleanUSD):** `total_assets=0 total_shares=0 bal_a=1 bal_b=0`
 
-**Bu yanlış-pozitiftir ve nedeni kanıtlanmıştır:** AegisForge Stage-1 Z3 modeli, hedefi **"ERC-4626-style share/asset accounting with batch preview/apply semantics"** olarak soyutlamış (abstraction_note'dan alıntı).
+**Bu yanlış-pozitiftir ve nedeni kanıtlanmıştır:** CleanAudit Stage-1 Z3 modeli, hedefi **"ERC-4626-style share/asset accounting with batch preview/apply semantics"** olarak soyutlamış (abstraction_note'dan alıntı).
 
 **Ama CleanUSD bir ERC-4626 değildir** — saf ERC-20'dir:
 - `totalShares` değişkeni **yoktur** (`totalSupply` vardır)
@@ -85,4 +85,4 @@ PoV_Hash'lerle sonuçların aynı olduğu doğrulanabilir.
 - **Fix fırsatı:** ERC-20/ERC-4626 model seçimi → ürün geliştirme maddesi
 
 ---
-*AegisForge: "PoV_Hash bir SHA-256 hash taahhüdüdür, ZK-SNARK değil. CleanScore ücretsizdir. Haraç modeli yok."*
+*CleanAudit: "PoV_Hash bir SHA-256 hash taahhüdüdür, ZK-SNARK değil. CleanScore ücretsizdir. Haraç modeli yok."*

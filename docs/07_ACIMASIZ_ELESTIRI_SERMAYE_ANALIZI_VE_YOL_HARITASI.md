@@ -69,7 +69,7 @@ Bu projeyi hayata geçirmek için **"Minimum Hayatta Kalma Bütçesi" (Bootstrap
 | **Sunucu, RPC & Altyapı** | **$150 – $300 / ay** (Hetzner Dedicated Server + QuickNode/Alchemy) | **$1.500 / ay** (Yüksek erişilebilirlik cluster) |
 | **Alan Adı & Marka** | **$50 – $100 / yıl** (`cleanvest.market` vb.) | **$2.500** (Global marka tescili) |
 | **Şirketleşme & Hukuk** | **$0** (Türkiye Şahıs Şirketi / GVK 89/13 başlangıcı) | **$12.000 – $18.000** (BAE RAK DAO veya Cayman Vakfı) |
-| **Güvenlik Denetimi (Audit)** | **$0** (AegisForge + AutoVerus kendi iç denetimimiz) | **$15.000 – $30.000** (Dış üçüncü parti bağımsız audit) |
+| **Güvenlik Denetimi (Audit)** | **$0** (CleanAudit + AutoVerus kendi iç denetimimiz) | **$15.000 – $30.000** (Dış üçüncü parti bağımsız audit) |
 | **İlk Likidite Tamponu** | **$0** (Uniswap/Raydium Proxy Yönlendirmesi) | **$50.000 – $100.000** (Öz sermaye havuzu) |
 | **TOPLAM İLK GİRİŞ MALİYETİ** | 💵 **$500 – $1.500 (Tamamen Kendi Yağıyla Kavrulan)** | 💰 **$80.000 – $150.000 (Yatırımcı/Hazine Destekli)** |
 
@@ -85,7 +85,7 @@ Bu projeyi hayata geçirmek için **"Minimum Hayatta Kalma Bütçesi" (Bootstrap
 │                                                                                             │
 │  [FAZ 1: NAKİT MOTORU & GÜVENLİK KAPISI] (1. - 3. Ay) ──► MALİYET: <$1.500                  │
 │  - CleanScore Analiz Paneli yayına alınır (İlk 500 tokenın temizlik skoru yayınlanır).     │
-│  - AegisForge/AutoVerus B2B Gatekeeper devreye girer: Açıklı projelere $299-$1.490 rapor    │
+│  - CleanAudit/AutoVerus B2B Gatekeeper devreye girer: Açıklı projelere $299-$1.490 rapor    │
 │    satışı başlar. İlk günden NAKİT AKIŞI üretilir!                                          │
 │  - Privy/Web3Auth ile tohum kelimesiz cüzdan arayüzü tamamlanır.                           │
 │                                                                                             │
@@ -119,5 +119,5 @@ Bu projeyi hayata geçirmek için **"Minimum Hayatta Kalma Bütçesi" (Bootstrap
 ## 4. Nihai Değerlendirme
 Bu acımasız analiz sayesinde:
 1. **İflas riski taşıyan sahte vaatler ayıklandı:** İlk günden kart çıkarma ve milyar dolarlık toptancı bekleme hayalleri yerine, çalışan proxy likiditesi kondu.
-2. **Sermaye gereksinimi $150.000'den $1.500'a indirildi:** İlk fazda AegisForge güvenlik raporu satışıyla kendi sermayesini kendi üreten bir yapı kuruldu.
+2. **Sermaye gereksinimi $150.000'den $1.500'a indirildi:** İlk fazda CleanAudit güvenlik raporu satışıyla kendi sermayesini kendi üreten bir yapı kuruldu.
 3. **Pazarlama kancası güçlendirildi:** Soyut "etik borsa" yerine, herkesin anlayacağı **"Faizle Bedava Bitcoin Biriktir" (CleanYield)** kancası öne çıkarıldı.

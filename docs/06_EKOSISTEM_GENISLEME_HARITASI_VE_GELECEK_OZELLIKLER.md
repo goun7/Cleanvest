@@ -70,7 +70,7 @@ Geleneksel kriptoda getiri elde etmek için varlığınızı şüpheli platforml
 ---
 
 ### 🛡️ Özellik 5: CleanScore — Kripto Dünyasının "Moody's / S&P" Not Baremi
-* AegisForge ve AutoVerus motorlarımız sadece Cleanvest'te listelenen projeleri değil; piyasadaki ilk 1.000 tokenı otomatik tarayarak bir **Temizlik ve Güvenlik Skoru (CleanScore: 0 - 100)** üretir.
+* CleanAudit ve AutoVerus motorlarımız sadece Cleanvest'te listelenen projeleri değil; piyasadaki ilk 1.000 tokenı otomatik tarayarak bir **Temizlik ve Güvenlik Skoru (CleanScore: 0 - 100)** üretir.
 * Bu skor kamuya açık bir API ve analiz paneli olarak yayınlanır:
   * *Yeşil (90-100):* Sıfır arka kapı, kilitli likidite, formal kanıtlı invariantlar.
   * *Kırmızı (<50):* Şüpheli balina cüzdanları, dondurulabilir bakiye riski, denetlenmemiş kod.

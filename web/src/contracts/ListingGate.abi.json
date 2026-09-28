@@ -674,7 +674,7 @@
   },
   {
     "type": "function",
-    "name": "setAegisForgeOracle",
+    "name": "setCleanAuditOracle",
     "inputs": [
       {
         "name": "oracle",

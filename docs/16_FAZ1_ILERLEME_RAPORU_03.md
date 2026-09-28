@@ -9,7 +9,7 @@
 
 ## 🎯 Ana Başarı: LE-3 Çıkar-Çatışması Kalkanı Kanıtlandı
 
-AegisForge v0.4.0'ı **kendi kontratlarımızda** çalıştırdım (dogfood). Beklenmedik ama DEĞERLİ bir sonuç: **motor gerçek bulgular üretti** ve ben hepsini **kamu raporu olarak yayınladım**.
+CleanAudit v0.4.0'ı **kendi kontratlarımızda** çalıştırdım (dogfood). Beklenmedik ama DEĞERLİ bir sonuç: **motor gerçek bulgular üretti** ve ben hepsini **kamu raporu olarak yayınladım**.
 
 ## Tarama Sonuçları
 
@@ -36,7 +36,7 @@ AegisForge v0.4.0'ı **kendi kontratlarımızda** çalıştırdım (dogfood). Be
 
 ## Ürün Geri Bildirimi İletildi
 
-AegisForge ajanına **ERC-20/ERC-4626 model seçim hatasını** rapor ettim:
+CleanAudit ajanına **ERC-20/ERC-4626 model seçim hatasını** rapor ettim:
 - Öneri: bytecode'tan function-selector çıkarımı → model seçimi
 - Bu, $299 kademesinin kalitesini yükseltecek
 - Ajan o konuda çalışıyor
@@ -62,7 +62,7 @@ AegisForge ajanına **ERC-20/ERC-4626 model seçim hatasını** rapor ettim:
 
 ## ⏳ Sonraki Adım
 
-Faz-1 sözleşme tarafı **tamamlandı**. AutoVerus/AegisForge entegrasyonu (ERC-20 model fix) bekleniyor.
+Faz-1 sözleşme tarafı **tamamlandı**. AutoVerus/CleanAudit entegrasyonu (ERC-20 model fix) bekleniyor.
 
 **Önerim:** Faz-2'ye geçmeliyim — Aave V3 USDC reserve entegrasyonu (ERC-4626 strateji deseni). Bu, AutoVerus'u beklemeden ilerlememi sağlar ve CleanFXVault'un reserve katmanını gerçek yield motoruna bağlar. Onayını bekliyorum.
 

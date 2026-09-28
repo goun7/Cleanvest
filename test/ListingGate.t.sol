@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "../contracts/ListingGate.sol";
 
 /// @title ListingGate Test Suite
-/// @notice AegisForge denetimi zorunlu; basvuru ucretsiz (harc modeli YOK)
+/// @notice CleanAudit denetimi zorunlu; basvuru ucretsiz (harc modeli YOK)
 contract ListingGateTest is Test {
     ListingGate public gate;
     address public owner = address(0x0ABE);
@@ -17,7 +17,7 @@ contract ListingGateTest is Test {
         gate.transferOwnership(owner);
 
         vm.prank(owner);
-        gate.setAegisForgeOracle(oracle);
+        gate.setCleanAuditOracle(oracle);
     }
 
     /// @notice Basvuru ucretsiz olmali (harc modeli YOK)
@@ -40,7 +40,7 @@ contract ListingGateTest is Test {
         gate.applyForListing(address(0), "Invalid");
     }
 
-    /// @notice AegisForge onayi -> Verified
+    /// @notice CleanAudit onayi -> Verified
     function testAuditPassVerifies() public {
         gate.applyForListing(projectToken, "TestToken");
 
@@ -66,7 +66,7 @@ contract ListingGateTest is Test {
     function testRevertNonOracleAudit() public {
         gate.applyForListing(projectToken, "TestToken");
 
-        vm.expectRevert("Yalnizca AegisForge oracle");
+        vm.expectRevert("Yalnizca CleanAudit oracle");
         gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 90, 0, 0, 0, 1, 2, true);
     }
 
@@ -95,16 +95,16 @@ contract ListingGateTest is Test {
         address newOracle = address(0xBEEF);
 
         vm.prank(owner);
-        gate.setAegisForgeOracle(newOracle);
+        gate.setCleanAuditOracle(newOracle);
 
-        assertEq(gate.aegisForgeOracle(), newOracle);
+        assertEq(gate.cleanAuditOracle(), newOracle);
     }
 
     /// @notice Sifir oracle set edilemez
     function testRevertZeroOracle() public {
         vm.prank(owner);
         vm.expectRevert("Oracle sifir olamaz");
-        gate.setAegisForgeOracle(address(0));
+        gate.setCleanAuditOracle(address(0));
     }
 
     /// @notice PoV hash taahhudunu muhurler ve dogrular
@@ -179,7 +179,7 @@ contract ListingGateTest is Test {
     function testRevertNonOracleSeal() public {
         bytes32 appId = gate.applyForListing(projectToken, "TestToken");
 
-        vm.expectRevert("Yalnizca AegisForge oracle");
+        vm.expectRevert("Yalnizca CleanAudit oracle");
         gate.sealPovCommitment(appId, keccak256("payload"), block.timestamp, 1, 30);
     }
 
@@ -328,7 +328,7 @@ contract ListingGateTest is Test {
         vm.prank(oracle);
         gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
 
-        vm.expectRevert("Yalnizca AegisForge oracle");
+        vm.expectRevert("Yalnizca CleanAudit oracle");
         gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.FuzzPatch);
     }
 

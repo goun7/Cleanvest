@@ -51,5 +51,5 @@
 | **Kaldıraç & Tasfiye** | 100x kumar, gece gelen tek fitille %100 sermaye kaybı | **SIFIR Kaldıraç, SIFIR Tasfiye Riski (%100 Spot)** |
 | **Önceden Alım (Front-running)** | HFT botları emirlerinizi milisaniyelerle önden soyar | **Halka Açık API Yok; HFT Botları Fiziksel Olarak Engelli** |
 | **Boşta Duran Nakit** | Vadesiz dolara %0 faiz verir (kendi kasasına atar) | **Boşta duran her $cUSD'ye otomatik %4.80 ABD tahvil faizi** |
-| **Listelenen Varlıklar** | Parayı basan meme-coin girer, ertesi gün dump yer | **AegisForge + AutoVerus 4 kademeli temizlik süzgeci** |
+| **Listelenen Varlıklar** | Parayı basan meme-coin girer, ertesi gün dump yer | **CleanAudit + AutoVerus 4 kademeli temizlik süzgeci** |
 | **Fon Güvenliği** | Borsa batarsa paranız buharlaşır (FTX senaryosu) | **Validium ZK-Rollup: Fonlar kullanıcının kendi kasasında** |

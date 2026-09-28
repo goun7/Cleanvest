@@ -126,7 +126,7 @@ Ampirik benchmark: stabilcoin bank-run'larında ( USDC/UST krizleri) talep **48 
 
 ---
 
-## SORU 3: AegisForge ZK-PoV Motoru — Cleanvest Listeleme Kapısı Olarak Bağımsız Gelir Modeli Yaratmak İçin Yeterli mi?
+## SORU 3: CleanAudit ZK-PoV Motoru — Cleanvest Listeleme Kapısı Olarak Bağımsız Gelir Modeli Yaratmak İçin Yeterli mi?
 
 ### HÜKÜM: ⚠️ KISMİ. "Bağımsız SaaS tarama geliri" EVET; "$4.900 listeleme kapısı + ZK-PoV birincil motor" HAYIR.
 
@@ -152,7 +152,7 @@ Bu varsayımın iki kırılma noktası var:
 **Sonuç:** listeleme kapısı bağımsız bir gelir motoru **olamaz**, çünkü fiyatlandırma gücü borsanın likiditesine bağlıdır. **Gerçekten bağımsız olan tek kısım:** $299/$1.490'lık **tarama raporu** ( listing entegrasyonu olmayan, herhangi bir geliştiriciye satılan salt SaaS). Bu çalışır — ama $300k/ay getirmez.
 
 ### 3.3 ❌ "Ödeme veya Listelenmez" = Protection Racket Yapısı
-Şu anki model: AegisForge **hem** $4.900'a remedasyon paketi satıyor **hem de** listelemeyi ödenene kadar engelliyor. Bu yapı üç yönden kırılgan:
+Şu anki model: CleanAudit **hem** $4.900'a remedasyon paketi satıyor **hem de** listelemeyi ödenene kadar engelliyor. Bu yapı üç yönden kırılgan:
 - **Yan etki ( perverse incentive):** alacağın artması için **ağır bulguları şişirmek** veya **false positive'leri fatura etmek** için finansal teşvik. ( Z3/timeout kaynaklı bulguların %15-30'u gürültü olabilir.)
 - **Regülatör/ toplum optiği:** "Öde ya da listelenmezsin" **haraç/şantaj** olarak okunur. Siber güvenlik şirketi değil, koruma parası toplayan bir organizasyon olarak etiketleniriz.
 - **Reputasyonel çelişki:** `06_...` Red-Team Satır-6 kendi itirafımız: **"Formel Doğrulama Yanılgısı (False Negatives)"** — invariant'lar dışında kalan mantık hataları kalır. Bu durumda satılan "Cryptographic Clean Pass" **yanlış güvenilirlik** satar; bilinen bir açık sonradan çıkarsa Sorumluluk bize döner.

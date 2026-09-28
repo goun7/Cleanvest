@@ -13,7 +13,7 @@
 **Mevcut ürünün doğru tanımı** (`PROJE_KAGIDI.md` sayfa başı DURUM RAPORU ile
 `docs/35` ile **birebir**):
 
-> **ERC-4626 getiri kasası + FBA settlement + AegisForge denetim kapısı +
+> **ERC-4626 getiri kasası + FBA settlement + CleanAudit denetim kapısı +
 > PQHaven USDC köprüsü (Seçenek A).** Kodda **7 sözleşme** vardır:
 > `CleanUSD`, `CleanFXVault`, `ListingGate`, `CleanvestSettlement`,
 > `ReserveManager`, `UniswapProxy`.
@@ -33,8 +33,8 @@
 | 7 | **Slippage kalkanı `depositWithMin`** (ERC-4626 donation attack'e karşı) | `CleanFXVault.sol:203` `function depositWithMin`; `testSecurityDonationAttackVectors` (199 wei kayıp) | ✅ MEVCUT |
 | 8 | **Junior rezerv ≥ %3 TVL** (fail-closed mint-halt) | `CleanUSD.sol:25` `JUNIOR_MIN_BPS=300`; `:46` `canMint()`; `:99` `require(canMint(), "Junior <%3, mint kilitli")` | ✅ MEVCUT |
 | 9 | **400ms FBA batch settlement** (Budish frequent batch auction) | `CleanvestSettlement.sol:23` `T_BATCH_MS=400`; `:119` `executeBatch Settlement` | ✅ MEVCUT |
-| 10 | **AegisForge denetim kapısı: PoV_Hash taahhüdü** (ZK-SNARK DEĞİL) | `ListingGate.sol:28-30` PoV_Hash = `SHA256("aegisforge-pov-v1" \|\| ...)`; `:118` `onlyAegisForge` | ✅ MEVCUT |
-| 11 | **AegisForge 3 kademeli fiyatlandırma** ($299 / $1.490 / $4.900) | `ListingGate.sol:73` `$299 kademesi PoV_Hash raporu verir`; `:50` `MIN_CLEAN_SCORE=70` | ✅ MEVCUT |
+| 10 | **CleanAudit denetim kapısı: PoV_Hash taahhüdü** (ZK-SNARK DEĞİL) | `ListingGate.sol:28-30` PoV_Hash = `SHA256("aegisforge-pov-v1" \|\| ...)`; `:118` `onlyCleanAudit` | ✅ MEVCUT |
+| 11 | **CleanAudit 3 kademeli fiyatlandırma** ($299 / $1.490 / $4.900) | `ListingGate.sol:73` `$299 kademesi PoV_Hash raporu verir`; `:50` `MIN_CLEAN_SCORE=70` | ✅ MEVCUT |
 | 12 | **PQHaven USDC köprüsü (Seçenek A)** — canlı anvil'de kanıtlandı | `test/PQHavenBridge.t.sol` (8 test) + `docs/34 §7` (anvil koşusu, `e6a58b6`) | ✅ MEVCUT (testnet) |
 | 13 | **"48 Güvenlik İnvariantı"** | **KODDA KANITLANAMAZ** — `test/`'te 5 invariant var (`test/scusd_vault_invariants.t.sol:36,50,68,95,106`), 48 DEĞİL | 🔴 **VAAT DEĞİL** |
 | 14 | **Validium / ZK-Proof settlement, Escape Hatch, Privy/Web3Auth, Omnichain** | **Kodda 0 dosya** — grep ile doğrulandı (`PROJE_KAGIDI.md` sayfa başı tablo) | 🗺️ YOL HARİTASI |
@@ -68,7 +68,7 @@ Koddaki 5 invariant (`test/scusd_vault_invariants.t.sol`):
 
 `docs/35` L122 zaten doğruyu söylüyordu: **"Invariant'lar: 5 (300 derinlik fuzz)"**.
 **"48" sayısı `docs/35`'te geçmiyordu; yalnızca `PROJE_KAGIDI.md` L208'de**
-(AegisForge satış metninde) geçiyordu. **Bu güncelleme ile PROJE_KAGIDI'dan da
+(CleanAudit satış metninde) geçiyordu. **Bu güncelleme ile PROJE_KAGIDI'dan da
 çıkarıldı** — kanıtlanamaz sayı müşteri materyallerinde kalamaz.
 
 > **Kesin kanıt (docs/19 §6.3):** *"48 invariant hedefinin 15'i. 10 vault +
@@ -76,9 +76,9 @@ Koddaki 5 invariant (`test/scusd_vault_invariants.t.sol`):
 > 33'sü hiç var olmadı. Ayrıca `test/`'te **5** invariant çalışır — yani
 > "48'in 33'ü kodlanmadı" bile gerçeğin üzerindedir; **gerçek sayı 5'tir.**
 
-> **Dürüst not:** AegisForge kendi ürününde 48 invariant kullanıyor olabilir,
+> **Dürüst not:** CleanAudit kendi ürününde 48 invariant kullanıyor olabilir,
 > ancak bu **Cleanvest kodunun** iddiası değildir. İki ürün karıştırıldığında
-> doğan bir abartıdır. AegisForge'un invariant sayısı için `07_AegisForge`
+> doğan bir abartıdır. CleanAudit'un invariant sayısı için `07_CleanAudit`
 > dokümanlarına atıf yapılmalıdır; Cleanvest **5**'idir.
 
 ---

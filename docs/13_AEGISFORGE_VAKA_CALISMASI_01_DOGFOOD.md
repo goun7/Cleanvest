@@ -1,7 +1,7 @@
 # AEGISFORGE VAKA ÇALIŞMASI #1 — DOGFOOD: Cleanvest Kendi Kontratları
 
 **Tarih:** 2026-09-24  
-**Motor:** AegisForge v1.0.0 (Kademe-4 sinsi kod süzgeci)  
+**Motor:** CleanAudit v1.0.0 (Kademe-4 sinsi kod süzgeci)  
 **Kanal:** `aegisforge scan --source <file>`  
 **Karışma Modu:** LE-3 kuralı uyarınca PUBLİK
 
@@ -9,7 +9,7 @@
 
 ## Özet
 
-AegisForge denetim motorunu **kendi kontratlarımızda** çalıştırdık (dogfood). İkisi de **Kademe-4 (sinsi kod) süzgecinden temiz** geçti. Bu, motorumuzun çalıştığını ve kendi kodumuzda arka kapı bulunmadığını kanıtlar.
+CleanAudit denetim motorunu **kendi kontratlarımızda** çalıştırdık (dogfood). İkisi de **Kademe-4 (sinsi kod) süzgecinden temiz** geçti. Bu, motorumuzun çalıştığını ve kendi kodumuzda arka kapı bulunmadığını kanıtlar.
 
 ## Tarama Sonuçları
 
@@ -48,7 +48,7 @@ Bu vaka çalışması **kendi kodumuzu** taradı — çıkar çatışması yok. 
 **Üçüncü-taraf yeniden doğrulama daveti:** Aşağıdaki komutla sonuç yeniden üretilebilir:
 
 ```bash
-# AegisForge cekirdegi 07_Temporit icindedir (26_Cleanvest icinde DEGIL - kapsam karari)
+# CleanAudit cekirdegi 07_Temporit icindedir (26_Cleanvest icinde DEGIL - kapsam karari)
 cd ../07_Temporit_DeFi_Metamorfik_Yaris_Durumu_Avcisi
 cargo build -p aegisforge --release
 
@@ -73,8 +73,8 @@ forge build
 ## Ticari Etki
 
 - **$299 kademesi için MVP kanıtı var** — anında satılabilir durumda.
-- **Temiz rozet:** CleanUSD + CleanFXVault "AegisForge Kademe-4 Temiz" rozeti almaya hak kazandı.
+- **Temiz rozet:** CleanUSD + CleanFXVault "CleanAudit Kademe-4 Temiz" rozeti almaya hak kazandı.
 - **Sonraki hedef:** AutoVerus entegrasyonu → Kademe-1 canlanır → $299 kademesi tam değerine ulaşır.
 
 ---
-*AegisForge: "ZK-SNARK değil. Hash taahhüdü. Ücretsiz CleanScore. Haraç yok."*
+*CleanAudit: "ZK-SNARK değil. Hash taahhüdü. Ücretsiz CleanScore. Haraç yok."*

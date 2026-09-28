@@ -175,5 +175,5 @@ done
 PoV_Hash'lerin yukarıdakiyle aynı olduğu doğrulanabilir.
 
 ---
-*AegisForge: "PoV_Hash bir SHA-256 hash taahhüdüdür, ZK-SNARK değil. CleanScore
+*CleanAudit: "PoV_Hash bir SHA-256 hash taahhüdüdür, ZK-SNARK değil. CleanScore
 ücretsizdir. Haraç modeli yok."*

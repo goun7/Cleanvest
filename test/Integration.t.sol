@@ -204,7 +204,7 @@ contract IntegrationTest is Test {
     /// @notice Proje listeleme: ucretsiz basvuru -> audit -> PoV -> upgrade
     function testListingFlow() public {
         vm.prank(founder);
-        gate.setAegisForgeOracle(oracle);
+        gate.setCleanAuditOracle(oracle);
 
         address projectToken = address(0x7047);
 
@@ -212,7 +212,7 @@ contract IntegrationTest is Test {
         assertEq(gate.applicationFee(), 0, "Basvuru ucretsiz");
         bytes32 appId = gate.applyForListing(projectToken, "Integration Token");
 
-        // AegisForge audit: 85 skor -> Verified
+        // CleanAudit audit: 85 skor -> Verified
         vm.startPrank(oracle);
         gate.recordAuditResultForToken(
             appId, projectToken, true, 85, 0, 0, 1, 2, 3, false

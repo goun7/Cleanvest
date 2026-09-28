@@ -7,14 +7,14 @@ import "./interfaces/IListingGate.sol";
 
 /// @title ListingGate - Cleanvest Listeleme Kapis
 /// @author Cleanvest
-/// @notice AegisForge denetimini gecmeden hicbir proje listelenemez.
+/// @notice CleanAudit denetimini gecmeden hicbir proje listelenemez.
 ///         Basvuru UCRETSIZDIR; "odeme ya da listelenme" harac modeli YOK.
 /// @dev Sartname Kurali: CleanScore kamusal API ucretsizdir. Verified rozeti
 ///      $4.900 Enterprise kademesi ile gelir ama listeleme engellenmez -
 ///      sadece siralamada oncelik kazanir.
 contract ListingGate is IListingGate, Ownable {
-    /// @notice AegisForge oracle adresi (denetim sonuclari buradan gelir).
-    address public aegisForgeOracle;
+    /// @notice CleanAudit oracle adresi (denetim sonuclari buradan gelir).
+    address public cleanAuditOracle;
 
     /// @notice Basvuru => CleanScore (0-100)
     mapping(bytes32 => uint256) public applicationScore;
@@ -35,11 +35,11 @@ contract ListingGate is IListingGate, Ownable {
     mapping(bytes32 => uint256) public commitmentTimestamp;
 
     /// @notice Basvuru => taahhuttaki bulgu sayisi (KAMUSAL - sayi gizli degil).
-    /// @dev AegisForge cekirdegi PovCommitment.finding_count ile ayni deger.
+    /// @dev CleanAudit cekirdegi PovCommitment.finding_count ile ayni deger.
     mapping(bytes32 => uint256) public commitmentFindingCount;
 
     /// @notice Basvuru => risk skoru 0-100 (KAMUSAL - CleanScore'dan gelir).
-    /// @dev AegisForge cekirdegi PovCommitment.risk_score ile ayni deger.
+    /// @dev CleanAudit cekirdegi PovCommitment.risk_score ile ayni deger.
     ///      Skor gizli degildir; gizli olan yalnizca exploit payload ve tuz'dur.
     mapping(bytes32 => uint8) public commitmentRiskScore;
 
@@ -49,7 +49,7 @@ contract ListingGate is IListingGate, Ownable {
     /// @notice Minimum gecerli CleanScore ebesigi (70/100).
     uint256 public constant MIN_CLEAN_SCORE = 70;
 
-    /// @notice KAMUSAL CleanScore kaydi - AegisForge cekirdeginin
+    /// @notice KAMUSAL CleanScore kaydi - CleanAudit cekirdeginin
     ///         CleanScoreResponse yapisinin EVM karsiligi.
     /// @dev Sartname: CleanScore KAMUSAL ve UCRETSIZ bir API'dir. Bu yapi
     ///      zincirde okunabilir; gizli degildir. Gizli olan yalnizca PoV
@@ -74,7 +74,7 @@ contract ListingGate is IListingGate, Ownable {
     ///      $990 ve $4.900 kademeleri tam audit + remediation diff verir.
     mapping(address => bool) public fullAuditAvailable;
 
-    /// @notice Denetim kademesi - AegisForge pricing.rs Tier enum'unun EVM karsiligi.
+    /// @notice Denetim kademesi - CleanAudit pricing.rs Tier enum'unun EVM karsiligi.
     /// @dev Musteri sureci: ucretsiz basvuru -> Scan ($199) -> ScanHuman ($399)
     ///      -> FuzzPatch ($990) -> Priority ($4.900). Yalnizca ileri yonlu
     ///      yukseltme (downgrade YOK). Fiyatlar docs/40 H5 Fiyatlandirma Karari
@@ -121,8 +121,8 @@ contract ListingGate is IListingGate, Ownable {
 
     constructor() Ownable(msg.sender) {}
 
-    modifier onlyAegisForge() {
-        require(msg.sender == aegisForgeOracle, "Yalnizca AegisForge oracle");
+    modifier onlyCleanAudit() {
+        require(msg.sender == cleanAuditOracle, "Yalnizca CleanAudit oracle");
         _;
     }
 
@@ -146,8 +146,8 @@ contract ListingGate is IListingGate, Ownable {
     }
 
     /// @inheritdoc IListingGate
-    /// @dev Yalnizca AegisForge oracle cagirabilir - merkeziyetsiz доверие.
-    function recordAuditResult(bytes32 applicationId, bool passed, uint256 cleanScore) external onlyAegisForge {
+    /// @dev Yalnizca CleanAudit oracle cagirabilir - merkeziyetsiz доверие.
+    function recordAuditResult(bytes32 applicationId, bool passed, uint256 cleanScore) external onlyCleanAudit {
         applicationScore[applicationId] = cleanScore;
 
         // Token adresini applicationToken eslemesinden coz (TEKNIK BORC KAPANDI:
@@ -156,7 +156,7 @@ contract ListingGate is IListingGate, Ownable {
         emit AuditRecorded(applicationId, token, passed, cleanScore);
     }
 
-    /// @notice AegisForge tarafindan cagrilir - token adresi ile birlikte.
+    /// @notice CleanAudit tarafindan cagrilir - token adresi ile birlikte.
     /// @dev Bu fonksiyon gercek audit akisidir. Tam bulgu sayilari KAMUSALDIR.
     function recordAuditResultForToken(
         bytes32 applicationId,
@@ -169,7 +169,7 @@ contract ListingGate is IListingGate, Ownable {
         uint16 findingsLow,
         uint16 findingsInfo,
         bool auditFullAvailable
-    ) external onlyAegisForge {
+    ) external onlyCleanAudit {
         require(cleanScore <= 100, "Skor 0-100 arasinda olmali");
 
         applicationScore[applicationId] = cleanScore;
@@ -211,7 +211,7 @@ contract ListingGate is IListingGate, Ownable {
     ///      engellemez - sadece siralamada oncelik kaybettirir.
     /// @param projectToken Yükseltilecek proje
     /// @param newTier Hedef kadem (mevcutten yüksek olmalı)
-    function upgradeAuditTier(address projectToken, AuditTier newTier) external onlyAegisForge {
+    function upgradeAuditTier(address projectToken, AuditTier newTier) external onlyCleanAudit {
         AuditTier current = auditTier[projectToken];
         require(uint256(newTier) > uint256(current), "Yalnizca ileri yonlu yukseltme");
         // Gecersiz kademe kontrolu (defense-in-depth): ABI dekoderi enum
@@ -244,7 +244,7 @@ contract ListingGate is IListingGate, Ownable {
         return (PRICE_SCAN, PRICE_SCAN_HUMAN, PRICE_FUZZ_PATCH, PRICE_PRIORITY);
     }
 
-    /// @notice Harf notu hesapla - AegisForge grade_for ile ayni bantlar.
+    /// @notice Harf notu hesapla - CleanAudit grade_for ile ayni bantlar.
     /// @dev Kasitli muhafazakar: AAA kazanmak zordur (cekirdek yorumundan alinti).
     function _gradeFor(uint256 score) internal pure returns (bytes1) {
         if (score >= 95) return bytes1("S");  // nadir, muhafazakar
@@ -283,8 +283,8 @@ contract ListingGate is IListingGate, Ownable {
         return block.timestamp <= verifiedUntil[projectToken];
     }
 
-    /// @notice AegisForge tarafindan cagrilir - PoV hash taahhudunu zincirde muhurler.
-    /// @dev AegisForge motoru off-chain'da payload'u gizli tutar ve yalnizca
+    /// @notice CleanAudit tarafindan cagrilir - PoV hash taahhudunu zincirde muhurler.
+    /// @dev CleanAudit motoru off-chain'da payload'u gizli tutar ve yalnizca
     ///      hash'i gonderir. Bu "satilmis sirlar" modelidir: alici odeme yapinca
     ///      payload ve tuzu alir, hash'i YENIDEN uretir ve eslestigini dogrular.
     ///      Taahhudun kendi basina bir ZK-SNARK olmadigini acikca belirtiyoruz.
@@ -296,7 +296,7 @@ contract ListingGate is IListingGate, Ownable {
         uint256 timestamp,
         uint256 findingCount,
         uint8 riskScore
-    ) external onlyAegisForge {
+    ) external onlyCleanAudit {
         require(povHash != bytes32(0), "PoV hash sifir olamaz");
         require(timestamp > 0, "Timestamp sifir olamaz");
 
@@ -329,10 +329,10 @@ contract ListingGate is IListingGate, Ownable {
     }
 
     /// @inheritdoc IListingGate
-    function setAegisForgeOracle(address oracle) external onlyOwner {
+    function setCleanAuditOracle(address oracle) external onlyOwner {
         require(oracle != address(0), "Oracle sifir olamaz");
-        address old = aegisForgeOracle;
-        aegisForgeOracle = oracle;
+        address old = cleanAuditOracle;
+        cleanAuditOracle = oracle;
         emit OracleUpdated(old, oracle);
     }
 

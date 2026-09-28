@@ -1,7 +1,7 @@
 # AEGISFORGE VAKA ÇALIŞMASI #3 — pgHeal: TypeScript Servis Kaynak Taraması
 
 **Tarih:** 2026-09-25  
-**Motor:** AegisForge v0.4.0 (kaynak imza tarayıcısı + PoV_Hash commitment)  
+**Motor:** CleanAudit v0.4.0 (kaynak imza tarayıcısı + PoV_Hash commitment)  
 **Kanal:** `aegisforge scan --src-dir <proje-kökü> --tier scan`  
 **LE-3 kuralı uyarınca PUBLİK** — çıkar-çatışması kalkanı
 
@@ -9,7 +9,7 @@
 
 ## Özet
 
-AegisForge'u **kendi portföyümüzden bir hizmette** çalıştırdık: pgHeal — PostgreSQL
+CleanAudit'u **kendi portföyümüzden bir hizmette** çalıştırdık: pgHeal — PostgreSQL
 otonom indeks ve PR robotu. Sonuç: **TEMİZ** — 57 kaynak dosyasında 0 backdoor imzası,
 **CleanScore 100/100 (AAA)**.
 

@@ -80,7 +80,7 @@ L100 geçtiyse: `totalSupply + amount ≤ tvlCap = seed × 10000 / 300`
 ### 2. ListingGate.sol L214 — `require(uint256(newTier) <= uint256(AuditTier.Priority))`
 
 ```solidity
-L208:  function upgradeAuditTier(address projectToken, AuditTier newTier) external onlyAegisForge {
+L208:  function upgradeAuditTier(address projectToken, AuditTier newTier) external onlyCleanAudit {
 L214:      require(uint256(newTier) <= uint256(AuditTier.Priority), "Gecersiz kademe");
 ```
 
