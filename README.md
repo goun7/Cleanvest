@@ -1,6 +1,8 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**Sözleşme + frontend katmanı tamamlandı** · Test/coverage sayıları için tek kaynak: [`docs/43_TEST_DURUMU_TEK_KAYNAK.md`](docs/43_TEST_DURUMU_TEK_KAYNAK.md) (taze: 187 Foundry + 28 vitest, %96.97 line / %96.75 branch, 7 sözleşme) · TODO/placeholder sıfır
+**Sözleşme + frontend katmanı tamamlandı** · Test/coverage sayıları için tek kaynak: [`docs/43_TEST_DURUMU_TEK_KAYNAK.md`](docs/43_TEST_DURUMU_TEK_KAYNAK.md) (taze: 187 Foundry + 28 vitest · 7 sözleşme) · TODO/placeholder sıfır
+
+> 🔢 **Sayıların üretimi:** README'e giren her sayı [`scripts/readme_stats.py`](scripts/readme_stats.py) tarafından koddan üretilir — elle girilmez. Çalıştırma: `python3 scripts/readme_stats.py`
 
 Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getirili stabilcoin
 ($cUSD/$scUSD) sunan bir kripto ekosistemidir. Bu depo **sözleşme katmanını** içerir.
@@ -41,13 +43,13 @@ Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getiril
 
 | Sözleşme | Açıklama | Test |
 |---|---|---|
-| [`CleanUSD`](contracts/CleanUSD.sol) | $1.00 sabit ödeme stabilcoini. **Rebase yok**; junior reserve ≥ TVL×%3 hard invariant | 9 |
-| [`CleanFXVault`](contracts/CleanFXVault.sol) | ERC-4626 getiri kasası; 3 kademeli reserve, T+2 itfa kuyruğu, utilization devre-kesici | 20 |
-| [`ListingGate`](contracts/ListingGate.sol) | AegisForge denetimi zorunlu; AuditTier ($299/$1.490/$4.900), CleanScore kamusal API | 28 |
-| [`CleanvestSettlement`](contracts/CleanvestSettlement.sol) | 400ms Budish FBA; orderCommitmentRoot, boyut-farklı anti-collusion, batch bütünlük kanıtı | 19 |
-| [`ReserveManager`](contracts/ReserveManager.sol) | 3 kademeli reserve dağılımı; SAFE mod %12 idle, OPTIMIZE feed kilidi | 14 |
-| [`UniswapProxy`](contracts/UniswapProxy.sol) | Artık hacim yönlendirme; **kayma gizlenmez**, UI'da şeffaf | 8 |
-| [Integration](test/Integration.t.sol) | 6 sözleşmenin birlikte çalışması; 3 uçtan uca senaryo | 8 |
+| [`CleanUSD`](contracts/CleanUSD.sol) | $1.00 sabit ödeme stabilcoini. **Rebase yok**; junior reserve ≥ TVL×%3 hard invariant | 16 |
+| [`CleanFXVault`](contracts/CleanFXVault.sol) | ERC-4626 getiri kasası; 3 kademeli reserve, T+2 itfa kuyruğu, utilization devre-kesici | 33 |
+| [`ListingGate`](contracts/ListingGate.sol) | AegisForge denetimi zorunlu; AuditTier ($199/$399/$990/$4.900), CleanScore kamusal API | 36 |
+| [`CleanvestSettlement`](contracts/CleanvestSettlement.sol) | 400ms Budish FBA; orderCommitmentRoot, boyut-farklı anti-collusion, **commitment scheme** ile batch bütünlüğü | 21 |
+| [`ReserveManager`](contracts/ReserveManager.sol) | 3 kademeli reserve dağılımı; SAFE mod %12 idle, OPTIMIZE feed kilidi | 31 |
+| [`UniswapProxy`](contracts/UniswapProxy.sol) | Artık hacim yönlendirme; **kayma gizlenmez**, UI'da şeffaf | 13 |
+| [Integration](test/Integration.t.sol) | 7 sözleşmenin birlikte çalışması; uçtan uca senaryolar | 9 |
 
 ## Hızlı Başlangıç (Quick Start — 5 adım)
 
@@ -75,9 +77,10 @@ forge script script/Demo.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --unl
 #    Cikti "=== ONCHAIN EXECUTION COMPLETE & SUCCESSFUL ===" ile biter
 
 # 5. Dogrulama — testler + kapsamislik
-~/.foundry/bin/forge test                          # 186/186 Foundry
+~/.foundry/bin/forge test                          # 187/187 Foundry
 cd web && npx vitest run && cd ..                  # 28/28 vitest (erisilebilirlik dahil)
-~/.foundry/bin/forge coverage --report lcov        # 7 sozlesme: %96.97 line / %96.75 branch
+~/.foundry/bin/forge coverage --report lcov        # 7 sozlesme (sayilar scripts/readme_stats.py ile taze)
+#    Sayilar elle YAZILMAZ: python3 scripts/readme_stats.py ile koddan uretilir
 ```
 
 > **vitest NOTU:** `npx vitest` her zaman `web/` icinden calistirilmalidir. Repo
@@ -87,9 +90,11 @@ cd web && npx vitest run && cd ..                  # 28/28 vitest (erisilebilirl
 > korumali; ayrica jsdom+vitest yalnizca `web/node_modules`'tadir.
 
 > **Coverage NOTU:** `script/` altindaki deploy araclari is mantigi icermez,
-> lcov'da %0 gosterip genel rakami dusurur. Yukaridaki sayilar 6 SOZLESME icin.
-> Kalan 2 acik dal (CleanUSD:102, ListingGate:214) belgelenmis dead-by-design
-> defense-in-depth katmanlaridir (test ile ulasilamaz).
+> lcov'da %0 gosterip genel rakami dusurur. Yukaridaki sayilar 7 SOZLESME icin.
+> Coverage yuzdeleri `scripts/readme_stats.py` ile degil `forge coverage` ile
+> okunur (README'de sabit yuzde YAZILMAZ — stale olur; her calistirmada taze).
+> Kalan acik dallar belgelenmis dead-by-design defense-in-depth
+> katmanlaridir (test ile ulasilamaz).
 
 Deployment detaylari icin bkz. [`docs/19_DEPLOYMENT_REHBERI.md`](docs/19_DEPLOYMENT_REHBERI.md).
 Musteri onboarding akisi: [`docs/27_MUSTERI_ONBOARDING.md`](docs/27_MUSTERI_ONBOARDING.md).
@@ -149,6 +154,41 @@ Denetim turları yapmadan "bitti" denseydi bunlar canlıda patlardı:
 2. ListingGate score lookup **her zaman 0** döndürüyordu (timestamp hash uyumsuzluğu)
 3. Batch settlement proof **5 bayt ile geçiyordu** (artık commitment scheme)
 4. UniswapProxy **sahte swap** yapıyordu (artık gerçek `exactInputSingle`)
+
+> ## ⚠️ DÜRÜST TEKNİK DÜZELTME — "Merkle inclusion kanıtı" DEĞİL
+>
+> `CleanvestSettlement.executeBatchSettlement`'taki `proof` parametresi
+> **bir Merkle inclusion (yaprak bulundu) kanıtı DEĞİLDİR.**
+>
+> **Kodun gerçek yaptığı** (`CleanvestSettlement.sol:143-147`):
+> ```solidity
+> bytes32 expectedProof = keccak256(
+>     abi.encode(batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume)
+> );
+> require(proof.length == 32, "Kanit 32 bayt olmali");
+> require(bytes32(proof) == expectedProof, "Kanit batch ile uyumsuz");
+> ```
+> Yani `proof`, batch'in **kendi 4 alanının keccak256 özetidir** — bir
+> **commitment scheme** (taahhüt şeması): yalnızca bu batch'i bilen solver
+> bu özeti üretebilir.
+>
+> **Gerçek bir Merkle inclusion kanıtından farkı:** Merkle kanıtı, bir
+> yaprağın ağaç kökünde bulunduğunu kanıtlamak için **kardeş düğüm yolunu**
+> (sibling path) sunar ve `orderCommitmentRoot`'a karşı doğrulanır. Burada
+> ise `proof`, `orderCommitmentRoot`'a karşı değil, batch'in özetine eşit
+> olarak doğrulanır; **hiçbir yaprak/kardeş düğüm içermez**. 32 bayt,
+> tek yapraklı bir ağaç dışında inclusion kanıtı olamaz.
+>
+> **Bu bir güvenlik açığı mı?** Başka bir deyişle — **hayır, kasıtlı**.
+> Sözleşmenin amacı **batch bütünlüğüdür** (solver ancak kendi gönderdiği
+> batch'i kanıtlayabilir), yaprak bazlı inclusion doğrulaması değildir.
+> Kodun kendi yorumu (L139-142) buna **"commitment scheme"** der ve
+> doğrudur. `orderCommitmentRoot`'un boş olmaması zorunluluğu (L134) ayrı
+> bir front-run/race kalkanıdır.
+>
+> **Müşteriye sunumda:** "batch bütünlük kanıtı" denir, **"Merkle inclusion
+> kanıtı"** denmez. Daha güçlü bir garanti istenirse, gerçek Merkle yol
+> doğrulaması **YOL HARİTASI**'dır (yaprak imzaları + kardeş yolu).
 
 ## Frontend — scUSD Dashboard (`web/`)
 

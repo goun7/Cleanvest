@@ -15,3 +15,6 @@ broadcast/
 # Forge coverage ciktilari (kaynak degil — uretilir)
 lcov.info
 coverage/
+
+# Vitest JSON reporter ciktisi (scripts/readme_stats.py okur, kaynak degil)
+web/.vitest/
