@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BrowserProvider } from "ethers";
 import type { Eip1193Provider } from "./types";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { getLang, setLang, t, type Lang } from "./lib/i18n";
 import {
   CHAIN_ID,
@@ -329,6 +330,13 @@ function App() {
             disabled={busy || !account}
             aria-describedby="balance-hint"
             onChange={(e) => setAmount(e.target.value)}
+            onKeyDown={(e) => {
+              // WCAG 2.1.1: klavye ile islem gonderimi (Enter)
+              if (e.key === "Enter" && !busy && account && amount) {
+                e.preventDefault();
+                void submit();
+              }
+            }}
           />
           {balance && Number(balance) > 0 && (
             <button
@@ -372,9 +380,21 @@ function App() {
       </section>
 
       <footer className="mt-8 text-center text-xs text-slate-600">
-        Cleanvest · {tt("footer")} · 160/160 Foundry tests · <span className="font-mono">rc=0</span>
+        Cleanvest · {tt("footer")} · 186/186 Foundry tests · <span className="font-mono">rc=0</span>
       </footer>
     </div>
+  );
+}
+
+/**
+ * AppWithBoundary — App'i ErrorBoundary ile sarar.
+ * Render hatalarinda beyaz ekran ONLENIR (WCAG 4.1.3).
+ */
+export function AppWithBoundary() {
+  return (
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   );
 }
 
