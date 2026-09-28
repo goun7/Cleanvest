@@ -6,6 +6,8 @@ license = "MIT"
 description = "Cleanvest emir taahhudu Merkle ureticisi — orderCommitmentRoot + inclusion proof"
 
 [dependencies]
+k256 = { version = "0.14", features = ["ecdsa"] }
+sha3 = "0.10"
 tiny-keccak = { version = "2", features = ["keccak"] }
 
 [dev-dependencies]

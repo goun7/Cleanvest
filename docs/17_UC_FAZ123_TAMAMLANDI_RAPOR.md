@@ -55,7 +55,7 @@ Talimat eski snapshot'tan geldi. Düzeltmeler yapılmıştı, diff'in çıktıs�
 ### 5. 🔵 FAZ-3 Spot HEX Borsa — TAMAM (17/17 test)
 
 - **T_batch = 400ms** Budish FBA kilidi
-- **`orderCommitmentRoot` ZORUNLU** — sifir (atanmamis) Merkle kökü reddedilir (front-run/race kalkani). ✅ **KAPANDI (2026-09-28): Merkle üreticisi MEVCUT** — `merkle/` Rust crate'i gerçek kökü üretir (çift-yapraklı ağaç) ve `CleanvestSettlement.verifyMerkleProof` zincirde inclusion doğrular; Rust ↔ Solidity kökleri birebir (`0x21e195d1...` çapraz kanıtı). **Hâlâ YOL HARİTASI:** yaprak imzaları + canlı solver entegrasyonu (bkz. README "GÜVENLİK AÇIĞI KAPANDI" notu). Merkle olmayan bütünlük kanıtı `proof` için bkz. README "commitment scheme" notu
+- **`orderCommitmentRoot` ZORUNLU** — sifir (atanmamis) Merkle kökü reddedilir (front-run/race kalkani). ✅ **KAPANDI (2026-09-28): Merkle üreticisi MEVCUT** — `merkle/` Rust crate'i gerçek kökü üretir (çift-yapraklı ağaç) ve `CleanvestSettlement.verifyMerkleProof` zincirde inclusion doğrular; Rust ↔ Solidity kökleri birebir (`0x21e195d1...` çapraz kanıtı). **YAPRAK İMZALARI MEVCUT** (EIP-191, Rust↔Solidity çapraz kanıt); YOL HARİTASI: canlı solver entegrasyonu (bkz. README "GÜVENLİK AÇIĞI KAPANDI" notu). Merkle olmayan bütünlük kanıtı `proof` için bkz. README "commitment scheme" notu
 - **Anti-collusion BOYUT-FARKLİ:** `eps = 0.15% + kappa·(dQ/L)`, max %5
   - **Düz 0.15% KULLANILMADI** — kendi büyük emirlerimizi kronik reddeder
 - **$5.000 soğuk başlangıç emir tavanı** + LE-2 lift trigger

@@ -1,6 +1,6 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**EVM sözleşme + frontend katmanı tamamlandı** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test/coverage sayıları için tek kaynak: [`docs/43_TEST_DURUMU_TEK_KAYNAK.md`](docs/43_TEST_DURUMU_TEK_KAYNAK.md) (taze: 226 Foundry + 28 vitest · 7 sözleşme) · TODO/placeholder sıfır
+**EVM sözleşme + frontend katmanı tamamlandı** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test/coverage sayıları için tek kaynak: [`docs/43_TEST_DURUMU_TEK_KAYNAK.md`](docs/43_TEST_DURUMU_TEK_KAYNAK.md) (taze: 239 Foundry + 28 vitest · 7 sözleşme) · TODO/placeholder sıfır
 
 > 🔢 **Sayıların üretimi:** README'e giren her sayı [`scripts/readme_stats.py`](scripts/readme_stats.py) tarafından koddan üretilir — elle girilmez. Çalıştırma: `python3 scripts/readme_stats.py`
 
@@ -87,7 +87,7 @@ forge script script/Demo.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --unl
 #    Cikti "=== ONCHAIN EXECUTION COMPLETE & SUCCESSFUL ===" ile biter
 
 # 5. Dogrulama — testler + kapsamislik
-~/.foundry/bin/forge test                          # 226/226 Foundry
+~/.foundry/bin/forge test                          # 239/239 Foundry
 cd web && npx vitest run && cd ..                  # 28/28 vitest (erisilebilirlik dahil)
 ~/.foundry/bin/forge coverage --report lcov        # 7 sozlesme (sayilar scripts/readme_stats.py ile taze)
 #    Sayilar elle YAZILMAZ: python3 scripts/readme_stats.py ile koddan uretilir
@@ -198,7 +198,7 @@ Denetim turları yapmadan "bitti" denseydi bunlar canlıda patlardı:
 >
 > **Müşteriye sunumda:** "batch bütünlük kanıtı" denir, **"Merkle inclusion
 > kanıtı"** denmez. Daha güçlü bir garanti istenirse, gerçek Merkle yol
-> doğrulaması **YOL HARİTASI**'dır (yaprak imzaları + kardeş yolu).
+> doğrulaması **MEVCUT** (kullanıcı imzaları + kardeş yolu).
 
 > ## ✅ GÜVENLİK AÇIĞI KAPANDI — off-chain Merkle üreticisi MEVCUT
 >
@@ -223,26 +223,41 @@ Denetim turları yapmadan "bitti" denseydi bunlar canlıda patlardı:
 >   **yanlış proof REDDEDİLİR**, yanlış kök REDDEDİLİR, gerçek kök ile
 >   batch settlement çalışır (`testExecuteBatchWithRealMerkleRoot`).
 >
-> **Hâlâ YOL HARİTASI (kalan adımlar):** (1) yaprak imzaları — kök,
-> kullanıcı imzalarını henüz doğrulamaz (sadece ağaç yapısını); (2) canlı
-> solver entegrasyonu — üretici `executeBatchSettlement`'a henüz bağlı
-> değil; (3) üretim anahtar yönetimi. Bu üçü insan kararıdır.
+> **✅ YAPRAK İMZALARI MEVCUT (2026-09-28, tam kapanma):** her yaprak
+> artık **kullanıcı tarafından imzalanır** — EIP-191 personal_sign
+> (`signMessage` ile cüzdan uyumlu). İmza, ağaçtan **bağımsız** doğrulanır:
+> - **Rust** — `merkle/src/signed.rs`: `SignedLeaf`, `build_signed()`
+>   (önce tüm imzaları doğrular, tek geçersiz hepsini reddeder — fail-closed),
+>   `prove_signed(i)` (Merkle path + imza), `verify_signed()` (tam kanıt zinciri)
+> - **Solidity** — `verifyLeafSignature(leaf, sig, signer)` (ecrecover),
+>   `recoverSigner`, `verifySignedOrder(...)` — **hem imza hem Merkle**
+> - **Çapraz kanıt** — Rust'ın ürettiği imza Solidity `ecrecover` ile
+>   **aynı adresi** geri kazanır (`testRustSignatureVerifiesOnChain` PASS)
+> - **Testler** — 12 yeni: **yanlış imza REDDEDİLİR**, **yanlış signer
+>   REDDEDİLİR**, doğru imza + doğru proof PASS, geçerli imza + yanlış proof
+>   REDDEDİLİR
 >
-> **Müşteriye sunumda:** "emir taahhüdü Merkle kökü **üretilir ve zincirde
-> doğrulanır**" denir; "kullanıcı imzaları doğrulanır" HENÜZ DENMEZ.
+> **Hâlâ YOL HARİTASI (kalan adımlar):** (1) canlı solver entegrasyonu —
+> üretici `executeBatchSettlement`'a henüz bağlı değil; (2) üretim anahtar
+> yönetimi. İkisi de insan kararıdır.
+>
+> **Müşteriye sunumda:** "emir taahhüdü Merkle kökü **üretilir, kullanıcı
+> imzasıyla bağlanır ve zincirde doğrulanır**" denir. Bu, güvenlik açığı
+> belgesinin 2. adımının tamamlanmasıdır — **3. adım (canlı entegrasyon)
+> opsiyoneldir, güvenlik için zorunlu DEĞİL**.
 
 > Merkle ağacı + kök üreticisi yazılmalı, (2) kök yaprak imzalarıyla
 > bağlanmalı, (3) test batch'leri gerçek kökle üretilmeli.
 
-> **Testlerin durumu ("226 passed" rozeti nasıl okunmalı):**
+> **Testlerin durumu ("239 passed" rozeti nasıl okunmalı):**
 > Eski 21 `CleanvestSettlement` testi `orderCommitmentRoot` için eski
 > **sabit değeri** (`keccak256("merkle-orders-1")`) hâlâ kullanır
 > (`test/CleanvestSettlement.t.sol:16`) — bu testler **commitment-scheme
-> bütünlüğünü** test etmeye devam eder. **Yeni 11 Merkle testi + 1 çapraz
-> doğrulama testi** gerçek ağaç kurulumunu, proof üretimini ve
-> **yanlış proof reddini** kapsar. Rozet artık "batch settlement +
-> Merkle emir taahhüdü test-kanıtlı"dır; **yaprak imzaları hariçtir**
-> (YOL HARİTASI, yukarıdaki nota bakın).
+> bütünlüğünü** test etmeye devam eder. **Yeni 11 Merkle + 1 çapraz kök +
+> 12 imza testi** gerçek ağaç kurulumunu, proof üretimini, **yanlış proof
+> reddini**, **kullanıcı imzalarını ve yanlış imza/signer reddini** kapsar.
+> Rozet artık "batch settlement + **imzalı** Merkle emir taahhüdü
+> test-kanıtlı"dır.
 > Yani testler **gerçek kullanıcı emirlerinden Merkle ağacı kurmaz** —
 > sabit bir string'in özetini kök olarak kabul eder. Sonuç: testler
 > `executeBatchSettlement`'ın **kendi iç tutarlılığını** (commitment-scheme

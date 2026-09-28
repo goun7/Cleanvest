@@ -41,6 +41,8 @@
 
 #![forbid(unsafe_code)]
 
+pub mod signed;
+
 use tiny_keccak::{Hasher, Keccak};
 
 /// Keccak-256 — EVM `keccak256` ile birebidir (tiny-keccak).

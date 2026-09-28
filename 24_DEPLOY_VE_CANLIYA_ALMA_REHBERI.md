@@ -298,10 +298,39 @@ Rust `MerkleTree::build` ve Solidity `computeRoot` **aynı kökü** üretir
 (çapraz kanıt: `merkle/examples/cross_check.rs` ile
 `test/MerkleCrossCheck.t.sol`, değer `0x21e195d1...`).
 
-> **Hâlâ YOL HARİTASI (insan kararı):** (1) **yaprak imzaları** — kök
-> kullanıcı imzalarını doğrulamaz (sadece ağaç yapısını); (2) **canlı solver
-> entegrasyonu** — üretici `executeBatchSettlement`'a henüz bağlı değil;
-> (3) anahtar yönetimi. Üretimde batch'ler gerçek kökle gönderilmelidir.
+### 6.5 İmzalı yapraklar (EIP-191) — TAM KANIT ZİNCİRİ
+
+Her emir **kullanıcı tarafından imzalanmalıdır** (cüzdan `signMessage`):
+
+```rust
+use cleanvest_merkle::signed::{SignedLeaf, SignedMerkleTree};
+use cleanvest_merkle::Order;
+
+// 1. Kullanici cuzdani leaf'in EIP-191 ozetini imzalar
+let leaf = order.leaf_hash();
+let digest = eth_signed_message_hash(&leaf);
+// -> cuzdan: personal_sign(digest) -> 65 bayt (r, s, v)
+
+let signed = SignedLeaf::new(order, signature);
+let tree = SignedMerkleTree::build_signed(&[signed])?;
+// build_signed ONCE TUM IMZALARI DOGRULAR — tek gecersiz hepsini reddeder
+```
+
+Zincirde doğrulama:
+
+```bash
+# verifySignedOrder: hem imza hem Merkle inclusion
+cast call $SETTLEMENT_ADDR "verifySignedOrder(bytes32,bytes,address,bytes,bytes32)" \
+    $LEAF $SIG $SIGNER $PROOF_BYTES $ROOT
+# -> true: imza gecerli VE yaprak kok icinde
+```
+
+> **✅ Güvenlik açığı TAM KAPANDI** (2. adım): kök artık her yaprağın
+> **kullanıcı tarafından imzalandığını** doğrular. Üretici artık rastgele
+> "kullanıcı emri" dolduramaz.
+>
+> **Hâlâ YOL HARİTASI (opsiyonel, güvenlik için zorunlu DEĞİL):** canlı solver
+> entegrasyonu + anahtar yönetimi.
 
 ## KANIT PROTOKOLÜ (her adım için)
 

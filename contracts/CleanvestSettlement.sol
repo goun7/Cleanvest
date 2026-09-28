@@ -231,6 +231,15 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
         bytes calldata proof,
         bytes32 root
     ) public pure returns (bool) {
+        return _verifyMerkleProof(leaf, proof, root);
+    }
+
+    /// @dev Memory/calldata ayrimi: verifySignedOrder memory kullanir.
+    function _verifyMerkleProof(
+        bytes32 leaf,
+        bytes memory proof,
+        bytes32 root
+    ) internal pure returns (bool) {
         // Kanit: her seviye icin 32 bayt sibling + 1 bayt konum
         // (Toplam seviye sayisi = proof.length / 33)
         if (proof.length % 33 != 0) return false;
@@ -239,10 +248,11 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
 
         for (uint256 i = 0; i < proof.length; i += 33) {
             bytes32 sibling;
-            // assembly ile 32 bayt oku (calldata proof[i..i+32])
+            // assembly ile 32 bayt oku (memory proof[i..i+32])
             assembly {
-                let ptr := add(proof.offset, i)
-                sibling := calldataload(ptr)
+                // bytes memory: 32 bayt uzunluk + veri; proof veri pointer'i
+                let ptr := add(add(proof, 32), i)
+                sibling := mload(ptr)
             }
 
             // Konum biti: sibling sagda (1) veya solda (0)
@@ -284,6 +294,67 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
             layer = _buildLayer(layer);
         }
         return layer[0];
+    }
+
+    // ============================================================
+    // YAPRAK IMZALARI (2026-09-28) — GUVENLIK ACIGININ TAM KAPANMASI
+    // Kok artik yalnizca agac yapisini degil, her yapragin
+    // KULLANICI TARAFINDAN IMZALANDIGINI da dogrular.
+    // Sema: EIP-191 personal_sign (cuzdan signMessage ile ayni).
+    // ============================================================
+
+    /// @notice EIP-191 imza ozeti: keccak256("\x19Ethereum Signed Message:\n32" || hash).
+    /// @dev Rust eth_signed_message_hash ile BIREBIR ayni cikti.
+    function toEthSignedMessageHash(bytes32 hash) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
+    }
+
+    /// @notice Imzadan imzalayan adresi geri kazanir (ecrecover).
+    /// @param leaf Yaprak hash'i (imza bunun EIP-191 ozeti uzerinedir)
+    /// @param sig 65 bayt imza: r(32) + s(32) + v(1); v: 27 veya 28
+    /// @return imzalayan adres; gecersiz imzada address(0)
+    function recoverSigner(bytes32 leaf, bytes memory sig) public pure returns (address) {
+        require(sig.length == 65, "Imza 65 bayt olmali");
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            // bytes memory: 32 bayt uzunluk + veri
+            r := mload(add(sig, 32))
+            s := mload(add(sig, 64))
+            v := byte(0, mload(add(sig, 96)))
+        }
+        return ecrecover(toEthSignedMessageHash(leaf), v, r, s);
+    }
+
+    /// @notice Yaprak imzasini dogrular: imzalayan == signer mi?
+    /// @dev Agactan BAGIMSIZDIR — yalnizca yaprak hash'ine imza dogrulanir.
+    function verifyLeafSignature(bytes32 leaf, bytes memory sig, address signer)
+        public
+        pure
+        returns (bool)
+    {
+        if (signer == address(0)) return false;
+        return recoverSigner(leaf, sig) == signer;
+    }
+
+    /// @notice TAM KANIT ZINIRI: hem imza hem Merkle inclusion dogrular.
+    /// @dev Kullanici imzasi -> yaprak -> kok zincirinin tam dogrulamasidir.
+    ///      Rust verify_signed ile birebir ayni mantik.
+    /// @param leaf Dogrulanacak yaprak hash'i
+    /// @param sig Yaprak imzasi (65 bayt, EIP-191)
+    /// @param signer Iddia edilen imzalayan adres
+    /// @param proof Merkle sibling kaniti (33 bayt/seviye)
+    /// @param root Dogrulanacak Merkle koku
+    /// @return true Imza gecerli VE yaprak kok icinde
+    function verifySignedOrder(
+        bytes32 leaf,
+        bytes memory sig,
+        address signer,
+        bytes memory proof,
+        bytes32 root
+    ) public pure returns (bool) {
+        return verifyLeafSignature(leaf, sig, signer) && _verifyMerkleProof(leaf, proof, root);
     }
 
     /// @notice RFQ solver kaydet (sahip).
