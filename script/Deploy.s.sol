@@ -8,6 +8,7 @@ import "../contracts/ReserveManager.sol";
 import "../contracts/CleanvestSettlement.sol";
 import "../contracts/ListingGate.sol";
 import "../contracts/UniswapProxy.sol";
+import "../contracts/ReferralLedger.sol";
 
 /// @title Deploy - Cleanvest Tam Stack Deployment
 /// @author Cleanvest
@@ -40,6 +41,7 @@ contract Deploy is Script {
         CleanvestSettlement settlement;
         ListingGate gate;
         UniswapProxy proxy;
+        ReferralLedger referral;
     }
 
     Deployed public deployed;
@@ -53,7 +55,7 @@ contract Deploy is Script {
             aavePrimePool: vm.envOr("AAVE_PRIME_POOL", address(0)),
             chainlinkFeed: vm.envOr("CHAINLINK_FEED", address(0)),
             uniswapRouter: vm.envOr("UNISWAP_ROUTER", address(0)),
-            cleanAuditOracle: vm.envOr("AEGISFORGE_ORACLE", address(0))
+            cleanAuditOracle: vm.envOr("CLEANAUDIT_ORACLE", address(0))
         });
 
         string memory network = vm.envOr("NETWORK", string("local-test"));
@@ -105,9 +107,13 @@ contract Deploy is Script {
         deployed.proxy = new UniswapProxy(cfg.uniswapRouter);
         console.log("UniswapProxy:", address(deployed.proxy));
 
+        // 7. ReferralLedger (referans sistemi, docs/44)
+        deployed.referral = new ReferralLedger();
+        console.log("ReferralLedger:", address(deployed.referral));
+
         vm.stopBroadcast();
 
-        console.log("=== Deployment tamamlandi (6 sozlesme) ===");
+        console.log("=== Deployment tamamlandi (7 sozlesme) ===");
 
         // Sozlesme adreslerini kaydet (sonraki adimlar icin)
         _logAddresses();

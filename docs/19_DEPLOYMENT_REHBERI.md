@@ -115,5 +115,80 @@ Founder tohumu yeterli degil. `seedJunior{value: X}(0)` ile X >= (hedef TVL * 0.
 ### "Once requestRedemption ile kuyruga girin"
 T+2 kuyrugu: once `vault.requestRedemption(amount)` cagirin, 2 gun bekleyin, sonra `withdraw()`. Bu **yanlis degil, dogru davranistir** — Solidity revert state'i geri alir.
 
+## Base Sepolia Testnet (UCRETSIZ demo - 2026-09-28 dogrulandi)
+
+> **Maliyet: $0.** Base Sepolia test aginda faucet ETH'si kullanilir.
+> Gercek para YOK. Kullaniciya gosterilebilir.
+
+### Hazirlik
+
+```bash
+# 1. Base Sepolia faucet'ten test ETH al
+#    https://www.coinbase.com/developer-platform/faucets/base-sepolia
+#    (veya https://faucet.quicknode.com/base/sepolia)
+
+# 2. .env dosyasi
+export PRIVATE_KEY=<senin-test-anahtarin>
+export NETWORK=base-sepolia
+```
+
+### Deploy (7 sozlesme)
+
+```bash
+export PATH="$HOME/.foundry/bin:$PATH"
+forge script script/Deploy.s.sol \
+  --rpc-url https://sepolia.base.org \
+  --broadcast \
+  --verify
+```
+
+Beklenen cikti (anvil'de dogrulandi):
+```
+CleanUSD:           0x...
+CleanFXVault:       0x...
+ReserveManager:     0x...
+CleanvestSettlement:0x...
+ListingGate:        0x...
+UniswapProxy:       0x...
+ReferralLedger:     0x...
+=== Deployment tamamlandi (7 sozlesme) ===
+```
+
+### Bootstrap + Demo
+
+```bash
+export CUSD_ADDR=<deploy edilen CleanUSD>
+export VAULT_ADDR=<deploy edilen CleanFXVault>
+forge script script/Bootstrap.s.sol --rpc-url ... --broadcast
+forge script script/Demo.s.sol    --rpc-url ... --broadcast
+```
+
+### Adresleri UI'a bagla
+
+`web/src/contracts/addresses.json` guncelle:
+```json
+{ "chainId": 84532,
+  "CleanUSD": "0x...", "CleanFXVault": "0x...",
+  "ReserveManager": "0x...", "CleanvestSettlement": "0x...",
+  "ListingGate": "0x...", "UniswapProxy": "0x...",
+  "ReferralLedger": "0x..." }
+```
+
+> chainId artik addresses.json'dan okunur (vault.ts) - mainnet/testnet
+> arasi manuel degisim YOK.
+
+### ANVIL'DE DOGRULANDI (kanit, 2026-09-28)
+```
+7/7 sozlesme deploy edildi
+tvlCap: 100000000000000000000000 [1e23] = $100K
+juniorReserve: 3000000000000000000000 [3e21] = $3K
+Demo 6/6: "ONCHAIN EXECUTION COMPLETE & SUCCESSFUL" (rc=0)
+```
+
+### UYARI - anvil anahtari GUVENLIK
+Anvil'in varsayilan anahtari (`0xac0974...`) GERCEK Base Sepolia'da
+canli bir adrestir. **ASLA canli RPC ile --broadcast yapma** - yalnizca
+lokal anvil veya dry-run icin kullan.
+
 ### "OPTIMIZE: utilization feed bagli degil"
 `reserve.setAaveUtilizationFeed(FEED)` ile Chainlink feed'i baglayin.

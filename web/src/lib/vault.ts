@@ -33,7 +33,9 @@ export const LIVE_VERIFIED = {
   juniorMinBps: 300,
 } as const;
 
-export const CHAIN_ID = 8453; // Base
+// chainId artik addresses.json'dan okunur (testnet/mainnet arasi otomatik).
+// Once: 8453 (Base mainnet) sabit kodluydu; artik deploy hedefine uyar.
+export const CHAIN_ID = (addresses as unknown as Record<string, unknown>).chainId as number;
 export const VAULT_ADDR = (addresses as unknown as Record<string, string>).CleanFXVault || "";
 export const CUSD_ADDR = (addresses as unknown as Record<string, string>).CleanUSD || "";
 
