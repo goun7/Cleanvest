@@ -56,7 +56,7 @@ const tr: Dict = {
   riskT2: "Kuyruk suresi",
   riskT2Note: "Kotayi asan cikislar 2 gun",
   riskAudit: "Test katmani",
-  riskAuditNote: "179 Foundry + 24 UI testi, 0 failed",
+  riskAuditNote: "186 Foundry + 28 UI testi, 0 failed",
   riskNote: "Akademik dayanak: N. Bundi, 'Pricing the DeFi Tail' (CBT 2026/ESORICS). Makale protokollerin standartlastirilmis risk aciklamasi yapmasini onerir. Junior tamponu operasyonel riski KARSILAMAZ - kredi/likidite kaybi icindir; operasyonel risk 179 test + %96 coverage ile azaltilmistir.",
   footer: "Sözlesmeler Base aginda",
 };
@@ -112,7 +112,7 @@ const en: Dict = {
   riskT2: "Queue period",
   riskT2Note: "Above-cap exits free in 2 days",
   riskAudit: "Test layer",
-  riskAuditNote: "179 Foundry + 24 UI tests, 0 failed",
+  riskAuditNote: "186 Foundry + 28 UI tests, 0 failed",
   riskNote: "Academic basis: N. Bundi, 'Pricing the DeFi Tail' (CBT 2026/ESORICS). The paper recommends standardized risk disclosure. The junior buffer does NOT cover operational risk - it covers credit/liquidity loss; operational risk is mitigated by 179 tests + 96% coverage.",
   footer: "Contracts on Base network",
 };

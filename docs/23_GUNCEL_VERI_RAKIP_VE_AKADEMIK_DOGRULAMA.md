@@ -277,7 +277,7 @@ Yazar: Magnus Hansson (q-fin.TR + cs.SE).
 | Kriter | Puan | Gerekçe |
 |---|---|---|
 | Sözleşme güvenliği | **98** | 1 kalıcı risk: `deposit()` minShares'siz (azaltıcılarla) |
-| Test kapsamı | **100** | 186/186 (forge) + 24/24 (vitest); coverage %96.97 lines / %96.75 branches; 4 kontratta %100 lines+funcs; invariant 5 + 2 fuzz (256 runs) |
+| Test kapsamı | **100** | 186/186 (forge) + 28/28 (vitest); coverage %96.97 lines / %96.75 branches; 4 kontratta %100 lines+funcs; invariant 5 + 2 fuzz (256 runs) |
 | Teknik borç | **100** | `recordAuditResult` mapping ile kapatıldı; TODO=0 |
 | UI/UX | **96** | i18n TR/EN (kalıcı), mobil 390px doğrulandı (taşma yok), **22 UI testi** (a11y: label htmlFor + button type + aria-pressed); kalan: canlı deploy |
 | Veri güncelliği | **97** | Aave spot/7D metodoloji farkı dokümante edildi |

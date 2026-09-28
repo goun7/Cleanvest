@@ -112,7 +112,7 @@ Listeleme zorunludur: `ListingGate.upgradeAuditTier` (`ListingGate.sol` L208) il
 | Çıkışlar asla kilitlenmez | `CleanUSD.sol` L104 |
 | Sıfır manipülasyon | FBA eşleştirme, RFQ netting, Chainlink oracle |
 | **186/186 Foundry testi** | `forge test` |
-| **24/24 UI testi** | `pnpm vitest run` |
+| **28/28 UI testi** | `pnpm vitest run` |
 | **5 invariant** (300 derinlik) | `test/scusd_vault_invariants.t.sol` |
 
 ### Bulunan ve Düzeltilen 5 Gerçek Hata
