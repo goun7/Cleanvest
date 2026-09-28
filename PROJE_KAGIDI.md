@@ -73,7 +73,7 @@ Bu ekosistemde spot fiyatlar gerçek alıcı-satıcılar tarafından değil; mil
 2. **Bot-Geçirmez İzole Tahta (Zero HFT Front-Running):** Halka açık API anahtarı verilmez. HFT botlarının tahtayı taraması, perakendenin emirlerini önden görmesi (front-running) ve sandviç yapması imkansızdır.
 3. **Sıfır Kurucu Sermayesi ile Likidite (CoW Netting + Certified RFQ):** Kurucunun cebinden $1 bile likidite koymasına gerek yoktur; iç emirler Talep Çakışması (Coincidence of Wants) ile eşlenir, artık hacim kapalı kurumsal toptancılar tarafından karşılanır.
 4. **CleanFX & $cUSD (Getirili Küresel Para):** Bankaların %2-%3'lük döviz makasını toptan interbank kurlarla ezer; boşta duran nakit **$scUSD ERC-4626 getiri kasasında** üç kademeli dürüst getiri (%3.05 → %2.91 → %2.92, TVL'e göre) kazanır. **Rebase YOK** — $cUSD sabit $1.00'dir.
-5. **AegisForge + AutoVerus 4 Kademeli Otonom Denetim:** Listeleme başvurusu yapan projelerin açıkları taranır; **üç kademeli fiyatlandırma** sunulur: $299 Z3 hızlı tarama / $1.490 fuzz+patch / $4.900 öncelikli rozet. Açık detayları PoV_Hash (deterministik **hash taahhüdü** — ZK-SNARK değil) ile kilitlenir. Borsa ilk günden otonom B2B nakit akışı üretir; CleanScore kamusal API'si **ücretsizdir, haraç modeli yoktur**.
+5. **AegisForge + AutoVerus 4 Kademeli Otonom Denetim:** Listeleme başvurusu yapan projelerin açıkları taranır; **dört kademeli fiyatlandırma** sunulur: $199 Z3 hızlı tarama (otomatik) / $399 insan triyajlı tarama / $990 fuzz+patch / $4.900 öncelikli rozet (docs/40). **Motorların Rust çekirdekleri YOL HARİTASI** — bkz. §5 durum notu. Açık detayları PoV_Hash (deterministik **hash taahhüdü** — ZK-SNARK değil) ile kilitlenir. Borsa ilk günden otonom B2B nakit akışı üretir; CleanScore kamusal API'si **ücretsizdir, haraç modeli yoktur**.
 
 ---
 
@@ -193,6 +193,21 @@ Terra/Luna veya Celsius facialarının tekrarlanmaması için **Kıdemli-Ast Dil
 
 ## 5. B2B Otonom Güvenlik Kapısı: AegisForge + AutoVerus Entegrasyonu
 
+> ## 🔴 DÜRÜST DURUM NOTU — motorlar YOL HARİTASI
+>
+> Aşağıdaki 4 kademeli hattın **zincir üzerindeki etkileşim noktaları MEVCUTTUR**
+> (`ListingGate.sol` oracle ABI, `PoV_Hash` şeması, fiyatlandırma 199/399/990/4.900).
+> **Ancak iki motorun Rust çekirdekleri henüz mevcut DEĞİLDİR:**
+> - **AegisForge** — kardeş proje `07_Temporit_...` taraması (2026-09-28)
+>   ile **tek bir Rust dosyası** bulunmuştur (`probe.rs`, 42 satır);
+>   `lib.rs`/`src/`/`Cargo.toml` YOK → **derlenemez bile**.
+> - **AutoVerus** — bu entegrasyon bir **tasarım hedefidir**, üretilen
+>   motor kodu kanıtlanmamıştır.
+>
+> **Müşteriye sunumda:** "denetim kapısı mevcut" denir (zincir tarafı
+> doğrudur), "denetim motoru çalışıyor" DENMEZ. Gerçek Merkle emir
+> taahhüdü üreticisi de aynı şekilde eksik (README güvenlik notu).
+
 Cleanvest'te listelenmek isteyen her proje, portföyümüzdeki iki devrimsel motorun **4 Kademeli Güvenlik Hattından** geçer.
 
 ### 5.1. 4 Kademeli Purity Denetimi
@@ -203,7 +218,7 @@ Cleanvest'te listelenmek isteyen her proje, portföyümüzdeki iki devrimsel mot
 
 ### 5.2. Ticari Satış Modeli: Cryptographic Proof-of-Vulnerability (PoV)
 Açık tespit edildiğinde geliştiriciye satır numarası **asla bedava söylenmez.**
-* Sistem, açığı sömüren bir istismar kanıtı üretir ve bunun **kriptografik özet hash'ini ($PoV\_Hash$)** zincire basar.
+* Sistem, açığı sömüren bir istismar kanıtı üretir ve bunun **kriptografik özet hash'ini ($PoV\_Hash$)** zincire basar. **(Not: bu adımı gerçekleştiren motor YOL HARİTASI — `PoV_Hash` şeması ve zincire mühürleme `ListingGate.sol`'de MEVCUTTUR, ama istismar kanıtı üreten analiz motoru henüz yok; bkz. §5 durum notu.)**
 * Başvuru sahibine şu otonom bildirim gider:
   > *"Sözleşmeniz Cleanvest'in güvenlik invariantlarında 3 tanesinde KRİTİK SEVİYEDE BAŞARISIZ oldu (Fon Kaybı Riski). $PoV\_Hash$ zincirde mühürlenmiştir. Listeleme başvurunuz durdurulmuştur. Açığın istismar kodunu, düzeltme yamasını (remediation patch) ve 'Cleanvest Verified' yeşil mührünü almak için Güvenlik Paketi Bedeli: $4.900."*
 * Proje açığını kapatmak ve Cleanvest'in güvenli yatırımcı kitlesine erişmek için bu bedeli öder. Cleanvest, hacimden bağımsız olarak **otonom bir siber güvenlik şirketine (SaaS)** dönüşür.
