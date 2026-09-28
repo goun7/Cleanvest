@@ -55,7 +55,7 @@ Talimat eski snapshot'tan geldi. Düzeltmeler yapılmıştı, diff'in çıktıs�
 ### 5. 🔵 FAZ-3 Spot HEX Borsa — TAMAM (17/17 test)
 
 - **T_batch = 400ms** Budish FBA kilidi
-- **`orderCommitmentRoot` ZORUNLU** — sifir Merkle kökü reddedilir (front-run/race kalkanı)
+- **`orderCommitmentRoot` ZORUNLU** — sifir (atanmamis) Merkle kökü reddedilir (front-run/race kalkani). **Zincir üzerinde Merkle inclusion doğrulaması YOK** — yalnızca kök atanmamış olmalı; yaprak/kardeş-düğüm yolu **off-chain** doğrulanır. Merkle olmayan bütünlük kanıtı `proof` için bkz. README "commitment scheme" notu
 - **Anti-collusion BOYUT-FARKLİ:** `eps = 0.15% + kappa·(dQ/L)`, max %5
   - **Düz 0.15% KULLANILMADI** — kendi büyük emirlerimizi kronik reddeder
 - **$5.000 soğuk başlangıç emir tavanı** + LE-2 lift trigger
