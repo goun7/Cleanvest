@@ -1,6 +1,6 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**Sözleşme + frontend katmanı tamamlandı** · 186/186 Foundry + 28/28 vitest testi yeşil · %96.97 line / %96.75 branch coverage (7 sözleşme) · TODO/placeholder sıfır
+**Sözleşme + frontend katmanı tamamlandı** · Test/coverage sayıları için tek kaynak: [`docs/43_TEST_DURUMU_TEK_KAYNAK.md`](docs/43_TEST_DURUMU_TEK_KAYNAK.md) (taze: 187 Foundry + 28 vitest, %96.97 line / %96.75 branch, 7 sözleşme) · TODO/placeholder sıfır
 
 Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getirili stabilcoin
 ($cUSD/$scUSD) sunan bir kripto ekosistemidir. Bu depo **sözleşme katmanını** içerir.
