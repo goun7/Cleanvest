@@ -136,6 +136,9 @@ describe("App — kullanicidan gelen UI akislari", () => {
     expect(panel?.getAttribute("role")).toBe("region");
     expect(panel?.getAttribute("aria-label")).toContain("Risk");
 
+    // Test sayisi i18n'den gelir (STALE onlemi: hard-coded DEGIL)
+    expect(panel?.textContent).toContain("186");
+
     // Junior karti canli durum (role=status)
     const juniorCard = panel?.querySelector('[role="status"]');
     expect(juniorCard).toBeTruthy();

@@ -112,7 +112,7 @@ function App() {
   const balance = tab === "deposit" ? s?.walletCUSD : s?.walletScUSD;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:py-12">
+    <div className="mx-auto max-w-5xl overflow-x-hidden px-4 py-8 sm:py-12">
       {/* Baslik */}
       <header className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
@@ -283,7 +283,10 @@ function App() {
           </div>
           <div className="rounded-xl border border-white/5 bg-white/[0.02] p-4">
             <p className="stat-label">{tt("riskAudit")}</p>
-            <p className="mt-1 font-mono text-lg font-semibold text-white">179</p>
+            <p className="mt-1 font-mono text-lg font-semibold text-white">
+              {/* 186 Foundry test sayisi - i18n ile ayni kaynak */}
+              {tt("riskAuditCount")}
+            </p>
             <p className="mt-1 text-xs text-slate-500">{tt("riskAuditNote")}</p>
           </div>
         </div>
