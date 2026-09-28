@@ -31,16 +31,16 @@ describe("App — kullanicidan gelen UI akislari", () => {
     expect(heading.textContent).toContain("scUSD");
 
     // Getiri egrisi sabitleri (spec ile birebir)
-    expect(screen.getByText(/Dürüst Getiri Egrisi/i)).toBeInTheDocument();
+    expect(screen.getByText(/Dürüst Getiri Eğrisi/i)).toBeInTheDocument();
     expect(screen.getAllByText("%3.05").length).toBeGreaterThan(0);
     expect(screen.getAllByText("%2.91").length).toBeGreaterThan(0);
     expect(screen.getAllByText("%2.92").length).toBeGreaterThan(0);
 
     // Cikis kapisi invariant mesaji
-    expect(screen.getByText(/CIKISLAR ASLA KILITLENMEZ/)).toBeInTheDocument();
+    expect(screen.getByText(/ÇIKIŞLAR ASLA KİTLENMEZ/)).toBeInTheDocument();
 
     // Cuzdan bagla butonu: TEK olmali (header'da degil, panelde)
-    const walletBtns = screen.getAllByRole("button", { name: /Cuzdan Bagla/i });
+    const walletBtns = screen.getAllByRole("button", { name: /Cüzdan Bağla/i });
     expect(walletBtns).toHaveLength(1);
   });
 
@@ -55,8 +55,8 @@ describe("App — kullanicidan gelen UI akislari", () => {
     const user = userEvent.setup();
     render(<App />);
 
-    // TR'de 'Dürüst Getiri Egrisi'
-    expect(screen.getByText(/Dürüst Getiri Egrisi/i)).toBeInTheDocument();
+    // TR'de 'Dürüst Getiri Eğrisi'
+    expect(screen.getByText(/Dürüst Getiri Eğrisi/i)).toBeInTheDocument();
 
     // EN'ye gec: TR iken buton "TR", hedef English
     const langBtn = screen.getByRole("button", { name: /Switch to English/i });
@@ -68,7 +68,7 @@ describe("App — kullanicidan gelen UI akislari", () => {
     expect(localStorage.getItem("cleanvest-lang")).toBe("en");
 
     // Buton artik "EN" gosterir ve hedef Turkce olur
-    const enBtn = screen.getByRole("button", { name: /Switch to Turkce/i });
+    const enBtn = screen.getByRole("button", { name: /Switch to Türkçe/i });
     expect(enBtn.textContent).toBe("EN");
   });
 
@@ -92,7 +92,7 @@ describe("App — kullanicidan gelen UI akislari", () => {
 
   it("erc-4626 kalkani notu gorunur (guvenlik bilgisi)", () => {
     render(<App />);
-    expect(screen.getByText(/ERC-4626 inflation-attack kalkani/i)).toBeInTheDocument();
+    expect(screen.getByText(/ERC-4626 enflasyon saldırısı kalkanı/i)).toBeInTheDocument();
   });
 
   it("erisilebilirlik: input label bagli + butonlar type belirtmis", async () => {
@@ -119,10 +119,10 @@ describe("App — kullanicidan gelen UI akislari", () => {
   it("risk seffafligi paneli render olur (akademik dayanakli)", () => {
     const { container } = render(<App />);
 
-    // Panel basligi TR'de 'Risk Seffafligi'
+    // Panel basligi TR'de 'Risk Şeffaflığı'
     const headings = container.querySelectorAll("h2");
     const riskPanel = Array.from(headings).find((h) =>
-      h.textContent?.includes("Risk Seffafligi")
+      h.textContent?.includes("Risk Şeffaflığı")
     );
     expect(riskPanel).toBeTruthy();
 
@@ -137,7 +137,7 @@ describe("App — kullanicidan gelen UI akislari", () => {
     expect(panel?.getAttribute("aria-label")).toContain("Risk");
 
     // Test sayisi i18n'den gelir (STALE onlemi: hard-coded DEGIL)
-    expect(panel?.textContent).toContain("186");
+    expect(panel?.textContent).toContain("187");
 
     // Junior karti canli durum (role=status)
     const juniorCard = panel?.querySelector('[role="status"]');

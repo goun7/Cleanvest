@@ -83,9 +83,9 @@ function App() {
     try {
       if (tab === "deposit") {
         const hash = await depositWithMin(provider, amount, account);
-        setMessage({ kind: "ok", text: `Depozito basarili: ${hash.slice(0, 18)}…` });
+        setMessage({ kind: "ok", text: `${tt("depositOk")}: ${hash.slice(0, 18)}…` });
       } else {
-        // Cikis: once slippage-korumali dene; kota asarsa T+2 kuyruguna al
+        // Cikis: once kayma-korumali dene; kotayi asarsa T+2 kuyruguna al
         try {
           const hash = await redeemWithMin(provider, amount, account);
           setMessage({ kind: "ok", text: `${tt("redeemOk")}: ${hash.slice(0, 18)}…` });
@@ -128,8 +128,8 @@ function App() {
             type="button"
             className="btn-ghost w-auto px-3 py-2 text-xs font-mono"
             onClick={() => { const l = lang === "tr" ? "en" : "tr"; setLang(l); setLangState(l); }}
-            aria-label={`Switch to ${lang === "tr" ? "English" : "Turkce"}`}
-            title={`Switch to ${lang === "tr" ? "English" : "Turkce"}`}
+            aria-label={`Switch to ${lang === "tr" ? "English" : "Türkçe"}`}
+            title={`Switch to ${lang === "tr" ? "English" : "Türkçe"}`}
           >
             {lang.toUpperCase()}
           </button>

@@ -8,7 +8,12 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
  *
  * Not: sadece RENDER hatalarini yakalar (event handler icindeki
  * hatalar degil - onlar zaten try/catch ile submit'te yakalanir).
+ *
+ * Metinler i18n'den gelir (TEK KAYNAK) - kullanici dili neyse o
+ * gosterilir. Yeni dil eklerken buraya DOKUNULMAZ.
  */
+import { getLang, t } from "../lib/i18n";
+
 interface Props {
   children: ReactNode;
 }
@@ -34,16 +39,14 @@ export class ErrorBoundary extends Component<Props, State> {
 
   render(): ReactNode {
     if (this.state.hasError) {
+      const lang = getLang();
       return (
         <div className="min-h-screen bg-fx-bg p-6 text-slate-200">
           <div className="mx-auto max-w-md rounded-xl border border-fx-red/30 bg-fx-red/5 p-6">
-            <h1 className="mb-2 text-lg font-semibold text-fx-red">
-              Bir hata olustu
+            <h1 className="mb-2 text-lg font-semibold text-fx-red" role="alert">
+              {t(lang, "errTitle")}
             </h1>
-            <p className="mb-4 text-sm text-slate-400">
-              Uygulama beklenmeyen bir hata ile karsilasti. Fonlariniz
-              guvende — bu sadece arayuz hatasidir, sozlesmeler etkilenmez.
-            </p>
+            <p className="mb-4 text-sm text-slate-400">{t(lang, "errBody")}</p>
             <p className="mb-4 break-words font-mono text-xs text-slate-500">
               {this.state.message}
             </p>
@@ -52,7 +55,7 @@ export class ErrorBoundary extends Component<Props, State> {
               className="rounded-lg bg-fx-glow px-4 py-2 text-sm font-medium text-fx-bg hover:opacity-90"
               onClick={() => this.setState({ hasError: false, message: "" })}
             >
-              Tekrar dene
+              {t(lang, "errRetry")}
             </button>
           </div>
         </div>
