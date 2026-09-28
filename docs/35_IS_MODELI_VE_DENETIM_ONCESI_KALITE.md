@@ -18,7 +18,7 @@
 **Mevcut ürünün doğru tanımı (PROJE_KAGIDI sayfa başı DURUM RAPORU ile birebir):**
 
 > **ERC-4626 getiri kasası + FBA settlement + AegisForge denetim kapısı +
-> PQHaven USDC köprüsü (Seçenek A).** Kodda **6 sözleşme** vardır:
+> PQHaven USDC köprüsü (Seçenek A).** Kodda **7 sözleşme** vardır:
 > `CleanUSD`, `CleanFXVault`, `ListingGate`, `CleanvestSettlement`,
 > `ReserveManager`, `UniswapProxy`.
 
@@ -48,7 +48,7 @@ can never be liquidated here."* (PROJE_KAGIDI L33)
 
 | Dayanak | Kanıt | Durum |
 |---|---|---|
-| **Getiri koda bağlı** | `testYieldCurveMatchesSpec` (3 kademe) | ✅ 174 test |
+| **Getiri koda bağlı** | `testYieldCurveMatchesSpec` (3 kademe) | ✅ 186 test |
 | **Çıkış kilidi yok** | `invariantRedemptionNeverLocked` | ✅ invariant |
 | **Donation attack kalkanı** | `testSecurityDonationAttackVectors` (199 wei) | ✅ 5/5 vektör |
 
@@ -85,7 +85,7 @@ iki sistemi **tek bir ekonomik döngüye** koyar: ödeme alınır → getiri ür
 
 ---
 
-## 3. 174 Testin 8'i PQHavenBridge — Müşteri Gözüyle Ne Kanıtlar?
+## 3. 186 Testin 8'i PQHavenBridge — Müşteri Gözüyle Ne Kanıtlar?
 
 **Müşteri açısından 3 madde (kod jargonu olmadan):**
 
@@ -127,7 +127,7 @@ kalite kanıtı**.
 | **Hedef** | Başvuran projenin sözleşmesi | Cleanvest'in **kendi** vault'u |
 | **PoV_Hash** | `SHA256(payload \| target \| salt \| ts)` — bulgular taahhüt | **Aynı şema**: `SHA256("cleanvest-quality-v1" \| test-listesi \| coverage \| commit)` |
 | **Bulgular** | Kritik/Yüksek/Orta/Düşük sayısı (kamusal) | **0 kritik, 0 yüksek** (5 vektör test-kanıtli) |
-| **Kanıt** | Exploit örneği (satır numarası gizli) | `forge test` 174/174 + `forge coverage` %99.42 line |
+| **Kanıt** | Exploit örneği (satır numarası gizli) | `forge test` 186/186 + `forge coverage` %96.97 line |
 
 ### Somut paket içeriği (AegisForge'a eklenebilir)
 
@@ -136,8 +136,8 @@ Cleanvest Vault Denetim-Oncesi Kalite Raporu v1
 ================================================
 PoV_Hash:      SHA256("cleanvest-quality-v1" || <test-id-listesi> ||
                 <coverage-json> || <commit-hash> || <ts>)
-Test sonucu:   174 passed / 0 failed (166 kurulu + 8 kopru)
-Coverage:      %99.42 line / %98.62 branch (6 sozlesme)
+Test sonucu:   186 passed / 0 failed (178 kurulu + 8 kopru)
+Coverage:      %96.97 line / %96.75 branch (7 sozlesme)
 Saldiri vektorleri: 5/5 test-kanıtli, KRITIK ZAFIYET YOK
   - Donation attack: 199 wei kayip -> depositWithMin revert ile koruma
   - Share price manipulation: view-only
@@ -194,8 +194,9 @@ PROJE_KAGIDI artık her yerde bunları 🗺️ **YOL HARİTASI** olarak işaretl
 | **"48 Güvenlik İnvariantı"** | eski L208 — **ÇIKARILDI** | **5 invariant** (`test/scusd_vault_invariants.t.sol`) | 🔴 YANLIŞ (çıkarıldı) |
 | **HITL "%0 (ZK-Rollup)"** | eski L235 — **DÜZELTİLDİ** | operatöre bağımlı | 🔴 YANLIŞ (düzeltildi) |
 
-**Kodda GERÇEKTE var olan 6 sözleşme:** CleanUSD, CleanFXVault, ListingGate,
-CleanvestSettlement, ReserveManager, UniswapProxy.
+**Kodda GERÇEKTE var olan 7 sözleşme:** CleanUSD, CleanFXVault, ListingGate,
+CleanvestSettlement, ReserveManager, UniswapProxy, RiskTransparency
+(yeni: akademik dayanaklı risk açıklaması).
 
 > **Müşteriye dürüstçe:** Mevcut ürün **ERC-4626 getiri kasası + FBA settlement +
 > AegisForge denetim kapısı + PQHaven USDC köprüsüdür (Seçenek A).** Kâğıttaki
@@ -247,7 +248,7 @@ Tier2'de, TVL ≥ $12.5M'da mevcuttur.**
 ```
 IDDIA:  docs/35 pitch'i PROJE_KAGIDI (YOL A) ile birebilir hizalandi
         + docs/36_IDDIALAR_TABLOSU.md olusturuldu (20 iddia, file:line kanitli)
-KANIT:  git status --short contracts/ | wc -l → 0  +  forge test → 174 passed, 0 failed
+KANIT:  git status --short contracts/ | wc -l → 0  +  forge test → 186 passed, 0 failed
 RC:     0
 COMMIT: (bu commit)
 DOSYA:  docs/35_IS_MODELI_VE_DENETIM_ONCESI_KALITE.md
@@ -257,7 +258,7 @@ DOSYA:  docs/35_IS_MODELI_VE_DENETIM_ONCESI_KALITE.md
 
 **Kısıt uyumu:**
 - ✅ **HİÇBİR Solidity kodu değiştirilmedi** (`contracts/` dokunulmadı)
-- ✅ **174 forge test** altına düşmedi (kanıt yukarıda)
+- ✅ **186 forge test** altına düşmedi (kanıt yukarıda)
 - ✅ **`juniorCoverageBps` 1.157e77** tasarım notu korundu (docs/34 §5)
 - ✅ **Dürüst:** 3 zayıf yön açıkça yazıldı (kullanıcı duymalı)
 - ✅ **"48 Güvenlik İnvariantı" ÇIKARILDI** — gerçeği **5** invariant

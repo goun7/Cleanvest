@@ -191,7 +191,7 @@ IDDIA:  Gercek altyapi maliyeti olculdu — SIFIR sozlesme degisikligi
 KANIT:  curl eth_gasPrice Base mainnet → 0x5b8d80 (6.000.000 wei = 0.006 gwei), RC 0
         + test/GasCostMeter.t.sol → 7/7 gas olcumu (gasleft ile, setup haric)
         + grep indexleyici → CIKTI YOK (indexleyici YOK)
-        + forge test → 174 passed, 0 failed (GasCostMeter haric, gecici)
+        + forge test → 186 passed, 0 failed (GasCostMeter haric, gecici)
 RC:     0
 COMMIT: (bu commit)
 DOSYA:  docs/38_GERCEK_ALTYAPI_MALIYETI.md

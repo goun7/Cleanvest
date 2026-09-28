@@ -14,7 +14,7 @@
 `docs/35` ile **birebir**):
 
 > **ERC-4626 getiri kasası + FBA settlement + AegisForge denetim kapısı +
-> PQHaven USDC köprüsü (Seçenek A).** Kodda **6 sözleşme** vardır:
+> PQHaven USDC köprüsü (Seçenek A).** Kodda **7 sözleşme** vardır:
 > `CleanUSD`, `CleanFXVault`, `ListingGate`, `CleanvestSettlement`,
 > `ReserveManager`, `UniswapProxy`.
 
@@ -120,7 +120,7 @@ Tier2 (>=$12.5M):  %40 BUIDL(3.47) / %33 Aave / %12 idle / %15 Prime = %3.130
 
 ```
 IDDIA:  docs/35 pitch'i + PROJE_KAGIDI birebir hizalandi + iddialar tablosu
-KANIT:  git status --short contracts/ | wc -l → 0  +  forge test → 174 passed, 0 failed
+KANIT:  git status --short contracts/ | wc -l → 0  +  forge test → 186 passed, 0 failed
 RC:     0
 COMMIT: (bu commit)
 DOSYA:  docs/36_IDDIALAR_TABLOSU.md

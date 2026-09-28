@@ -241,7 +241,7 @@ Saatlik ücret (§1) × zaman (§2):
 
 ```
 IDDIA:  Insan isciligi ve toplam maliyet dokumani — TAHMIN etiketli, SIFIR Solidity degisikligi
-KANIT:  forge test → 174 passed, 0 failed (RC 0)
+KANIT:  forge test → 186 passed, 0 failed (RC 0)
         + dosya: docs/39_INSAN_ISCILIGI_VE_TOPMAL_MALIYET.md
         + saatlik ucret araligi: 4 ABD kaynagi okundu:
             1. ZipRecruiter $47.71/saat ort (ABD freelance auditor)

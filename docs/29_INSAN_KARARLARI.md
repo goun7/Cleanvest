@@ -208,7 +208,7 @@ CleanUSD'deki `juniorReserve` bir **güvenlik tamponu sayacıdır**; gerçek ser
 |---|---|---|---|
 | 1 | Tüm Foundry testleri yeşil | ✅ | `forge test` → 186/186, rc=0 |
 | 2 | Tüm vitest testleri yeşil | ✅ | `cd web && npx vitest run` → 24/24, rc=0 |
-| 3 | Coverage eşiği (≥%95 branch) | ✅ | %98.62 branch (6 sözleşme) |
+| 3 | Coverage eşiği (≥%95 branch) | ✅ | %96.75 branch (7 sözleşme) |
 | 4 | Müşteri demosu CANLI | ✅ | Demo.s.sol anvil rc=0, 6 adım, "ONCHAIN EXECUTION COMPLETE" |
 | 5 | Bootstrap likidite CANLI | ✅ | Bootstrap.s.sol anvil rc=0 (cap $100k, coverage ≥%3, mint AÇIK) |
 | 6 | TODO/placeholder sıfır | ✅ | audit_code_quality temiz |
@@ -343,13 +343,13 @@ anvil --port 8545 --block-time 2 --host 127.0.0.1 \
 > Zaten açık bir anvil varsa ATLA. `cast block-number --rpc-url $RPC` çalışıyorsa
 > ayakta demektir. **Taze anvil** istersen önce `pkill -f anvil` (eski state gider).
 
-### Adım 1 — Deploy (6 sözleşme, ~5 saniye)
+### Adım 1 — Deploy (7 sözleşme, ~5 saniye)
 
 ```bash
 forge script script/Deploy.s.sol --rpc-url $RPC --broadcast --unlocked \
   2>&1 | grep -E "CleanUSD|Deployment tamamlandi"
 # → CleanUSD:      0x5FbDB2315678afecb367f032d93F642f64180AA3   (taze anvil'de bu)
-# → === Deployment tamamlandi (6 sozlesme) ===
+# → === Deployment tamamlandi (7 sozlesme) ===
 ```
 
 **cUSD adresini yakala** (Deploy çıktısındaki `--- ADRESLER ---` bloğundan):

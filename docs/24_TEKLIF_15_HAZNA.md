@@ -51,7 +51,7 @@ Kurum için pratik anlamı: bir günde portföyün %10'u anında, kalanı 2 gün
 | **186/186 Foundry testi** (9 suite, 0 failed) | `forge test` |
 | **24/24 UI testi** (a11y + risk paneli + hata yakalama) | `pnpm vitest run` |
 | **5 invariant** (300 derinlik fuzz) | `test/scusd_vault_invariants.t.sol` |
-| **%99,42 line / %98,62 branch coverage** (6 sözleşme) | `forge coverage --report lcov` |
+| **%96,97 line / %96,75 branch coverage** (7 sözleşme) | `forge coverage --report lcov` |
 | **ERC-4626 saldırı vektörleri: 5/5 test-kanıtli, kritik zafiyet YOK** | [docs/30](30_GUVENLIK_INCELEMESI.md) + 5 test |
 | **ERC-4626 standardı** | OpenZeppelin |
 

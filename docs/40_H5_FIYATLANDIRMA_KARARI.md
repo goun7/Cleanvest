@@ -215,7 +215,7 @@ tespit edemeyebilir."* Yani **insan gözü kodsuz olarak zorunludur** — ama
 
 ```
 IDDIA:  H5 fiyatlandirma karari (oneri) — SIFIR Solidity degisikligi
-KANIT:  forge test → 174 passed, 0 failed (RC 0)
+KANIT:  forge test → 186 passed, 0 failed (RC 0)
         + dosya: docs/40_H5_FIYATLANDIRMA_KARARI.md
         + maliyet kaynagi: docs/39 §2-3 (TAHMIN, ABD ucretleri)
         + otomasyon kaniti: docs/19:45 (Z3 Unsat = proven)

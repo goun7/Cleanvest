@@ -110,7 +110,7 @@ hizmet üzerindeki etkisi:
 
 > 🔴 **İnsan-gated hizmetler:** H1 ve H4, **multisig (Gnosis Safe) veya
 > zaman-kilidi ile korunmadan** tamamen otonom DEĞİLDİR. Bu korumalar **YOL
-> HARİTASIDIR** (`transferOwnership` tüm 6 sözleşmede `Ownable`):
+> HARİTASIDIR** (`transferOwnership` tüm 7 sözleşmede `Ownable`):
 > - **Multisig:** `CleanFXVault.sol`/`ReserveManager.sol` `Ownable(msg.sender)`
 >   constructor — `transferOwnership` ile Gnosis Safe'e devir **yol haritası**
 > - **Zaman-kilidi (timelock):** kodda YOK — tüm `onlyOwner` fonksiyonlar
@@ -150,7 +150,7 @@ hizmet üzerindeki etkisi:
 
 ```
 IDDIA:  Hizmet envanteri + fiyatlandirma dokumani yazildi — SIFIR Solidity degisikligi
-KANIT:  git status --short contracts/ | wc -l → 0  +  forge test → 174 passed, 0 failed
+KANIT:  git status --short contracts/ | wc -l → 0  +  forge test → 186 passed, 0 failed
         + dosya: docs/37_HIZMET_ENVANTERI_VE_FIYATLANDIRMA.md
 RC:     0
 COMMIT: (bu commit)

@@ -1,4 +1,4 @@
-# 31 — COVERAGE ANALİZİ: %99.42 → %100 (kalan %0.58 NEREDE?)
+# 31 — COVERAGE ANALİZİ: %96.97 line / %96.75 branch (kalan 2 dal NEREDE?)
 
 **Tarih:** 2026-09-27 · **Hazırlayan:** cleanvest-dev (vardiya 4)
 **Ölçüm:** `forge coverage --report lcov` — lcov DA/BRDA parser ile
@@ -7,7 +7,7 @@
 
 ---
 
-## Mevcut durum (6 sözleşme)
+## Mevcut durum (7 sözleşme, 2026-09-26 taze)
 
 | Sözleşme | Line | Branch |
 |---|---|---|
@@ -17,10 +17,12 @@
 | ListingGate | 78/78 = **100%** | 27/28 = 96.43% |
 | ReserveManager | 75/75 = **100%** | 32/32 = **100%** |
 | UniswapProxy | 27/27 = **100%** | 13/13 = **100%** |
-| **TOPLAM** | **341/343 = 99.42%** | **143/145 = 98.62%** |
+| RiskTransparency (yeni) | test ile | test ile |
+| **TOPLAM** | **416/429 = 96.97%** | **149/154 = 96.75%** |
 
 > **Not:** `forge coverage` genel rakamı `script/*.s.sol`'in %0'ı yüzünden düşer.
-> Yukarıdakiler **6 sözleşme** içindir (anlamlı metrik). 166 test ile ölçüldü.
+> Yukarıdakiler **7 sözleşme** içindir (anlamlı metrik). 186 test ile ölçüldü.
+> RiskTransparency library'sinin tüm dalları test ile kapatıldı (L53 dahil).
 
 ---
 
@@ -114,7 +116,7 @@ Solidity ABI **decoder**'i, `AuditTier` enum parametresini decode ederken değer
 
 **Dürüst sonuç:** %100 line/branch **test ile ulaşılabilir değil**. Kalan 2 dal
  kastlı defense-in-depth katmanlarıdır; natspec'lerinde belgelenmiş,
- "ulaşılamaz" tasarım kararlarıdır. **%99.42/%98.62 nihaidir.**
+ "ulaşılamaz" tasarım kararlarıdır. **%96.97/%96.75 nihaidir (2 dead-by-design dal).**
 
 > **Karar verene not:** Bu 2 dalı kapsamak için ya güvenlik katmanı
 > sökülür (tavsiye edilmez) ya da test, sözleşme içi mantığı aşmaya çalışır
