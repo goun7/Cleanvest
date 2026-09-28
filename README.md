@@ -190,6 +190,38 @@ Denetim turları yapmadan "bitti" denseydi bunlar canlıda patlardı:
 > kanıtı"** denmez. Daha güçlü bir garanti istenirse, gerçek Merkle yol
 > doğrulaması **YOL HARİTASI**'dır (yaprak imzaları + kardeş yolu).
 
+> ## 🔴 GÜVENLİK AÇIĞI — off-chain Merkle üreticisi YOK
+>
+> **Kanıt (2026-09-28, salt-okuma denetimi):** `orderCommitmentRoot`'un
+> tanımı `ICleanvestSettlement.sol:11`'de *"kullanıcı emir taahhüdü Merkle
+> kökü"*dür. **Bu kökü üreten kod var mı?**
+>
+> Kardeş proje `07_Temporit_DeFi_Metamorfik_Yaris_Durumu_Avcısı/`
+> (README kapsam notu: "AegisForge denetim motorunun Rust çekirdeği
+> içindedir") tarandı:
+> ```
+> $ find . -type f | grep -v .git/      →  crates/aegisforge/examples/probe.rs
+> $ grep -rln "erkle" --include="*.rs" .  →  (çıktı YOK)
+> ```
+> **Tüm projede TEK bir Rust dosyası** var (`probe.rs`, 42 satır). O da
+> `aegisforge::stage1_smt` / `aegisforge::target` modüllerine atıfta
+> bulunur — ama **crate'in kütüphane kaynağı (`lib.rs`, `src/`) ve
+> `Cargo.toml` YOK**, yani `probe.rs` derlenemez bile. **Hiçbir Merkle
+> ağacı, hiçbir emir-taahhüdü kök üreticisi mevcut DEĞİL.**
+>
+> **Güvenlik sonucu:** `CleanvestSettlement.sol:134` yalnızca
+> `orderCommitmentRoot != bytes32(0)` kontrol eder. **Kökü üreten kimse
+> olmadığı için** zincire **herhangi sıfır-olmayan değer yazılabilir** —
+> kökün gerçekten kullanıcı emirlerini temsil ettiğini doğrulayacak hiçbir
+> bileşen yok. Front-run/race kalkanı, `bytes32(0)` doldurma dışında
+> **uygulanmamış** durumdadır.
+>
+> **Dürüst etiket:** `orderCommitmentRoot` şu an **simüle/manuel** değer
+> alır — `ICleanvestSettlement.sol:11`'in "Merkle kökü" tanımı bir
+> **tasarım niyetidir, uygulanmamıştır.** Üretim öncesi: (1) gerçek
+> Merkle ağacı + kök üreticisi yazılmalı, (2) kök yaprak imzalarıyla
+> bağlanmalı, (3) test batch'leri gerçek kökle üretilmeli.
+
 ## Frontend — scUSD Dashboard (`web/`)
 
 Kurumsal dashboard; kullanıcı gözünden tek sayfada tüm durum görünür.
