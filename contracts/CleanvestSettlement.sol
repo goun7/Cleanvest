@@ -203,6 +203,89 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
         }
     }
 
+    // ============================================================
+    // MERKLE EMIR TAAHHUDU DOGRULAMA (2026-09-28)
+    // Guvenlik acigi kapanmasi: orderCommitmentRoot artik GERCEK Merkle
+    // koku olarak uretilir (merkle/ Rust crate'i) ve bu fonksiyon
+    // yaprak inclusion kanitini koke karsi dogrular.
+    // ============================================================
+
+    /// @notice Yaprak hash'i: keccak256(abi.encode(amount, user, nonce)).
+    /// @dev Merkle ureticisi (Rust) ile BIREBIR ayni paketleme.
+    ///      uint256 amount (32) + address user (12 sifir + 20) + uint256 nonce (32) = 96 bayt.
+    function leafHash(uint256 amount, address user, uint256 nonce) public pure returns (bytes32) {
+        return keccak256(abi.encode(amount, user, nonce));
+    }
+
+    /// @notice Merkle inclusion kanitini koke karsi dogrular.
+    /// @dev Cift-yaprakli (double-leaf) agac: her seviyede ikili eslesme;
+    ///      tek kalan yaprak KENDISIYLE eslestirilir. Rust ureticisi
+    ///      (merkle/src/lib.rs: prove/verify) ile birebir ayni algoritma.
+    /// @param leaf Dogrulanacak yapragin hash'i (leafHash() ile uretilir)
+    /// @param proof Sibling hash'ler + konum bitleri (her 33. baytin dusuk
+    ///              biti: 1 = sibling sagda, 0 = sibling solda)
+    /// @param root Dogrulanacak Merkle koku (orderCommitmentRoot)
+    /// @return true Kanit gecerli (leaf root icinde)
+    function verifyMerkleProof(
+        bytes32 leaf,
+        bytes calldata proof,
+        bytes32 root
+    ) public pure returns (bool) {
+        // Kanit: her seviye icin 32 bayt sibling + 1 bayt konum
+        // (Toplam seviye sayisi = proof.length / 33)
+        if (proof.length % 33 != 0) return false;
+
+        bytes32 acc = leaf;
+
+        for (uint256 i = 0; i < proof.length; i += 33) {
+            bytes32 sibling;
+            // assembly ile 32 bayt oku (calldata proof[i..i+32])
+            assembly {
+                let ptr := add(proof.offset, i)
+                sibling := calldataload(ptr)
+            }
+
+            // Konum biti: sibling sagda (1) veya solda (0)
+            bool isRight = (proof[i + 32] & 0x01) == 0x01;
+
+            // Sıralama: isRight -> (acc, sibling); !isRight -> (sibling, acc)
+            // Bu, Rust ureticisinin prove() konum biti ile AYNI kuraldir.
+            if (isRight) {
+                acc = keccak256(abi.encode(acc, sibling));
+            } else {
+                acc = keccak256(abi.encode(sibling, acc));
+            }
+        }
+
+        return acc == root;
+    }
+
+    /// @notice Rust ureticisi ile ayni agac kuralini test icin hesaplar.
+    /// @dev Cift-yaprakli: [a,b] -> keccak256(abi.encode(a,b));
+    ///      tek kalan -> keccak256(abi.encode(a,a)).
+    function _buildLayer(bytes32[] memory layer) internal pure returns (bytes32[] memory) {
+        uint256 n = layer.length;
+        uint256 outLen = (n + 1) / 2;
+        bytes32[] memory out = new bytes32[](outLen);
+        for (uint256 i = 0; i < outLen; i++) {
+            bytes32 a = layer[i * 2];
+            bytes32 b = (i * 2 + 1 < n) ? layer[i * 2 + 1] : a;
+            out[i] = keccak256(abi.encode(a, b));
+        }
+        return out;
+    }
+
+    /// @notice Yaprak listesinden Merkle koku hesaplar (Rust ile birebir).
+    /// @dev Test ve uretim karsilastirmasi icin zincir-ustu referans.
+    function computeRoot(bytes32[] memory leaves) public pure returns (bytes32) {
+        require(leaves.length > 0, "Bos agac koku tanimsiz");
+        bytes32[] memory layer = leaves;
+        while (layer.length > 1) {
+            layer = _buildLayer(layer);
+        }
+        return layer[0];
+    }
+
     /// @notice RFQ solver kaydet (sahip).
     function registerSolver(address solver) external onlyOwner {
         require(solver != address(0), "Solver sifir olamaz");

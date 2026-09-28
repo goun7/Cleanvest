@@ -261,4 +261,168 @@ contract CleanvestSettlementTest is Test {
         vm.expectRevert("Zaten kayitli");
         settlement.registerSolver(solver);
     }
+
+    // ============================================================
+    // MERKLE EMIR TAAHHUDU TESTLERI (2026-09-28)
+    // Rust ureticisi (merkle/src/lib.rs) ile birebit ayni kural.
+    // ============================================================
+
+    /// @notice leafHash Rust ile ayni paketlemeyi yapar
+    function testLeafHashMatchesAbiEncoding() public {
+        // keccak256(abi.encode(1000, address(1), 7))
+        bytes32 expected = keccak256(abi.encode(uint256(1000), address(1), uint256(7)));
+        assertEq(settlement.leafHash(1000, address(1), 7), expected, "leafHash abi.encode ile ayni");
+    }
+
+    /// @notice Tek yaprak: root = leaf
+    function testComputeRootSingleLeaf() public {
+        bytes32 leaf = settlement.leafHash(1000, address(1), 1);
+        bytes32[] memory leaves = new bytes32[](1);
+        leaves[0] = leaf;
+        assertEq(settlement.computeRoot(leaves), leaf, "Tek yaprakta root = leaf");
+    }
+
+    /// @notice Iki yaprak: root = keccak256(abi.encode(l0, l1))
+    function testComputeRootTwoLeaves() public {
+        bytes32 l0 = settlement.leafHash(1000, address(1), 1);
+        bytes32 l1 = settlement.leafHash(2000, address(2), 2);
+        bytes32[] memory leaves = new bytes32[](2);
+        leaves[0] = l0;
+        leaves[1] = l1;
+        bytes32 expected = keccak256(abi.encode(l0, l1));
+        assertEq(settlement.computeRoot(leaves), expected, "Iki yaprak dogru kok");
+    }
+
+    /// @notice Uc yaprak (tek kalan kendisiyle): Rust ile ayni kural
+    function testComputeRootOddLeaves() public {
+        bytes32 l0 = settlement.leafHash(1, address(1), 1);
+        bytes32 l1 = settlement.leafHash(2, address(2), 2);
+        bytes32 l2 = settlement.leafHash(3, address(3), 3);
+        bytes32[] memory leaves = new bytes32[](3);
+        leaves[0] = l0;
+        leaves[1] = l1;
+        leaves[2] = l2;
+        // Katman 1: [h(l0,l1), h(l2,l2)]
+        bytes32 p0 = keccak256(abi.encode(l0, l1));
+        bytes32 p1 = keccak256(abi.encode(l2, l2));
+        bytes32 expected = keccak256(abi.encode(p0, p1));
+        assertEq(settlement.computeRoot(leaves), expected, "Tek kalan kendisiyle eslesir");
+    }
+
+    /// @notice Bos agac reddedilir
+    function testComputeRootEmptyReverts() public {
+        bytes32[] memory leaves = new bytes32[](0);
+        vm.expectRevert("Bos agac koku tanimsiz");
+        settlement.computeRoot(leaves);
+    }
+
+    /// @notice Gecerli Merkle kaniti kabul edilir (2 yaprak)
+    function testVerifyMerkleProofValid() public {
+        bytes32 l0 = settlement.leafHash(1000, address(1), 1);
+        bytes32 l1 = settlement.leafHash(2000, address(2), 2);
+        bytes32[] memory leaves = new bytes32[](2);
+        leaves[0] = l0;
+        leaves[1] = l1;
+        bytes32 root = settlement.computeRoot(leaves);
+
+        // l0 icin kanit: sibling = l1, sagda (bit=1)
+        bytes memory proof = abi.encodePacked(l1, uint8(1));
+        assertTrue(settlement.verifyMerkleProof(l0, proof, root), "Gecerli kanit kabul edilmeli");
+    }
+
+    /// @notice Yanlis kanit REDDEDILMELI (farkli sibling)
+    function testVerifyMerkleProofWrongSiblingRejected() public {
+        bytes32 l0 = settlement.leafHash(1000, address(1), 1);
+        bytes32 l1 = settlement.leafHash(2000, address(2), 2);
+        bytes32 wrong = settlement.leafHash(9999, address(9), 9);
+        bytes32[] memory leaves = new bytes32[](2);
+        leaves[0] = l0;
+        leaves[1] = l1;
+        bytes32 root = settlement.computeRoot(leaves);
+
+        // Yanlis sibling ile kanit
+        bytes memory proof = abi.encodePacked(wrong, uint8(1));
+        assertFalse(settlement.verifyMerkleProof(l0, proof, root), "Yanlis kanit reddedilmeli");
+    }
+
+    /// @notice Yanlis yaprak (ayni kanit) REDDEDILMELI
+    function testVerifyMerkleProofWrongLeafRejected() public {
+        bytes32 l0 = settlement.leafHash(1000, address(1), 1);
+        bytes32 l1 = settlement.leafHash(2000, address(2), 2);
+        bytes32 wrong = settlement.leafHash(9999, address(9), 9);
+        bytes32[] memory leaves = new bytes32[](2);
+        leaves[0] = l0;
+        leaves[1] = l1;
+        bytes32 root = settlement.computeRoot(leaves);
+
+        // l1'in kaniti ama wrong leaf ile dogrulanamaz
+        bytes memory proof = abi.encodePacked(l0, uint8(0));
+        assertFalse(settlement.verifyMerkleProof(wrong, proof, root), "Yanlis yaprak reddedilmeli");
+    }
+
+    /// @notice Yanlis kok REDDEDILMELI
+    function testVerifyMerkleProofWrongRootRejected() public {
+        bytes32 l0 = settlement.leafHash(1000, address(1), 1);
+        bytes32 l1 = settlement.leafHash(2000, address(2), 2);
+        bytes32[] memory leaves = new bytes32[](2);
+        leaves[0] = l0;
+        leaves[1] = l1;
+        bytes32 root = settlement.computeRoot(leaves);
+        bytes32 badRoot = bytes32(uint256(root) ^ 1);
+
+        bytes memory proof = abi.encodePacked(l1, uint8(1));
+        assertFalse(settlement.verifyMerkleProof(l0, proof, badRoot), "Yanlis kok reddedilmeli");
+    }
+
+    /// @notice 3 yaprakli agacta her yaprak icin kanit gecerli (Rust ile ayni)
+    function testVerifyMerkleProofOddTreeAllLeaves() public {
+        bytes32 l0 = settlement.leafHash(1, address(1), 1);
+        bytes32 l1 = settlement.leafHash(2, address(2), 2);
+        bytes32 l2 = settlement.leafHash(3, address(3), 3);
+        bytes32[] memory leaves = new bytes32[](3);
+        leaves[0] = l0;
+        leaves[1] = l1;
+        leaves[2] = l2;
+        bytes32 root = settlement.computeRoot(leaves);
+
+        // Katman 1: p0 = h(l0,l1), p1 = h(l2,l2)
+        bytes32 p0 = keccak256(abi.encode(l0, l1));
+        bytes32 p1 = keccak256(abi.encode(l2, l2));
+
+        // l0: sibling l1 (sagda), sonra p1 (sagda)
+        bytes memory p_l0 = abi.encodePacked(l1, uint8(1), p1, uint8(1));
+        assertTrue(settlement.verifyMerkleProof(l0, p_l0, root), "l0 kaniti gecerli");
+
+        // l1: sibling l0 (solda), sonra p1 (sagda)
+        bytes memory p_l1 = abi.encodePacked(l0, uint8(0), p1, uint8(1));
+        assertTrue(settlement.verifyMerkleProof(l1, p_l1, root), "l1 kaniti gecerli");
+
+        // l2: sibling l2 (sagda — kendisiyle), sonra p0 (solda)
+        bytes memory p_l2 = abi.encodePacked(l2, uint8(1), p0, uint8(0));
+        assertTrue(settlement.verifyMerkleProof(l2, p_l2, root), "l2 kaniti gecerli");
+    }
+
+    /// @notice executeBatchSettlement GERCEK Merkle koku ile calisir
+    /// @dev Guvenlik acigi kapanmasi: artik sabit degil, uretilmis kok
+    function testExecuteBatchWithRealMerkleRoot() public {
+        bytes32 l0 = settlement.leafHash(1000, address(1), 1);
+        bytes32 l1 = settlement.leafHash(2000, address(2), 2);
+        bytes32[] memory leaves = new bytes32[](2);
+        leaves[0] = l0;
+        leaves[1] = l1;
+        bytes32 realRoot = settlement.computeRoot(leaves);
+
+        ICleanvestSettlement.MatchedBatch memory batch = ICleanvestSettlement.MatchedBatch({
+            batchId: BATCH_ID,
+            orderCommitmentRoot: realRoot,
+            clearingPrice: 1000 ether,
+            totalVolume: 3000 ether,
+            solverSignature: ""
+        });
+        bytes memory batchProof = _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume);
+
+        vm.prank(solver);
+        settlement.executeBatchSettlement(batch, batchProof);
+        assertTrue(settlement.batchSettled(BATCH_ID), "Batch GERCEK Merkle koku ile kesinlesti");
+    }
 }

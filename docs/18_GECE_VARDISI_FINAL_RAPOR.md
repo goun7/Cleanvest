@@ -51,7 +51,7 @@ Talimat eski snapshot'tan gelmiş — düzeltmeler zaten commit `62aeeed`'de. Di
 
 ### 5. 🔵 Faz-3 Spot HEX Borsa ✅ (17/17)
 - **T_batch = 400ms** Budish FBA kilidi
-- **`orderCommitmentRoot` ZORUNLU** (sıfır [atanmamış] Merkle kökü reddi). **Zincir üzerinde Merkle inclusion doğrulaması YOK** — yalnızca kök atanmamış olmalı. 🔴 **KANIT (2026-09-28): kökü ÜRETEN kod da YOK** — `07_Temporit` projesi tek Rust dosyasından oluşur (`probe.rs`, derlenemez bile: crate kaynağı yok); "Merkle kökü" bir **tasarım niyetidir**, `orderCommitmentRoot` şu an simüle/manuel değer alır (bkz. README "GÜVENLİK AÇIĞI" notu)
+- **`orderCommitmentRoot` ZORUNLU** (sıfır [atanmamış] Merkle kökü reddi). ✅ **KAPANDI (2026-09-28): Merkle üreticisi MEVCUT** — `merkle/` crate'i gerçek kökü üretir, `CleanvestSettlement.verifyMerkleProof` zincirde doğrular (Rust ↔ Solidity birebir: `0x21e195d1...`). **Hâlâ YOL HARİTASI:** yaprak imzaları + canlı solver entegrasyonu
 - **Anti-collusion BOYUT-FARKLİ:** `eps = 0.15% + kappa·(dQ/L)`, max %5
   - **Düz 0.15% KULLANILMADI** — kendi büyük emirlerimizi kronik reddeder
 - **$5.000 soğuk tavan** + **LE-2 lift trigger** (30-gün >$250k VEYA ≥2 solver → otomatik kalkar)

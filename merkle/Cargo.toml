@@ -1,0 +1,16 @@
+[package]
+name = "cleanvest-merkle"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Cleanvest emir taahhudu Merkle ureticisi — orderCommitmentRoot + inclusion proof"
+
+[dependencies]
+tiny-keccak = { version = "2", features = ["keccak"] }
+
+[dev-dependencies]
+hex = "0.4"
+
+[lib]
+name = "cleanvest_merkle"
+path = "src/lib.rs"

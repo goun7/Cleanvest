@@ -18,3 +18,8 @@ coverage/
 
 # Vitest JSON reporter ciktisi (scripts/readme_stats.py okur, kaynak degil)
 web/.vitest/
+
+# Rust build ciktilari (kaynak degil — uretilir)
+/target/
+merkle/target/
+Cargo.lock'u TUT (kilitlenmis baqimliliklar guvenlik icin onemli)

@@ -237,6 +237,72 @@ cast send $RESERVE_ADDR "setOptimizeMode(bool)" true \
 
 ---
 
+---
+
+## ADIM 6 — Emir Taahhüdü Merkle Üreticisi (batch settlement için)
+
+> **GEREKLİ — batch settlement bunu kullanır.** `executeBatchSettlement`'ın
+> `orderCommitmentRoot` alanı **gerçek Merkle kökü** olmalıdır; sabit
+> değer GÜVENLİK AÇIĞIDIR (kökü üreten kimse yoksa zincire sıfır-olmayan
+> her değer yazılabilir). Üretici: `merkle/` crate'i.
+
+### 6.1 Üreticiyi derle
+
+```bash
+cargo build --release --manifest-path merkle/Cargo.toml
+cargo test --manifest-path merkle/Cargo.toml --lib   # 11/11 gecmeli
+```
+
+> **Not:** `cargo doc` / doctest bu ortamda E0514 verebilir
+> (`tiny-keccak` cache'inin eski rustc ile derlenmiş olması — KOD HATASI
+> DEĞİL). `--lib` testleri geçerlidir.
+
+### 6.2 Kök + kanıt üret (solver batch göndermeden önce)
+
+```rust
+use cleanvest_merkle::{Order, MerkleTree};
+
+// Batch'in kullanıcı emirleri (solver tarafından toplanır)
+let orders = vec![
+    Order::new(1_000, user_a_address, nonce_a),
+    Order::new(2_000, user_b_address, nonce_b),
+];
+
+let tree = MerkleTree::build(&orders)?;
+let root: [u8; 32] = tree.root();          // -> orderCommitmentRoot
+let proof = tree.prove(0)?;                // -> 0. yaprak icin sibling path
+```
+
+`root`'u `MatchedBatch.orderCommitmentRoot`'a koyun; `proof`'u kullanıcıya
+veya denetim defterine verin.
+
+### 6.3 Zincirde doğrula (bağımsız kontrol)
+
+```bash
+# leafHash(amount, user, nonce) ile yapragi hesapla
+LEAF=$(cast call $SETTLEMENT_ADDR "leafHash(uint256,address,uint256)" 1000 $USER_A 1)
+
+# Kaniti gonder (33 bayt/segment: 32 sibling + 1 konum biti)
+cast call $SETTLEMENT_ADDR "verifyMerkleProof(bytes32,bytes,bytes32)" $LEAF $PROOF_BYTES $ROOT
+# -> true: yaprak root icinde; false: reddedildi
+```
+
+### 6.4 Kanıt formatı (Rust ve Solidity arasında birebir)
+
+Her seviye **33 bayt**: 32 bayt sibling hash + 1 bayt konum biti.
+- Bit `1` → sibling sağda: `keccak256(abi.encode(acc, sibling))`
+- Bit `0` → sibling solda: `keccak256(abi.encode(sibling, acc))`
+
+Çift-yapraklı ağaç: **tek kalan yaprak kendisiyle eşleştirilir**.
+Rust `MerkleTree::build` ve Solidity `computeRoot` **aynı kökü** üretir
+(çapraz kanıt: `merkle/examples/cross_check.rs` ile
+`test/MerkleCrossCheck.t.sol`, değer `0x21e195d1...`).
+
+> **Hâlâ YOL HARİTASI (insan kararı):** (1) **yaprak imzaları** — kök
+> kullanıcı imzalarını doğrulamaz (sadece ağaç yapısını); (2) **canlı solver
+> entegrasyonu** — üretici `executeBatchSettlement`'a henüz bağlı değil;
+> (3) anahtar yönetimi. Üretimde batch'ler gerçek kökle gönderilmelidir.
+
 ## KANIT PROTOKOLÜ (her adım için)
 
 ```
