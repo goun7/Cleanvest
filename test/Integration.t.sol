@@ -269,6 +269,51 @@ contract IntegrationTest is Test {
         assertEq(cUSD.totalSupply(), supplyBefore, "REBASE YOK: cUSD sabit");
     }
 
+    /// @notice FULL-STACK CIKIS: deposit -> requestRedemption -> redeem -> cUSD
+    /// @dev En kritik kullanici yolculugu - ana para cikisi.
+    ///      Onceden TAM test edilmemisti (sadece parcalari vardi).
+    function testFullStackExitFlow() public {
+        vm.prank(founder);
+        cUSD.seedJunior{value: 3_000 ether}(0);
+
+        // 1. Alice cUSD mint eder (fiyat -> cUSD)
+        vm.prank(alice);
+        cUSD.mint(alice, 10_000 ether);
+        uint256 cusdBefore = cUSD.balanceOf(alice);
+
+        // 2. Vault'a yatir (cUSD -> scUSD)
+        vm.startPrank(alice);
+        cUSD.approve(address(vault), 10_000 ether);
+        vault.deposit(10_000 ether, alice);
+        vm.stopPrank();
+
+        // 3. CIKIS: requestRedemption (kuyruk-onceligi ZORUNLU)
+        vm.startPrank(alice);
+        vault.requestRedemption(10_000 ether);
+
+        // 4. T+2 bekleme suresi
+        vm.warp(block.timestamp + 3 days);
+
+        // 5. redeem -> cUSD geri
+        uint256 shares = vault.convertToShares(10_000 ether);
+        vault.redeem(shares, alice, alice);
+        vm.stopPrank();
+
+        // INVARIANT: cUSD geri dondu (cikis kilitlenmedi)
+        assertEq(
+            cUSD.balanceOf(alice),
+            cusdBefore,
+            "Full-stack cikis: cUSD geri donmeli"
+        );
+
+        // INVARIANT: vault balance sifirlandi
+        assertEq(
+            vault.balanceOf(alice),
+            0,
+            "Cikis sonrasi scUSD sifir olmali"
+        );
+    }
+
     /// @notice Tum fiyatlar seffaf (gizli degil)
     /// @dev Fiyatlar docs/40 (2026-09-27) ile guncellendi
     function testTransparentPricing() public {
