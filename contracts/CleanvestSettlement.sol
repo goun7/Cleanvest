@@ -124,6 +124,88 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
 
     /// @notice Emir tavanini kim asti (oracle raporu).
     event OrderSizeCapExceeded(address indexed trader, uint256 size, uint256 cap);
+
+    // ============================================================
+    // EIP-712 ALAN-AYRIMI (DOMAIN SEPARATION) (2026-09-29, DAR görev)
+    // README dürüst sınırı: "imzanın alan-ayrımı YOKTUR" — KAPANIYOR.
+    // İmza artık EIP-712 ile (name, version, chainId, verifyingContract)
+    // alanına BAĞLIDIR: aynı imza başka bir kontratta (cross-contract) veya
+    // başka bir zincirde (cross-chain) GEÇERLİ DEĞİLDİR. Legacy EIP-191
+    // fonksiyonları (verifySignedOrder vb.) geriye dönük uyum için durur.
+    // ============================================================
+
+    /// @notice EIP-712 domain adı — imzayı BU kontratın adına bağlar.
+    string public constant EIP712_NAME = "Cleanvest-Settlement";
+
+    /// @notice EIP-712 domain sürümü — imza şeması değişirse artırılır.
+    string public constant EIP712_VERSION = "1";
+
+    /// @dev EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)
+    bytes32 private constant EIP712_DOMAIN_TYPEHASH = keccak256(
+        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+    );
+
+    /// @dev Order(uint256 amount,address user,uint256 nonce) — alan sıralaması
+    ///      legacy Merkle yaprağı (leafHash) ile BİREBİR AYNI; ağaç değişmez.
+    bytes32 private constant ORDER_TYPEHASH = keccak256(
+        "Order(uint256 amount,address user,uint256 nonce)"
+    );
+
+    /// @notice EIP-712 domain separator: (name, version, chainId, verifyingContract).
+    /// @dev İmzayı BU kontrata ve BU zincire bağlar — chainId ve
+    ///      verifyingContract zincirde belirlenir; saldırgan DEĞİŞTİREMEZ.
+    function domainSeparator() public view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                EIP712_DOMAIN_TYPEHASH,
+                keccak256(bytes(EIP712_NAME)),
+                keccak256(bytes(EIP712_VERSION)),
+                block.chainid,
+                address(this)
+            )
+        );
+    }
+
+    /// @notice Order için EIP-712 struct hash'i.
+    /// @dev keccak256(abi.encode(ORDER_TYPEHASH, amount, user, nonce)).
+    ///      leafHash(amount, user, nonce) ile AYNI alan sıralaması; yalnızca
+    ///      typeHash başlığı eklenir — Merkle ağacı ve kök hesabı DEĞİŞMEZ.
+    function orderStructHash(uint256 amount, address user, uint256 nonce)
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encode(ORDER_TYPEHASH, amount, user, nonce));
+    }
+
+    /// @notice Order için tam EIP-712 özeti — imza bunun üzerinedir.
+    /// @dev keccak256("\x19\x01" || domainSeparator || orderStructHash).
+    ///      Off-chain imzalayan (cüzdan / Rust merkle crate) AYNI baytları
+    ///      üretmelidir. Legacy toEthSignedMessageHash'den farkı: alan-ayrımı.
+    function orderDomainDigest(uint256 amount, address user, uint256 nonce)
+        public
+        view
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator(), orderStructHash(amount, user, nonce))
+        );
+    }
+
+    /// @dev EIP-712 özeti (zaten "\x19\x01" önekini içerir) üzerinden imzalayan
+    ///      adresi geri kazanır — EIP-191 sarmalama YAPILMAZ.
+    function _recoverSignerRaw(bytes32 digest, bytes memory sig) internal pure returns (address) {
+        require(sig.length == 65, "Imza 65 bayt olmali");
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            r := mload(add(sig, 32))
+            s := mload(add(sig, 64))
+            v := byte(0, mload(add(sig, 96)))
+        }
+        return ecrecover(digest, v, r, s);
+    }
     event BatchSettled(bytes32 indexed batchId, uint256 clearingPrice, uint256 totalVolume);
     event SizeCapLifted(uint256 rollingVolume, uint256 solverCount);
 
@@ -567,6 +649,38 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
         bytes32 root
     ) public pure returns (bool) {
         return verifyLeafSignature(leaf, sig, signer) && _verifyMerkleProof(leaf, proof, root);
+    }
+
+    /// @notice DOMAIN-AWARE tam kanıt zinciri (EIP-712): imza artık
+    ///         (name, version, chainId, verifyingContract) alanına BAĞLIDIR.
+    /// @dev Aynı imza başka bir kontratta (cross-contract) veya başka bir
+    ///      zincirde (cross-chain) GEÇERLİ DEĞİLDİR — domain separator farklı
+    ///      → özet farklı → ecrecover farklı adres → false (fail-closed).
+    ///      Merkle yaprağı ve kök algoritması legacy ile BİREBİR AYNI:
+    ///      yaprak hâlâ leafHash(amount, user, nonce)'tur; yalnızca İMZANIN
+    ///      özeti domain-aware'dir. Legacy EIP-191 yolu (verifySignedOrder)
+    ///      geriye dönük uyum için durur.
+    /// @param amount Emir miktarı
+    /// @param user Emir sahibi (aynı zamanda imzalayan)
+    /// @param nonce Emir nonce'u
+    /// @param sig EIP-712 imzası (orderDomainDigest özeti üzerinde, 65 bayt)
+    /// @param proof Merkle sibling kaniti (33 bayt/seviye)
+    /// @param root Doğrulanacak Merkle koku
+    /// @return true Domain imzası geçerli VE yaprak kok icinde
+    function verifySignedOrderWithDomain(
+        uint256 amount,
+        address user,
+        uint256 nonce,
+        bytes memory sig,
+        bytes memory proof,
+        bytes32 root
+    ) public view returns (bool) {
+        if (user == address(0)) return false;
+        // Merkle yaprağı legacy ile AYNI — ağaç/kök değişmez
+        bytes32 leaf = leafHash(amount, user, nonce);
+        // EIP-712 domain imzası — alan-ayrımı (cross-contract/cross-chain red)
+        if (_recoverSignerRaw(orderDomainDigest(amount, user, nonce), sig) != user) return false;
+        return _verifyMerkleProof(leaf, proof, root);
     }
 
     /// @notice RFQ solver kaydet (sahip).

@@ -26,6 +26,13 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 ///        B) publishLiabilities() — LEGACY/GAZ-VERİMLİ: yalnızca kök + toplam
 ///           yayınlanır; imza doğrulaması OFF-CHAIN varsayılır. Bu yol
 ///           gereksinimi zincir-üstünde KANITLAMAZ (epochSignatureEnforced=false).
+///        Ayrıca (DAR, 2026-09-29) DOMAIN-AWARE variantlar:
+///        A2) publishLiabilitiesFromSignedLeavesWithDomain() — A'nın aynısı,
+///            fakat yaprak imzaları EIP-712 domain özeti (name, version,
+///            chainId, verifyingContract) üzerinedir — ALAN-AYRIMI: aynı imza
+///            başka kontratta/zincirde GEÇERLİ DEĞİLDİR. Doğrulama:
+///            verifyLiabilityWithDomain(). Legacy EIP-191 yolu (A + verifyLiability)
+///            geriye dönük uyum için olduğu gibi KALDI.
 ///      Her iki yolda da:
 ///        1. Her yaprak = keccak256(abi.encode(user, balance, epoch))
 ///        2. Yaprak KULLANICI tarafından EIP-191 ile imzalanır
@@ -88,6 +95,36 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
     event PublisherRevoked(address indexed publisher);
     event LiabilityVerified(address indexed user, uint256 epoch, bytes32 indexed root, bool included);
 
+    // ============================================================
+    // EIP-712 ALAN-AYRIMI (DOMAIN SEPARATION) — DÜRÜST SINIR KAPANIYOR
+    // (DAR görev, 2026-09-29): README'nin "imzanın alan-ayrımı (domain
+    // separation) YOKTUR" sınırı. İmza artık EIP-712 ile
+    // (name, version, chainId, verifyingContract) alanına BAĞLIDIR:
+    // aynı imza başka bir kontratta (cross-contract) veya başka bir
+    // zincirde (cross-chain) GEÇERLİ DEĞİLDİR — domain separator
+    // farklı → özet farklı → ecrecover farklı adres → REVERT.
+    // LEGACY YOL (verifyLiability + publishLiabilitiesFromSignedLeaves,
+    // EIP-191) OLDUĞU GİBİ KALDI — geriye dönük uyum (R9-2 tarzı).
+    // ============================================================
+
+    /// @notice EIP-712 domain adı — imzayı BU kontratın adına bağlar.
+    string public constant EIP712_NAME = "Cleanvest-ProofOfLiabilities";
+
+    /// @notice EIP-712 domain sürümü — imza şeması değişirse artırılır.
+    string public constant EIP712_VERSION = "1";
+
+    /// @dev EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)
+    bytes32 private constant EIP712_DOMAIN_TYPEHASH = keccak256(
+        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+    );
+
+    /// @dev LiabilityLeaf(address user,uint256 balance,uint256 epoch)
+    ///      — alan sıralaması legacy Merkle yaprağı ile BİREBİR AYNI;
+    ///      böylece ağaç algoritması ve kök hesabı DEĞİŞMEZ.
+    bytes32 private constant LIABILITY_LEAF_TYPEHASH = keccak256(
+        "LiabilityLeaf(address user,uint256 balance,uint256 epoch)"
+    );
+
     constructor() Ownable(msg.sender) ReentrancyGuard() {}
 
     modifier onlyPublisher() {
@@ -148,6 +185,41 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
         uint256[] calldata balances,
         bytes[] calldata sigs
     ) external onlyPublisher returns (bytes32 root) {
+        // LEGACY YOL: EIP-191 imzası (alan-ayrımı YOK) — geriye dönük uyum.
+        return _publishFromSignedLeaves(users, balances, sigs, false);
+    }
+
+    /// @notice FAIL-CLOSED + DOMAIN-AWARE kök yayın: tıpkı
+    ///         publishLiabilitiesFromSignedLeaves() gibidir, ancak her yaprak
+    ///         imzası EIP-712 domain özeti (name, version, chainId,
+    ///         verifyingContract) üzerinedir.
+    /// @dev DÜRÜST SINIR (alan-ayrımı) KAPANIYOR: aynı imza başka bir
+    ///      kontratta veya başka bir zincirde KULLANILAMAZ — domain
+    ///      separator zincirde belirlenir (block.chainid + address(this)),
+    ///      saldıran değiştiremez. Ağaç/kök algoritması legacy ile BİREBİR
+    ///      AYNI (yaprak sıralaması değişmedi).
+    /// @param users Kullanıcı adresleri
+    /// @param balances Bakiyeler, 1e18 = 1 USD (users ile sıralı)
+    /// @param sigs EIP-712 imzaları: liabilityDomainDigest(user, balance, epoch)
+    ///             özeti üzerinde, users/balances ile sıralı
+    /// @return root Yayımlanan Merkle kökü (imzalı yapraklardan türetilmiş)
+    function publishLiabilitiesFromSignedLeavesWithDomain(
+        address[] calldata users,
+        uint256[] calldata balances,
+        bytes[] calldata sigs
+    ) external onlyPublisher returns (bytes32 root) {
+        return _publishFromSignedLeaves(users, balances, sigs, true);
+    }
+
+    /// @dev İmzalı yapraklar'dan fail-closed kök türeten PAYLAŞILAN çekirdek.
+    ///      domainAware=false → EIP-191 (legacy); true → EIP-712 domain özeti.
+    ///      Tek fark imza doğrulamasının özetidir; ağaç ve kök AYNIdır.
+    function _publishFromSignedLeaves(
+        address[] calldata users,
+        uint256[] calldata balances,
+        bytes[] calldata sigs,
+        bool domainAware
+    ) internal returns (bytes32 root) {
         require(users.length > 0, "Bos agac kabul edilmez");
         require(
             users.length == balances.length && users.length == sigs.length,
@@ -164,8 +236,13 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
             // tarafından imzalanmış OLMALIDIR. İmza yoksa revert -> operatör
             // yaprak UYDURAMAZ, kökü de seçemez.
             bytes32 leaf = keccak256(abi.encode(users[i], balances[i], epoch));
+            // ALAN-AYRIMI: domainAware ise imza EIP-712 domain özeti üzerinedir
+            // (cross-contract/cross-chain replay yapısal olarak reddedilir).
+            bytes32 digest = domainAware
+                ? liabilityDomainDigest(users[i], balances[i], epoch)
+                : _toEthSignedMessageHash(leaf);
             require(
-                _recoverSigner(leaf, sigs[i]) == users[i],
+                _recoverSignerRaw(digest, sigs[i]) == users[i],
                 "Kullanici imzasi gecersiz (yaprak imzalanmamis)"
             );
             leaves[i] = leaf;
@@ -213,6 +290,89 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
 
         // 2. Kullanıcı imzası (EIP-191) — operatör yaprak dolduramaz
         require(_recoverSigner(leaf, sig) == user, "Imza gecersiz (kullanici imzalamamis)");
+
+        // 3. Merkle inclusion
+        bool ok = _verifyMerkleProof(leaf, proof, root);
+
+        emit LiabilityVerified(user, epoch, root, ok);
+        return ok;
+    }
+
+    // ============================================================
+    // EIP-712 ALAN-AYRIMI — domain-aware doğrulama (2026-09-29)
+    // ============================================================
+
+    /// @notice EIP-712 domain separator: (name, version, chainId, verifyingContract).
+    /// @dev Bu, imzayı BU kontrata ve BU zincire bağlar — cross-contract ve
+    ///      cross-chain replay'i yapısal olarak engeller. chainId ve
+    ///      verifyingContract zincirde belirlenir; saldırgan DEĞİŞTİREMEZ.
+    function domainSeparator() public view returns (bytes32) {
+        return keccak256(
+            abi.encode(
+                EIP712_DOMAIN_TYPEHASH,
+                keccak256(bytes(EIP712_NAME)),
+                keccak256(bytes(EIP712_VERSION)),
+                block.chainid,
+                address(this)
+            )
+        );
+    }
+
+    /// @notice LiabilityLeaf için EIP-712 struct hash'i.
+    /// @dev keccak256(abi.encode(LIABILITY_LEAF_TYPEHASH, user, balance, epoch)).
+    ///      Legacy Merkle yaprağı ile AYNI alan sıralaması — yalnızca başlık
+    ///      (typeHash) eklenir; ağaç algoritması ve kök hesabı DEĞİŞMEZ.
+    function liabilityLeafStructHash(address user, uint256 balance, uint256 epoch)
+        public
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encode(LIABILITY_LEAF_TYPEHASH, user, balance, epoch));
+    }
+
+    /// @notice LiabilityLeaf için tam EIP-712 özeti — imza bunun üzerinedir.
+    /// @dev keccak256("\x19\x01" || domainSeparator || structHash).
+    ///      Off-chain imzalayan (cüzdan / Rust crate) AYNI baytları üretmelidir.
+    function liabilityDomainDigest(address user, uint256 balance, uint256 epoch)
+        public
+        view
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked("\x19\x01", domainSeparator(), liabilityLeafStructHash(user, balance, epoch))
+        );
+    }
+
+    /// @notice DOMAIN-AWARE liability doğrulama (EIP-712).
+    /// @dev İmza artık domain özeti üzerinedir: aynı imza başka bir
+    ///      verifyingContract (cross-contract) veya başka bir chainId
+    ///      (cross-chain) ile GEÇERLİ DEĞİLDİR — domain separator farklı
+    ///      → özet farklı → ecrecover farklı adres → REVERT (fail-closed).
+    ///      Merkle yaprağı ve kök algoritması legacy ile BİREBİR AYNI.
+    ///      LEGACY YOL: verifyLiability() (EIP-191) geriye dönük uyum için
+    ///      hâlâ mevcuttur — eski imzalar çalışmaya devam eder.
+    /// @param user Kullanıcı adresi
+    /// @param balance İddia edilen bakiye (1e18 = 1 USD)
+    /// @param epoch Doğrulanan dönem
+    /// @param sig Kullanıcının EIP-712 imzası (domain özeti üzerinde)
+    /// @param proof Merkle sibling yolu (33 bayt/seviye)
+    /// @return included Yaprak kökte mevcut ve domain imzası geçerli
+    function verifyLiabilityWithDomain(
+        address user,
+        uint256 balance,
+        uint256 epoch,
+        bytes memory sig,
+        bytes memory proof
+    ) external nonReentrant returns (bool included) {
+        bytes32 root = epochRoot[epoch];
+        require(root != bytes32(0), "Epoch yayinlanmamis");
+
+        // 1. Merkle yaprağı (legacy ile AYNI — ağaç/kök değişmez)
+        bytes32 leaf = keccak256(abi.encode(user, balance, epoch));
+
+        // 2. EIP-712 domain imzası — alan-ayrımı (cross-contract/cross-chain red)
+        bytes32 digest = liabilityDomainDigest(user, balance, epoch);
+        require(_recoverSignerRaw(digest, sig) == user, "EIP-712 domain imzasi gecersiz");
 
         // 3. Merkle inclusion
         bool ok = _verifyMerkleProof(leaf, proof, root);
@@ -275,6 +435,22 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
             v := byte(0, mload(add(sig, 96)))
         }
         return ecrecover(_toEthSignedMessageHash(leaf), v, r, s);
+    }
+
+    /// @dev EIP-712 özeti (zaten "\x19\x01" önekini içerir) üzerinden imzalayan
+    ///      adresi geri kazanır — EIP-191 sarmalama YAPILMAZ. Legacy
+    ///      _recoverSigner'dan tek farkı önetin dışarıda hazır gelmesidir.
+    function _recoverSignerRaw(bytes32 digest, bytes memory sig) private pure returns (address) {
+        require(sig.length == 65, "Imza 65 bayt olmali");
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            r := mload(add(sig, 32))
+            s := mload(add(sig, 64))
+            v := byte(0, mload(add(sig, 96)))
+        }
+        return ecrecover(digest, v, r, s);
     }
 
     /// @dev Çift-yapraklı Merkle doğrulama (CleanvestSettlement ile birebir).

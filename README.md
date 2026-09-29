@@ -1,6 +1,6 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test: **290 forge + 24 Rust, 0 failed** · Akademik araştırma: [`docs/arastirma/`](docs/arastirma/) (35 doğrulanmış makale) · TODO/placeholder sıfır
+**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test: **295 forge + 24 Rust, 0 failed** · Akademik araştırma: [`docs/arastirma/`](docs/arastirma/) (35 doğrulanmış makale) · TODO/placeholder sıfır
 
 > 🔢 **Sayıların üretimi:** README'e giren her sayı [`scripts/readme_stats.py`](scripts/readme_stats.py) tarafından koddan üretilir — elle girilmez. Çalıştırma: `python3 scripts/readme_stats.py`
 
@@ -132,13 +132,23 @@ Kök **byte-byte özdeştir**. Çalıştırma: `bash scripts/proof_demo.sh`.
 2. **İmza tekrar (replay) tam koruma DEĞİLDİR** — `nonce` alanı **ve**
    zincir-üstü **kullanılmış-nonce takibi** artık MEVCUTTUR (DAR görevi,
    2026-09-29: her imzalı emrin nonce'u `_useNonce` ile zincirde işaretlenir,
-   aynı (user, nonce) ikinci kez `ReplayDetected` ile **reddedilir** — 4 test,
-   toplam 290), ama **tam** koruma DEĞİLDİR: tüketim solver'in
-   `consumeNonces` çağrısına bağlıdır (üretici `executeBatchSettlement`
-   entegrasyonu yol haritasıdır) ve **ECDSA imza malleability (low-s/EIP-2)
-   kontrolü YOKTUR** — bir imzadan ikinci bir gösterim türetilebilir. Ayrıca
-   imzanın **alan-ayrımı (domain separation)** yoktur: başka bir taahhüt
-   üzerinde aynı imza geçerli olabilir
+   aynı (user, nonce) ikinci kez `ReplayDetected` ile **reddedilir**), ve
+   imzanın **alan-ayrımı (domain separation)** artık **MEVCUTTUR** (DAR görevi,
+   2026-09-29: EIP-712 domain separator
+   `(name, version, chainId, verifyingContract)` ile imza BU kontrata ve BU
+   zincire bağlıdır —
+   [`ProofOfLiabilities.verifyLiabilityWithDomain`](contracts/ProofOfLiabilities.sol) /
+   `publishLiabilitiesFromSignedLeavesWithDomain` ve
+   [`CleanvestSettlement.verifySignedOrderWithDomain`](contracts/CleanvestSettlement.sol);
+   aynı imza başka bir kontratta (**cross-contract**) veya başka bir zincirde
+   (**cross-chain**) **reddedilir** — 5 test, toplam 295), ama **tam** koruma
+   DEĞİLDİR: tüketim solver'in `consumeNonces` çağrısına bağlıdır (üretici
+   `executeBatchSettlement` entegrasyonu yol haritasıdır), **ECDSA imza
+   malleability (low-s/EIP-2) kontrolü YOKTUR** — bir imzadan ikinci bir
+   *gösterim* (representation) türetilebilir, ve **legacy EIP-191 yolları**
+   (`verifyLiability`, `publishLiabilitiesFromSignedLeaves`,
+   `verifySignedOrder`) **alan-ayrımı UYGULAMAZ** — geriye dönük uyumluluk için
+   kalırlar (R9-2 tarzı); yeni yayınlar domain-aware yolu kullanmalıdır
    ([`docs/arastirma/06`](docs/arastirma/06_eip191_imzali_mesaj_guvenligi_2025_2026.md)).
 3. **MEV'den tam bağışık DEĞİLDİR** — batch içi sıralama kilitlidir ama
    batch'ler arası kuyruk ve çözücü seçimi dışarıda kalır
@@ -455,7 +465,13 @@ Denetim turları yapmadan "bitti" denseydi bunlar canlıda patlardı:
 > üretici `executeBatchSettlement`'a henüz bağlı değil; (2) üretim anahtar
 > yönetimi; ~~(3) kullanılmış-nonce zincir-üstü takibi (replay koruması)~~ —
 > **TAMAMLANDI (DAR 2026-09-29)**: `_useNonce` + `ReplayDetected`, 4 test;
-> (4) zk-STARK tabanlı gizlilik. İlk ikisi **insan kararıdır**.
+> ~~(3b) imza alan-ayrımı (domain separation)~~ —
+> **TAMAMLANDI (DAR 2026-09-29)**: EIP-712 domain separator
+> `(name, version, chainId, verifyingContract)` — cross-contract /
+> cross-chain imza yeniden-oynatması **reddedilir**, legacy EIP-191 yolları
+> geriye dönük uyumluluk için korundu, 5 test (toplam 295);
+> (4) zk-STARK tabanlı gizlilik — **DÜRÜSTÇE KAPANAMAZ** (kriptografik
+> sınırdır), yol haritasında kalır. İlk ikisi **insan kararıdır**.
 >
 > **Müşteriye sunumda:** "emir taahhüdü Merkle kökü **üretilir, kullanıcı
 > imzasıyla bağlanır ve üç bağımsız uygulama tarafından kanıtlanır**" denir. Bu,
