@@ -17,12 +17,21 @@ import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 ///      [`docs/arastirma/05`](../docs/arastirma/05_merkle_kanitlari_finansal_uygulamalar_2025_2026.md)
 ///      Makale, commit edilen vektörün yalnızca KULLANICILARIN İMZALADIĞI
 ///      değerleri içermesini bir GEREKLİLİK olarak öne sürer (collusion'a
-///      karşı ana kalkan). Bu kontrat:
+///      karşı ana kalkan). Bu kontrat İKİ yayın yolu sunar:
+///        A) publishLiabilitiesFromSignedLeaves() — FAIL-CLOSED: her yaprağın
+///           EIP-191 imzası ZİNCİRDE doğrulanır ve KÖK imzalı yapraklardan
+///           ZİNCİRDE türetilir. Operatör kökü seçemez; imzasız yaprak
+///           uyduramaz (tek geçersiz imza tüm yayını revert eder).
+///           AsiaCCS'26 gereksinimi ZİNCİR-ÜSTÜNDE KANITLANIR.
+///        B) publishLiabilities() — LEGACY/GAZ-VERİMLİ: yalnızca kök + toplam
+///           yayınlanır; imza doğrulaması OFF-CHAIN varsayılır. Bu yol
+///           gereksinimi zincir-üstünde KANITLAMAZ (epochSignatureEnforced=false).
+///      Her iki yolda da:
 ///        1. Her yaprak = keccak256(abi.encode(user, balance, epoch))
-///        2. Her yaprak KULLANICI tarafından EIP-191 ile imzalanır
+///        2. Yaprak KULLANICI tarafından EIP-191 ile imzalanır
 ///        3. Kök (liabilitiesRoot) zincir-üstü yayınlanır
-///        4. Herkes kendi yaprağını köre karşı doğrular (inclusion)
-///        5. Toplam yükümlülük zincir-üstü sayılır (sumLiabilities)
+///        4. Herkes kendi yaprağını köre karşı doğrular (verifyLiability)
+///        5. Toplam yükümlülük zincir-üstü sayılır (epochTotalLiabilities)
 ///
 ///      DÜRÜST SINIR (NASIL OKUNMALI): bu bir **kayıt-muhasebe**
 ///      taahhüdüdür — rezervlerin VARLIĞINI kanıtlamaz (banka-DDO
@@ -61,10 +70,18 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
     /// @notice Toplam yayınlanmış epoch sayısı.
     uint256 public epochCount;
 
-    /// @notice Her epoch için KULLANICI İMZASI kullanılır (collusion kalkanı).
-    /// @dev leaf => imza; her yaprak kullanıcı EIP-191 imzası taşır.
-    // (İmzalar off-chain kök üretiminde doğrulanır; zincir-üstü doğrulama
-    //  verifyLiability() ile yapılır. Bu mapping tek-seferlik kayıt içindir.)
+    /// @notice Epoch => yaprak sayısı (denetim için).
+    mapping(uint256 => uint256) public epochLeafCount;
+
+    /// @notice Epoch => kök, KULLANICI İMZALI yapraklardan ZİNCİR-ÜSTÜNDE
+    ///         türetildi mi? (AsiaCCS'26 gereksiniminin zincir-üstü kanıtı)
+    /// @dev true  = publishLiabilitiesFromSignedLeaves ile yayınlandı: her
+    ///              yaprağın EIP-191 imzası ZİNCİRDE doğrulandı, tek geçersiz
+    ///              imza tüm yayını revert etti (fail-closed).
+    ///      false = publishLiabilities ile HAM kök yayınlandı: imza
+    ///              doğrulaması OFF-CHAIN varsayılır; bu yol AsiaCCS'26
+    ///              gereksinimini zincir-üstünde KANITLAMAZ.
+    mapping(uint256 => bool) public epochSignatureEnforced;
 
     event LiabilitiesPublished(uint256 indexed epoch, bytes32 indexed root, uint256 totalLiabilities, uint256 leafCount);
     event PublisherAuthorized(address indexed publisher);
@@ -79,9 +96,16 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
     }
 
     /// @notice Yeni bir yükümlülük kökü yayınla (her epoch'da bir kez).
-    /// @dev Kök, off-chain'da KULLANICI İMZALI yapraklardan üretilir
-    ///      (Rust merkle/ crate'i ile aynı algoritma). Zincir yalnızca
-    ///      KÖKÜ ve TOPLAMI kaydeder; yaprakları DEĞİL (gas maliyeti).
+    /// @dev LEGACY / GAZ-VERİMLİ YOL. Kök, off-chain'da KULLANICI İMZALI
+    ///      yapraklardan üretilir (Rust merkle/ crate'i ile aynı algoritma);
+    ///      zincir yalnızca KÖKÜ ve TOPLAMI kaydeder, yaprakları DEĞİL.
+    ///
+    ///      DÜRÜST SINIR: bu yol AsiaCCS'26 gereksinimini ZİNCİR-ÜSTÜNDE
+    ///      KANITLAMAZ — imza doğrulaması OFF-CHAIN yapılır varsayılır.
+    ///      `epochSignatureEnforced[epoch] = false` olarak işaretlenir, böylece
+    ///      denetçi bu epoch'un kökünün ancak off-chain imza denetimiyle
+    ///      güvenilir olduğunu ayırt edebilir. On-chain fail-closed garanti
+    ///      için publishLiabilitiesFromSignedLeaves() kullanın.
     /// @param root Merkle kökü (kullanıcı imzalı yapraklardan üretilmiş)
     /// @param totalLiabilities Tüm yaprakların bakiye toplamı (1e18 = 1 USD)
     /// @param leafCount Yaprak sayısı (denetim için)
@@ -94,9 +118,73 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
         epochRoot[currentEpoch] = root;
         epochTotalLiabilities[currentEpoch] = totalLiabilities;
         epochTimestamp[currentEpoch] = block.timestamp;
+        epochLeafCount[currentEpoch] = leafCount;
+        // HAM kök yolu: imzalar off-chain doğrulanmış varsayılır.
+        epochSignatureEnforced[currentEpoch] = false;
         epochCount += 1;
 
         emit LiabilitiesPublished(currentEpoch, root, totalLiabilities, leafCount);
+    }
+
+    /// @notice FAIL-CLOSED kök yayınla: kök, KULLANICI İMZALI yapraklardan
+    ///         ZİNCİR-ÜSTÜNDE türetilir. Bu, AsiaCCS'26 makalesinin ana
+    ///         gereksiniminin ("commit edilen vektör yalnızca kullanıcıların
+    ///         imzaladığı değerleri içermelidir") ZİNCİR-ÜSTÜ KANITIDIR.
+    /// @dev Operatör KÖKÜ SEÇEMEZ — kök, imzası doğrulanmış yapraklardan
+    ///      hesaplanır. Her yaprak için EIP-191 imzası doğrulanır; TEK bir
+    ///      geçersiz/eksik imza TÜM yayın işlemini REVERT EDER. Dolayısıyla
+    ///      operatör imzalamadığı bir kullanıcı UYDURAMAZ (fail-closed).
+    ///
+    ///      Epoch, zincirde belirlenir (currentEpoch + 1); kullanıcılar bu
+    ///      epoch numarası üzerinden imzalar (operator imzaları toplarken
+    ///      bir sonraki epoch'u bilir).
+    /// @param users Kullanıcı adresleri
+    /// @param balances Bakiyeler, 1e18 = 1 USD (users ile sıralı)
+    /// @param sigs EIP-191 imzaları: keccak256(abi.encode(user, balance, epoch))
+    ///             özeti üzerinde, users/balances ile sıralı
+    /// @return root Yayımlanan Merkle kökü (imzalı yapraklardan türetilmiş)
+    function publishLiabilitiesFromSignedLeaves(
+        address[] calldata users,
+        uint256[] calldata balances,
+        bytes[] calldata sigs
+    ) external onlyPublisher returns (bytes32 root) {
+        require(users.length > 0, "Bos agac kabul edilmez");
+        require(
+            users.length == balances.length && users.length == sigs.length,
+            "Dizi uzunluklari uyusmali"
+        );
+
+        uint256 epoch = currentEpoch + 1;
+        uint256 total;
+        bytes32[] memory leaves = new bytes32[](users.length);
+
+        for (uint256 i = 0; i < users.length; i++) {
+            require(users[i] != address(0), "Sifir kullanici reddedilir");
+            // ASIA CCS'26 GEREKSİNİMİ (fail-closed): her yaprak KULLANICI
+            // tarafından imzalanmış OLMALIDIR. İmza yoksa revert -> operatör
+            // yaprak UYDURAMAZ, kökü de seçemez.
+            bytes32 leaf = keccak256(abi.encode(users[i], balances[i], epoch));
+            require(
+                _recoverSigner(leaf, sigs[i]) == users[i],
+                "Kullanici imzasi gecersiz (yaprak imzalanmamis)"
+            );
+            leaves[i] = leaf;
+            total += balances[i];
+        }
+
+        // Kök, DOĞRULANMIŞ yapraklardan zincir-üstünde türetilir.
+        root = _computeRootFromLeaves(leaves);
+
+        currentEpoch = epoch;
+        liabilitiesRoot = root;
+        epochRoot[epoch] = root;
+        epochTotalLiabilities[epoch] = total;
+        epochTimestamp[epoch] = block.timestamp;
+        epochLeafCount[epoch] = users.length;
+        epochSignatureEnforced[epoch] = true;
+        epochCount += 1;
+
+        emit LiabilitiesPublished(epoch, root, total, users.length);
     }
 
     /// @notice Bir kullanıcının yükümlülüğünü (bakiyesini) köre karşı doğrular.
@@ -218,6 +306,13 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
     /// @dev CleanvestSettlement.computeRoot ile AYNI algoritma — tek bir
     ///      test ağacını hem PoL hem de emir taahhüdü için kullanılabilir.
     function computeLiabilitiesRoot(bytes32[] memory leaves) external pure returns (bytes32) {
+        return _computeRootFromLeaves(leaves);
+    }
+
+    /// @dev Çift-yapraklı Merkle kökü (tek kalan kendisiyle eşleşir).
+    ///      publishLiabilitiesFromSignedLeaves() ile AYNI algoritma —
+    ///      doğrulanmış yapraklardan türetilen kök birebir karşılaştırılabilir.
+    function _computeRootFromLeaves(bytes32[] memory leaves) internal pure returns (bytes32) {
         require(leaves.length > 0, "Bos agac koku tanimsiz");
         bytes32[] memory layer = leaves;
         while (layer.length > 1) {

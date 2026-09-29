@@ -1,6 +1,6 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test: **242 forge + 24 Rust, 0 failed** · Akademik araştırma 2025-2026: [`docs/arastirma/`](docs/arastirma/) (20 doğrulanmış makale) · TODO/placeholder sıfır
+**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test: **286 forge + 24 Rust, 0 failed** · Akademik araştırma: [`docs/arastirma/`](docs/arastirma/) (33 doğrulanmış makale) · TODO/placeholder sıfır
 
 > 🔢 **Sayıların üretimi:** README'e giren her sayı [`scripts/readme_stats.py`](scripts/readme_stats.py) tarafından koddan üretilir — elle girilmez. Çalıştırma: `python3 scripts/readme_stats.py`
 
@@ -15,9 +15,9 @@ Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getiril
 # 1. Araclar (https://getfoundry.sh) + alt moduller
 git submodule update --init --recursive
 
-# 2. Testler — 0 failed olmali (242 forge + 19 Rust)
+# 2. Testler — 0 failed olmali (286 forge + 19 Rust)
 export PATH="$HOME/.foundry/bin:$PATH"
-forge test                              # Solidity: 242 passed, 0 failed
+forge test                              # Solidity: 286 passed, 0 failed
 cargo test --manifest-path merkle/Cargo.toml   # Rust Merkle: 19 passed
 
 # 3. Yerel ag (anvil, anahtar GEREKMEZ)
@@ -120,8 +120,13 @@ Kök **byte-byte özdeştir**. Çalıştırma: `bash scripts/proof_demo.sh`.
 **Bu sınırlar iddianın parçası DEĞİLDİR:**
 
 1. **Rezerv/yükümlülük kanıtı (PoR/PoL) DEĞİLDİR** — `orderCommitmentRoot`
-   yalnızca **emir taahhüdüdür**. `$cUSD`'nin arkasındaki rezervlerin
-   kanıtlanması ayrı bir sistemdir (yol haritası).
+   yalnızca **emir taahhüdüdür**. `$cUSD`'nin **yükümlülük tarafı** artık
+   [`ProofOfLiabilities`](contracts/ProofOfLiabilities.sol) ile zincir-üstünde
+   fail-closed taahhüt edilir (`publishLiabilitiesFromSignedLeaves`: kök,
+   EIP-191 imzalı yapraklardan **zincirde** türetilir; imzasız yaprak
+   uydurulamaz), ama **rezervlerin VARLIĞI** hâlâ kanıtlanamaz — banka-DDO
+   entegrasyonu gerektirir (yol haritası; bkz.
+   [`docs/arastirma/07`](docs/arastirma/07_proof_of_liabilities_derinlestirme.md)).
 2. **İmza tekrar (replay) tam koruma DEĞİLDİR** — `nonce` alanı vardır ama
    zincir-üstü **kullanılmış-nonce takibi YOKTUR**. Batch seviyesinde
    `batchSettled` korur; yaprak seviyesinde yeniden oynatma operasyoneldir
@@ -503,11 +508,17 @@ Her iddia güncel akademik literatürle desteklenir. Tüm kaynaklar `web_fetch` 
 | Kontrat denetim standartları | [`docs/arastirma/04`](docs/arastirma/04_akilli_kontrat_denetim_standartlari_2025_2026.md) | On-chain/off-chain tutarsızlık yeni zafiyet sınıfı |
 | Merkle kanıtları (finansal) | [`docs/arastirma/05`](docs/arastirma/05_merkle_kanitlari_finansal_uygulamalar_2025_2026.md) | Kök dürüst kanıt değildir — **kullanıcı imzası gerekir** (AsiaCCS'26) |
 | EIP-191 imza güvenliği | [`docs/arastirma/06`](docs/arastirma/06_eip191_imzali_mesaj_guvenligi_2025_2026.md) | Ethereum'da imza kullanan kontratların **%19.63'ü** replay zafiyetli (ICSE 2026) |
+| Proof of Liabilities (derinleştirme) | [`docs/arastirma/07`](docs/arastirma/07_proof_of_liabilities_derinlestirme.md) | PoL "ağacın doğru kurulduğu" kanıtını **zincire taşır**; PoL tek başına ödenme gücü **kanıtlamaz** (TAP/USENIX'23, VASP denetim) |
 
 **En doğrudan ilgili bulgu:** "Mitigating Collusion in Proofs of Liabilities"
 (AsiaCCS 2026), **commit edilen vektörün yalnızca kullanıcıların imzaladığı
-değerleri içermesini** bir gereklilik olarak öne sürer — Cleanvest'in imzalı
-yaprakları bu gereksinimi karşılar. Detay: [`docs/arastirma/05`](docs/arastirma/05_merkle_kanitlari_finansal_uygulamalar_2025_2026.md).
+değerleri içermesini** bir gereklilik olarak öne sürer — Cleanvest bu gereksinimi
+sadece imzalı yapraklarla değil, **zincir-üstü fail-closed kök türetimiyle**
+karşılar: `ProofOfLiabilities.publishLiabilitiesFromSignedLeaves()` her yaprağın
+EIP-191 imzasını zincirde doğrular, kökü imzalı yapraklardan zincirde hesaplar ve
+tek geçersiz imzada tüm yayını revert eder — operatör kökü seçemez, imzasız yaprak
+uyduramaz. Detay: [`docs/arastirma/05`](docs/arastirma/05_merkle_kanitlari_finansal_uygulamalar_2025_2026.md),
+[`docs/arastirma/07`](docs/arastirma/07_proof_of_liabilities_derinlestirme.md).
 
 ## Lisans
 
