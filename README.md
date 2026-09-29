@@ -1,6 +1,6 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test: **295 forge + 24 Rust, 0 failed** · Akademik araştırma: [`docs/arastirma/`](docs/arastirma/) (35 doğrulanmış makale) · TODO/placeholder sıfır
+**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test: **300 forge + 24 Rust, 0 failed** · Akademik araştırma: [`docs/arastirma/`](docs/arastirma/) (35 doğrulanmış makale) · TODO/placeholder sıfır
 
 > 🔢 **Sayıların üretimi:** README'e giren her sayı [`scripts/readme_stats.py`](scripts/readme_stats.py) tarafından koddan üretilir — elle girilmez. Çalıştırma: `python3 scripts/readme_stats.py`
 
@@ -15,10 +15,10 @@ Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getiril
 # 1. Araclar (https://getfoundry.sh) + alt moduller
 git submodule update --init --recursive
 
-# 2. Testler — 0 failed olmali (286 forge + 19 Rust)
+# 2. Testler — 0 failed olmali (300 forge + 24 Rust)
 export PATH="$HOME/.foundry/bin:$PATH"
-forge test                              # Solidity: 286 passed, 0 failed
-cargo test --manifest-path merkle/Cargo.toml   # Rust Merkle: 19 passed
+forge test                              # Solidity: 300 passed, 0 failed
+cargo test --manifest-path merkle/Cargo.toml --features proof   # Rust Merkle: 24 passed
 
 # 3. Yerel ag (anvil, anahtar GEREKMEZ)
 make anvil                              # ayri terminalde
@@ -141,15 +141,26 @@ Kök **byte-byte özdeştir**. Çalıştırma: `bash scripts/proof_demo.sh`.
    `publishLiabilitiesFromSignedLeavesWithDomain` ve
    [`CleanvestSettlement.verifySignedOrderWithDomain`](contracts/CleanvestSettlement.sol);
    aynı imza başka bir kontratta (**cross-contract**) veya başka bir zincirde
-   (**cross-chain**) **reddedilir** — 5 test, toplam 295), ama **tam** koruma
+   (**cross-chain**) **reddedilir** — 5 test), ama **tam** koruma
    DEĞİLDİR: tüketim solver'in `consumeNonces` çağrısına bağlıdır (üretici
-   `executeBatchSettlement` entegrasyonu yol haritasıdır), **ECDSA imza
-   malleability (low-s/EIP-2) kontrolü YOKTUR** — bir imzadan ikinci bir
-   *gösterim* (representation) türetilebilir, ve **legacy EIP-191 yolları**
-   (`verifyLiability`, `publishLiabilitiesFromSignedLeaves`,
+   `executeBatchSettlement` entegrasyonu yol haritasıdır), ve **legacy
+   EIP-191 yolları** (`verifyLiability`, `publishLiabilitiesFromSignedLeaves`,
    `verifySignedOrder`) **alan-ayrımı UYGULAMAZ** — geriye dönük uyumluluk için
    kalırlar (R9-2 tarzı); yeni yayınlar domain-aware yolu kullanmalıdır
    ([`docs/arastirma/06`](docs/arastirma/06_eip191_imzali_mesaj_guvenligi_2025_2026.md)).
+
+   **✅ EK KAPANIŞ (DAR görevi, 2026-09-30): ECDSA imza malleability
+   (low-s/EIP-2) kontrolü artık MEVCUTTUR** — önceden "bir imzadan ikinci
+   bir *gösterim* (representation) türetilebilir" sınırı açıktı; artık
+   `error InvalidSignatureS` ile `s <= secp256k1n/2` (EIP-2) **hem legacy
+   EIP-191 (`CleanvestSettlement.recoverSigner` /
+   `ProofOfLiabilities._recoverSigner`) hem EIP-712 (`_recoverSignerRaw`)
+   yollarında zorunludur**: `(r, s, v)` ile malleable çifti `(r, n-s, v')`
+   AYNI adresi geri kazansa bile **AÇIK REVERT** ile reddedilir — replay
+   saldırısı için ikinci gösterim üretilemez. Geriye dönük uyumludur:
+   `vm.sign` / Rust `k256` / `cast wallet sign` hep DÜŞÜK-S üretir, yani
+   mevcut off-chain imzalayanlar ve eski testler bozulmadan çalışır
+   (5 test, toplam 300).
 3. **MEV'den tam bağışık DEĞİLDİR** — batch içi sıralama kilitlidir ama
    batch'ler arası kuyruk ve çözücü seçimi dışarıda kalır
    ([`docs/arastirma/02`](docs/arastirma/02_mev_ve_front_run_koruma_2025_2026.md)).
@@ -201,7 +212,7 @@ forge script script/Demo.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --unl
 #    Cikti "=== ONCHAIN EXECUTION COMPLETE & SUCCESSFUL ===" ile biter
 
 # 5. Dogrulama — testler + kapsamislik
-~/.foundry/bin/forge test                          # 242/242 Foundry
+~/.foundry/bin/forge test                          # 300/300 Foundry
 cd web && npx vitest run && cd ..                  # 28/28 vitest (erisilebilirlik dahil)
 ~/.foundry/bin/forge coverage --report lcov        # 7 sozlesme (sayilar scripts/readme_stats.py ile taze)
 #    Sayilar elle YAZILMAZ: python3 scripts/readme_stats.py ile koddan uretilir
@@ -470,6 +481,14 @@ Denetim turları yapmadan "bitti" denseydi bunlar canlıda patlardı:
 > `(name, version, chainId, verifyingContract)` — cross-contract /
 > cross-chain imza yeniden-oynatması **reddedilir**, legacy EIP-191 yolları
 > geriye dönük uyumluluk için korundu, 5 test (toplam 295);
+> ~~(3c) ECDSA imza malleability (EIP-2 low-s)~~ —
+> **TAMAMLANDI (DAR 2026-09-30)**: `error InvalidSignatureS` ile
+> `s > secp256k1n/2` high-s imzalar **hem legacy EIP-191 hem EIP-712
+> yollarında AÇIK REVERT** — `(r, s, v)` ile `(r, n-s, v')` malleable
+> çifti replay için kullanılamaz (ecrecover'da AYNI adresi verseler
+> bile). `vm.sign` / Rust `k256` / `cast wallet sign` hep düşük-s
+> ürettiğinden **geriye dönük uyumludur** — eski geçerli imzalar
+> bozulmadan çalışır, 5 test (toplam 300);
 > (4) zk-STARK tabanlı gizlilik — **DÜRÜSTÇE KAPANAMAZ** (kriptografik
 > sınırdır), yol haritasında kalır. İlk ikisi **insan kararıdır**.
 >

@@ -2,8 +2,12 @@
 pragma solidity ^0.8.28;
 
 import "forge-std/Test.sol";
-import "../contracts/ProofOfLiabilities.sol";
-import "../contracts/CleanvestSettlement.sol";
+// BRACED import (2026-09-30): her iki kontrat da en üst düzeyde
+// `error InvalidSignatureS();` tanımlar — tüm-dosya import'u isim
+// çakışması ("Identifier already declared") yaratır; bu yüzden yalnızca
+// tip adları içe aktarılır. Davranış veya test içeriği DEĞİŞMEZ.
+import {ProofOfLiabilities} from "../contracts/ProofOfLiabilities.sol";
+import {CleanvestSettlement} from "../contracts/CleanvestSettlement.sol";
 
 /// @title Domain Separation Test Suite (DAR görev, 2026-09-29)
 /// @notice README dürüst sınırının kapanması: imzanın **alan-ayrımı (domain

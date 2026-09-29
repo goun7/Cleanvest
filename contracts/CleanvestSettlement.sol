@@ -13,6 +13,19 @@ import "./MEVShield.sol";
 ///      Custom error: 64 bayt (address+uint256) — require string'lerinden gaz-verimli.
 error ReplayDetected(address user, uint256 nonce);
 
+/// @notice EIP-2: imzanin s degeri HIGH-s (malleable). (r,s) ile (r,n-s) ayni
+///         adresi geri kazanir — bir imzadan ikinci gosterim (representation)
+///         uretilebilir. Bu, replay saldirisi icin kullanilabilir.
+/// @dev DAR gorev (2026-09-30) — durust sinir #4'UN kapanisi:
+///      "ECDSA imza malleability (low-s/EIP-2) kontrolu YOKTUR" artik
+///      GECERSIZDIR. Hem legacy EIP-191 (recoverSigner) hem EIP-712
+///      (_recoverSignerRaw) yollarinda uygulanir — ACIK REVERT.
+///      Not: ProofOfLiabilities.sol de ayni isimde error tanimlar; ayri
+///      dosyalarda sorun yoktur. Ikisini ayni dosyada import ederken
+///      cakismamasi icin braced import kullanin:
+///      import {CleanvestSettlement} from "..." (detail test/EIP2Malleability.t.sol).
+error InvalidSignatureS();
+
 /// @title CleanvestSettlement - HEX Spot Borsa Batch Settlement (Faz-3)
 /// @author Cleanvest
 /// @notice Budish FBA: 400ms batch netting + uniform clearing price.
@@ -151,6 +164,15 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
         "Order(uint256 amount,address user,uint256 nonce)"
     );
 
+    /// @notice secp256k1 eğri sırası n — EIP-2 low-s eşiğinin kaynağı.
+    /// @dev EIP-2: s > n/2 olan imzalar MALLEABLE'dir. n tek sayı olduğundan
+    ///      n/2 (floor) == (n-1)/2 ve hiçbir tamsayı s tam olarak n/2 olamaz —
+    ///      "s <= n/2" koşulu EIP-2 spec ile BİREBİR ÖRTÜŞÜR. Bu sabit hem
+    ///      legacy (recoverSigner) hem EIP-712 (_recoverSignerRaw) yollarını
+    ///      koruyan InvalidSignatureS kontrolünde kullanılır (durust sınır #4).
+    uint256 internal constant SECP256K1_N =
+        0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141;
+
     /// @notice EIP-712 domain separator: (name, version, chainId, verifyingContract).
     /// @dev İmzayı BU kontrata ve BU zincire bağlar — chainId ve
     ///      verifyingContract zincirde belirlenir; saldırgan DEĞİŞTİREMEZ.
@@ -194,6 +216,9 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
 
     /// @dev EIP-712 özeti (zaten "\x19\x01" önekini içerir) üzerinden imzalayan
     ///      adresi geri kazanır — EIP-191 sarmalama YAPILMAZ.
+    ///      EIP-2 (DAR 2026-09-30, durust sınır #4): high-s imzalar MALLEABLE —
+    ///      (r,s) ile (r,n-s) ayni adresi geri kazanir. s > n/2 ise ACIK
+    ///      REVERT (InvalidSignatureS) — malleable gosterim kabul EDİLMEZ.
     function _recoverSignerRaw(bytes32 digest, bytes memory sig) internal pure returns (address) {
         require(sig.length == 65, "Imza 65 bayt olmali");
         bytes32 r;
@@ -204,6 +229,8 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
             s := mload(add(sig, 64))
             v := byte(0, mload(add(sig, 96)))
         }
+        // EIP-2: low-s ZORUNLU — high-s malleable gosterim reddedilir.
+        if (uint256(s) > SECP256K1_N / 2) revert InvalidSignatureS();
         return ecrecover(digest, v, r, s);
     }
     event BatchSettled(bytes32 indexed batchId, uint256 clearingPrice, uint256 totalVolume);
@@ -607,6 +634,10 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     /// @param leaf Yaprak hash'i (imza bunun EIP-191 ozeti uzerinedir)
     /// @param sig 65 bayt imza: r(32) + s(32) + v(1); v: 27 veya 28
     /// @return imzalayan adres; gecersiz imzada address(0)
+    /// @dev EIP-2 (DAR 2026-09-30, durust sınır #4): s > n/2 (high-s) imzalar
+    ///      MALLEABLE'dir — (r,s) ile (r,n-s,v') ayni adresi geri kazanir.
+    ///      High-s ACIK REVERT (InvalidSignatureS) ile reddedilir; low-s
+    ///      imzalar address(0)/adres davranışını oldugu gibi korur.
     function recoverSigner(bytes32 leaf, bytes memory sig) public pure returns (address) {
         require(sig.length == 65, "Imza 65 bayt olmali");
         bytes32 r;
@@ -618,6 +649,8 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
             s := mload(add(sig, 64))
             v := byte(0, mload(add(sig, 96)))
         }
+        // EIP-2: low-s ZORUNLU — legacy yol da malleability'e kapatildi.
+        if (uint256(s) > SECP256K1_N / 2) revert InvalidSignatureS();
         return ecrecover(toEthSignedMessageHash(leaf), v, r, s);
     }
 
