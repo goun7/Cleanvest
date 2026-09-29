@@ -22,4 +22,12 @@ web/.vitest/
 # Rust build ciktilari (kaynak degil — uretilir)
 /target/
 merkle/target/
+
+# Bagimsiz kanit demo ciktilari (uretilir — scripts/proof_demo.sh)
+proof.json
+orders.json
+
+# Deploy ciktisi: adresler (uretilir — Deploy.s.sol yazar)
+deploy-out/
+
 Cargo.lock'u TUT (kilitlenmis baqimliliklar guvenlik icin onemli)

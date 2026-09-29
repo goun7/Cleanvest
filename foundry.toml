@@ -8,5 +8,9 @@ remappings = [
     "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
 ]
 
+# Deploy script'inin adresleri deploy-out/addresses.json'a yazmasi icin.
+# Yalnizca bu dizinde yazma izni; baska yerde DEGIL.
+fs_permissions = [{ access = "write", path = "./deploy-out/" }]
+
 [fmt]
 line_length = 100

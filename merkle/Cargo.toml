@@ -9,10 +9,33 @@ description = "Cleanvest emir taahhudu Merkle ureticisi — orderCommitmentRoot 
 k256 = { version = "0.14", features = ["ecdsa"] }
 sha3 = "0.10"
 tiny-keccak = { version = "2", features = ["keccak"] }
+# Bagimsiz kanit CLI'i (verify proof.json) icin opsiyonel. Kutuphanenin cekirdegi
+# sifir ek bagimlilikla calisir; yalnizca `proof` ozelligi ile gelir.
+serde = { version = "1", optional = true, features = ["derive"] }
+serde_json = { version = "1", optional = true }
+hex = { version = "0.4", optional = true }
 
 [dev-dependencies]
 hex = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[features]
+default = []
+# `proof` ozelligi: serde ile proof.json formatini ve verify CLI'ini etkinlestirir.
+proof = ["serde", "serde_json", "hex"]
 
 [lib]
 name = "cleanvest_merkle"
 path = "src/lib.rs"
+
+# --- Bagimsiz kanit CLI'lari (cargo build --release --features proof --example ...) ---
+[[example]]
+name = "verify_cli"
+required-features = ["proof"]
+path = "examples/verify_cli.rs"
+
+[[example]]
+name = "prove_cli"
+required-features = ["proof"]
+path = "examples/prove_cli.rs"

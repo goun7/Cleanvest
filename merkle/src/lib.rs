@@ -43,6 +43,9 @@
 
 pub mod signed;
 
+#[cfg(feature = "proof")]
+pub mod proof;
+
 use tiny_keccak::{Hasher, Keccak};
 
 /// Keccak-256 — EVM `keccak256` ile birebidir (tiny-keccak).

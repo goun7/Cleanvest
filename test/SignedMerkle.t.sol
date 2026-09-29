@@ -216,4 +216,66 @@ contract SignedMerkleTest is Test {
             "l2 tam kanit gecerli"
         );
     }
+
+    // ============================================================
+    // UCLU CAPRAZ-DOGRULAMA (cast / Rust / Solidity) — scripts/proof_demo.sh
+    // Bu sabitler scripts/proof_demo.sh ile uretilen gercek degerlerdir:
+    //   - emirler Foundry cast (C++) ile EIP-191 imzalandi
+    //   - Merkle koku Rust (prove_cli) ile uretildi
+    //   - ayni proof_bytes Solidity'de dogrulandi
+    // Kok her ikisinde de OZDESTE: 0x5c040168...
+    // Bu test, uc uygulamanin sapmadan sabit kalmasini garantiler.
+    // ============================================================
+
+    /// @notice scripts/proof_demo.sh ciktisi ile birebir: kok Rust == Solidity
+    function testCrossCheckRootMatchesRustCli() public {
+        // Emirler: (1000, ANVIL_ADDR, 1), (2000, ANVIL_ADDR, 2), (3500, ANVIL_ADDR, 3)
+        bytes32[] memory leaves = new bytes32[](3);
+        leaves[0] = settlement.leafHash(1000, ANVIL_ADDR, 1);
+        leaves[1] = settlement.leafHash(2000, ANVIL_ADDR, 2);
+        leaves[2] = settlement.leafHash(3500, ANVIL_ADDR, 3);
+
+        bytes32 solidityRoot = settlement.computeRoot(leaves);
+        // Rust prove_cli ciktisi (scripts/proof_demo.sh, 2026-09-29)
+        bytes32 rustRoot = 0x5c040168e9a86021da45500a7a60a06ba8619e5ddd0841f23a179b3f8888127d;
+        assertEq(solidityRoot, rustRoot, "Rust ve Solidity koku OZDESTE olmali");
+    }
+
+    /// @notice cast ile uretilen imza + Rust proof_bytes Solidity'de gecerli
+    /// @dev Bu, merkle/src/proof.rs ile merkle/examples/{prove,verify}_cli.rs'in
+    ///      urettigi KANIT FORMATININ zincir-ustu ile birebir oldugunu sabitler.
+    function testCliProofBytesVerifyOnChain() public {
+        // Rust verify_cli ile dogrulanmis gercek kanit (proof.json ciktisi)
+        bytes32 leaf = 0xf9d9fd57e8c71d4c4af6bc9669b4ad74180dc9b61e2868e548b22bb4a2c0aca3;
+        bytes memory sig = hex"d081bb6fd0f9d54e6cf94141719cbdaa62629f9e46376067febc079c74d315cf54e672a13513c7a05c07e4b7381bad93a713160eed15c6b16b92025b56b6a5df1b";
+        // proof_bytes: sibling(32) + konum(1) basina 33 bayt, 2 seviye
+        //   seviye 1: sibling = l0 (1000/1), konum 0x00 (solda)
+        //   seviye 2: sibling = hash(l2,l2), konum 0x01 (sagda)
+        bytes memory proofBytes = hex"93e6b7c07a8739f4fb863563972c03adbb6d6b44f5f7822dd6749699b937baff004f0d212823590b6b90317e7128f5bfc5aa5a727b0e925aaf215d7f25a8519c5e01";
+        bytes32 root = 0x5c040168e9a86021da45500a7a60a06ba8619e5ddd0841f23a179b3f8888127d;
+
+        // 1. Imza (cast ile uretilen) Solidity'de gecerli
+        assertTrue(settlement.verifyLeafSignature(leaf, sig, ANVIL_ADDR), "cast imzasi gecerli");
+
+        // 2. proof_bytes (Rust encode_proof_bytes formati) zincirde gecerli
+        assertTrue(settlement.verifyMerkleProof(leaf, proofBytes, root), "proof_bytes gecerli");
+
+        // 3. TAM ZINCIR: imza + Merkle
+        assertTrue(
+            settlement.verifySignedOrder(leaf, sig, ANVIL_ADDR, proofBytes, root),
+            "cast imza + Rust proof_bytes + Solidity dogrulama tam zincir gecerli"
+        );
+    }
+
+    /// @notice Yanlis konum biti iceren proof_bytes REDDEDILMELI (sabi buyutme)
+    function testCliProofBytesWrongPositionRejected() public {
+        bytes32 leaf = 0xf9d9fd57e8c71d4c4af6bc9669b4ad74180dc9b61e2868e548b22bb4a2c0aca3;
+        // Ayni sibling'ler ama konum bitleri TERS (0x00 -> 0x01, 0x01 -> 0x00)
+        bytes memory badProof = hex"93e6b7c07a8739f4fb863563972c03adbb6d6b44f5f7822dd6749699b937baff014f0d212823590b6b90317e7128f5bfc5aa5a727b0e925aaf215d7f25a8519c5e00";
+        bytes32 root = 0x5c040168e9a86021da45500a7a60a06ba8619e5ddd0841f23a179b3f8888127d;
+        assertFalse(
+            settlement.verifyMerkleProof(leaf, badProof, root),
+            "Ters konum bitli kanit REDDEDILMELI"
+        );
+    }
 }

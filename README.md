@@ -1,11 +1,38 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**EVM sözleşme + frontend katmanı tamamlandı** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test/coverage sayıları için tek kaynak: [`docs/43_TEST_DURUMU_TEK_KAYNAK.md`](docs/43_TEST_DURUMU_TEK_KAYNAK.md) (taze: 239 Foundry + 28 vitest · 7 sözleşme) · TODO/placeholder sıfır
+**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test: **242 forge + 24 Rust, 0 failed** · Akademik araştırma 2025-2026: [`docs/arastirma/`](docs/arastirma/) (20 doğrulanmış makale) · TODO/placeholder sıfır
 
 > 🔢 **Sayıların üretimi:** README'e giren her sayı [`scripts/readme_stats.py`](scripts/readme_stats.py) tarafından koddan üretilir — elle girilmez. Çalıştırma: `python3 scripts/readme_stats.py`
 
 Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getirili stabilcoin
 ($cUSD/$scUSD) sunan bir kripto ekosistemidir. Bu depo **sözleşme katmanını** içerir.
+
+---
+
+## 30 Saniyede Cleanvest
+
+```bash
+# 1. Araclar (https://getfoundry.sh) + alt moduller
+git submodule update --init --recursive
+
+# 2. Testler — 0 failed olmali (242 forge + 19 Rust)
+export PATH="$HOME/.foundry/bin:$PATH"
+forge test                              # Solidity: 242 passed, 0 failed
+cargo test --manifest-path merkle/Cargo.toml   # Rust Merkle: 19 passed
+
+# 3. Yerel ag (anvil, anahtar GEREKMEZ)
+make anvil                              # ayri terminalde
+make deploy-anvil                       # 7 sozlesme + adresler deploy-out/addresses.json
+
+# 4. Kanit zinciri — uc bagimsiz uygulama (cast/Rust/Solidity)
+bash scripts/proof_demo.sh              # "OZDES" ile bitmeli
+
+# 5. Bagimsiz kanit dogrulayici (offline, operatore guvenmeden)
+cargo run --release --features proof --example verify_cli -- proof.json
+```
+
+**Hepsi bu kadar.** Yukaridakilerin hepsi `anvil`'dedir — **CANLI DEĞİLDİR**. Canlı
+deploy için bkz. [Deploy](#deploy-canlı-için-insan-kararı-gerekir).
 
 > **Kapsam notu (DÜRÜST):** CleanAudit denetim motorunun Rust çekirdeği
 > **bu deponun parçası DEĞİLDİR** — ayrı bir projede olması amaçlanmıştır:
@@ -49,6 +76,69 @@ Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getiril
                               └──────────────────┘          └──────────────────┘
 ```
 
+## "Sıfır Manipülasyon" Ne Demek? (Teknik Tanım)
+
+"Sıfır manipülasyon" bir **pazarlama iddiası değil**, doğrulanabilir bir **teknik
+özelliktir**. Üç katmanı vardır:
+
+### 1. Emirlerin manipüle edilememesi (on-chain taahhüt)
+
+Her batch'teki emirler bir **Merkle ağacında** toplanır ve kök
+(`orderCommitmentRoot`) **zincir-üstünde** yayınlanır. Her yaprak:
+
+```
+leaf = keccak256(abi.encode(amount, user, nonce))
+```
+
+ve her yaprak **kullanıcı tarafından EIP-191 ile imzalanır**. Bu, operatörün
+(ağacı kuran taraf) **kullanıcı imzalamadan yaprak dolduramayacağı** anlamına
+gelir — akademik literatürde bu gereklilik 2026'da açıkça formüle edilmiştir
+([`docs/arastirma/05`](docs/arastirma/05_merkle_kanitlari_finansal_uygulamalar_2025_2026.md),
+[`docs/arastirma/03`](docs/arastirma/03_spot_borsa_guvenligi_2025_2026.md)).
+
+### 2. Kanıtın bağımsız doğrulanması (bu oturumda eklendi)
+
+**Üç bağımsız uygulama aynı sonucu verir:**
+
+| Uygulama | İmza | Merkle kökü | Doğrulama |
+|---|---|---|---|
+| Foundry `cast` (C++) | üretir (EIP-191) | — | `ecrecover` |
+| Rust (`cleanvest-merkle`) | üretir + doğrular | üretir + doğrular | CLI offline |
+| Solidity (zincir-üstü) | doğrular (`verifySignedOrder`) | üretir (`computeRoot`) | `cast call` |
+
+Kök **byte-byte özdeştir**. Çalıştırma: `bash scripts/proof_demo.sh`.
+
+### 3. Front-run / sıralama sömürüsüne yapısal kalkan
+
+- `T_BATCH_MS = 400ms` batch gecikmesi — emirler kilitlenir, sonradan sıralanamaz
+- `nonce` her yaprakta — imza tekrar (replay) sınırlı
+- `orderCommitmentRoot != bytes32(0)` zorunlu — boş taahhüt reddedilir
+- `batchSettled[batchId]` — aynı batch iki kez kesinleşemez (non-equivocation)
+
+### "Sıfır" NE DEĞİLDİR (dürüst sınırlar)
+
+**Bu sınırlar iddianın parçası DEĞİLDİR:**
+
+1. **Rezerv/yükümlülük kanıtı (PoR/PoL) DEĞİLDİR** — `orderCommitmentRoot`
+   yalnızca **emir taahhüdüdür**. `$cUSD`'nin arkasındaki rezervlerin
+   kanıtlanması ayrı bir sistemdir (yol haritası).
+2. **İmza tekrar (replay) tam koruma DEĞİLDİR** — `nonce` alanı vardır ama
+   zincir-üstü **kullanılmış-nonce takibi YOKTUR**. Batch seviyesinde
+   `batchSettled` korur; yaprak seviyesinde yeniden oynatma operasyoneldir
+   ([`docs/arastirma/06`](docs/arastirma/06_eip191_imzali_mesaj_guvenligi_2025_2026.md)).
+3. **MEV'den tam bağışık DEĞİLDİR** — batch içi sıralama kilitlidir ama
+   batch'ler arası kuyruk ve çözücü seçimi dışarıda kalır
+   ([`docs/arastirma/02`](docs/arastirma/02_mev_ve_front_run_koruma_2025_2026.md)).
+4. **Gizlilik YOKTUR** — kanıt sunmak yaprak değerlerini (amount, user, nonce)
+   açığa çıkarır. zk-STARK tabanlı geçiş yol haritasıdır.
+5. **"Manipülasyon tespit etmez"** — wash-trade/complexity-measure tabanlı
+   tespit **koddan yoktur**; akademik yöntemler yol haritası sunar
+   ([`docs/arastirma/01`](docs/arastirma/01_piyasa_manipulasyonu_tespiti_2025_2026.md)).
+
+**Müşteriye sunumda:** "emir taahhüdü **üretilir, kullanıcı imzasıyla bağlanır
+ve üç bağımsız uygulama tarafından kanıtlanır**" denir. "Para istismar
+edilemez" veya "kanıt her şeyi kapsar" DENMEZ.
+
 ## Sözleşmeler
 
 | Sözleşme | Açıklama | Test |
@@ -87,7 +177,7 @@ forge script script/Demo.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --unl
 #    Cikti "=== ONCHAIN EXECUTION COMPLETE & SUCCESSFUL ===" ile biter
 
 # 5. Dogrulama — testler + kapsamislik
-~/.foundry/bin/forge test                          # 239/239 Foundry
+~/.foundry/bin/forge test                          # 242/242 Foundry
 cd web && npx vitest run && cd ..                  # 28/28 vitest (erisilebilirlik dahil)
 ~/.foundry/bin/forge coverage --report lcov        # 7 sozlesme (sayilar scripts/readme_stats.py ile taze)
 #    Sayilar elle YAZILMAZ: python3 scripts/readme_stats.py ile koddan uretilir
@@ -108,6 +198,106 @@ cd web && npx vitest run && cd ..                  # 28/28 vitest (erisilebilirl
 
 Deployment detaylari icin bkz. [`docs/19_DEPLOYMENT_REHBERI.md`](docs/19_DEPLOYMENT_REHBERI.md).
 Musteri onboarding akisi: [`docs/27_MUSTERI_ONBOARDING.md`](docs/27_MUSTERI_ONBOARDING.md).
+
+## Deploy: Canlı İçin İNSAN KARARI Gerekir
+
+**Mevcut durum: her şey `anvil`'dedir (chainId 31337). CANLI DEĞİLDİR.**
+
+Canlı deploy **tek komutla** yapılabilir haldedir — ama **kasıtlı olarak bir
+insan kararı gerektirir**. `script/Deploy.s.sol` içindeki **mainnet guard**
+üç şeyi kontrol eder:
+
+| Koşul | Eksikse |
+|---|---|
+| `PRIVATE_KEY` çevre değişkeni | **REDDER**: `CANLI AG: PRIVATE_KEY ZORUNLU` |
+| Anahtar anvil test anahtarı DEĞİL | **REDDER**: `anvil test anahtari YASAK` |
+| `DEPLOY_CONFIRM=yes` (açık insan onayı) | **REDDER**: `DEPLOY_CONFIRM=yes gerekiyor` |
+
+Guard yalnızca `chainId != 31337` (canlı ağ) olduğunda devreye girer; `anvil`'de
+engelleme yoktur.
+
+### Canlı deploy (insan tarafından)
+
+```bash
+# 1. Anahtar ve RPC hazirla (insan karari — otomatik DEGIL)
+export PRIVATE_KEY=0x...                           # deploy cuzdani
+export RPC_URL=https://mainnet.base.org             # hedef ag
+export DEPLOY_CONFIRM=yes                           # ACIK onay
+
+# 2. Tek komut (guard once kontrol eder, sonra deploy eder)
+make deploy-live
+
+# 3. Etherscan dogrulama (otomatik)
+export ETHERSCAN_API_KEY=...
+make verify
+```
+
+### Gas tahmini (anvil'de olculmustur)
+
+| Sözleşme | Deploy gazi |
+|---|---|
+| CleanUSD | 1.774.360 |
+| CleanFXVault | 3.246.497 |
+| ReserveManager | 1.863.390 |
+| CleanvestSettlement | 2.831.276 |
+| ListingGate | 2.813.238 |
+| UniswapProxy | 1.331.591 |
+| ReferralLedger | 1.298.344 |
+| **Toplam (7 sözleşme)** | **≈ 15.160.000** |
+
+`forge`'un kendi tahmini (batch genel giderleri dahil): **≈ 19.190.000 gas**.
+Base'de 1 gwei'da bu ≈ **0.019 ETH** (~$30–60, fiyata göre). **Para harcanmadı** —
+tüm ölçümler `anvil`'de yapılmıştır.
+
+> **NEDEN insan kararı?** Bu oturumda `PRIVATE_KEY` kullanıcı tarafından
+> **sağlanmadı** ve sisteme **girilmedi**. Canlı deploy, (1) üretim anahtarının
+> güvenli yönetimini, (2) hedef ağın seçimini ve (3) gerçek maliyetin
+> kabulünü içerir — bunlar **insana aittir**, otonom ajanın yapmamı gereken
+> işler. Akademik araştırma da bu noktayı doğruluyor: Web3'teki baskın kayıp
+> örüntüleri **anahtar yönetimi ve insan-içeren süreçlerden** kaynaklanıyor
+> ([`docs/arastirma/03`](docs/arastirma/03_spot_borsa_guvenligi_2025_2026.md)).
+
+## Bağımsız Kanıt CLI'ı (`cleanvest verify`)
+
+"Operatör bana bu kanıtı verdi" diyen bir kullanıcı, **operatöre güvenmeden**
+üç şeyi doğrulayabilir:
+
+```bash
+# Derle (opsiyonel `proof` ozelligi ile)
+cargo build --release --manifest-path merkle/Cargo.toml --features proof --examples
+
+# Dogrula (offline — ag baglantisi YOK)
+merkle/target/release/examples/verify_cli proof.json
+```
+
+**Çıktı (geçerli kanıt):**
+```
+[GECTI] 1/3 Yaprak yeniden hesaplandi (emir alanlarindan)
+        leaf    = 0xf9d9fd57...
+[GECTI] 2/3 EIP-191 imza gecerli (imzalayan = kullanici)
+[GECTI] 3/3 Merkle inclusion gecerli (yaprak kokte)
+KANIT GECTI — kullanici imzasi -> yaprak -> kok zinciri dogrulandi.
+```
+
+**Üç adımın anlamı:**
+1. **Yaprak yeniden hesaplanır** — `keccak256(abi.encode(amount, user, nonce))`
+   JSON'daki emir alanlarından baştan üretilir; operatörün "bu yaprak"
+   demesine gerek yoktur.
+2. **İmza doğrulanır** — EIP-191 `ecrecover(leaf, sig) == user`. Operatör
+   yaprağı dolduramaz.
+3. **Merkle inclusion** — `verify(leaf, proof_bytes, root)`. Yaprak kökte.
+
+**Kanıt üretmek (demo/test için):**
+```bash
+cargo run --release --features proof --example prove_cli -- \
+    --orders orders.json --index 1 --out proof.json
+```
+
+> **Dürüst sınır:** bu araç **kriptografik** doğrulama yapar; **zincir-üstü**
+> durumu bilmez. JSON'daki `root` operatörün iddiasıdır — **kanıtı**
+> zincirden okumak için: `cast call $SETTLEMENT "orderCommitmentRoot()(bytes32)"`.
+> `proof_bytes` alanı, zincir-üstü `verifySignedOrder`'a **aynı bayt dizisi**
+> olarak verilebilir (birebir uyumlu).
 
 ## Doğrulanmış Getiri Eğrisi (2026-09-24)
 
@@ -237,37 +427,45 @@ Denetim turları yapmadan "bitti" denseydi bunlar canlıda patlardı:
 >   REDDEDİLİR**, doğru imza + doğru proof PASS, geçerli imza + yanlış proof
 >   REDDEDİLİR
 >
+> **✅ BAĞIMSIZ KANIT CLI'I MEVCUT (2026-09-29):** kanıt artık `proof.json`
+> olarak **operatöre güvenmeden** doğrulanabilir:
+> - `merkle/src/proof.rs` — `ProofJson` formatı + tam doğrulama
+> - `merkle/examples/verify_cli.rs` — `cleanvest verify proof.json` (offline)
+> - `merkle/examples/prove_cli.rs` — kanıt üretici (test/demo)
+> - `scripts/proof_demo.sh` — **üçlü çapraz doğrulama**: cast (C++) imzalar,
+>   Rust kök üretir, Solidity zincir-üstü doğrular. Kök **özdeş**:
+>   `0x5c040168e9a86021da45500a7a60a06ba8619e5ddd0841f23a179b3f8888127d`
+> - **Testler** — 5 yeni Rust + 3 yeni Solidity testi (toplam 242 forge + 24 Rust)
+>
 > **Hâlâ YOL HARİTASI (kalan adımlar):** (1) canlı solver entegrasyonu —
 > üretici `executeBatchSettlement`'a henüz bağlı değil; (2) üretim anahtar
-> yönetimi. İkisi de insan kararıdır.
+> yönetimi; (3) kullanılmış-nonce zincir-üstü takibi (replay koruması);
+> (4) zk-STARK tabanlı gizlilik. İlk ikisi **insan kararıdır**.
 >
 > **Müşteriye sunumda:** "emir taahhüdü Merkle kökü **üretilir, kullanıcı
-> imzasıyla bağlanır ve zincirde doğrulanır**" denir. Bu, güvenlik açığı
-> belgesinin 2. adımının tamamlanmasıdır — **3. adım (canlı entegrasyon)
-> opsiyoneldir, güvenlik için zorunlu DEĞİL**.
+> imzasıyla bağlanır ve üç bağımsız uygulama tarafından kanıtlanır**" denir. Bu,
+> güvenlik açığı belgesinin 2. adımının tamamlanmasıdır — **3. adım (canlı
+> entegrasyon) opsiyoneldir, güvenlik için zorunlu DEĞİL**.
 
 > Merkle ağacı + kök üreticisi yazılmalı, (2) kök yaprak imzalarıyla
 > bağlanmalı, (3) test batch'leri gerçek kökle üretilmeli.
 
-> **Testlerin durumu ("239 passed" rozeti nasıl okunmalı):**
+> **Testlerin durumu ("242 passed" rozeti nasıl okunmalı):**
 > Eski 21 `CleanvestSettlement` testi `orderCommitmentRoot` için eski
 > **sabit değeri** (`keccak256("merkle-orders-1")`) hâlâ kullanır
 > (`test/CleanvestSettlement.t.sol:16`) — bu testler **commitment-scheme
 > bütünlüğünü** test etmeye devam eder. **Yeni 11 Merkle + 1 çapraz kök +
-> 12 imza testi** gerçek ağaç kurulumunu, proof üretimini, **yanlış proof
-> reddini**, **kullanıcı imzalarını ve yanlış imza/signer reddini** kapsar.
+> 12 imza + 3 CLI çapraz doğrulama testi** gerçek ağaç kurulumunu, proof
+> üretimini, **yanlış proof reddini**, **kullanıcı imzalarını**, **üçlü
+> cast/Rust/Solidity özdeşliğini** ve **yanlış imza/signer reddini** kapsar.
 > Rozet artık "batch settlement + **imzalı** Merkle emir taahhüdü
 > test-kanıtlı"dır.
-> Yani testler **gerçek kullanıcı emirlerinden Merkle ağacı kurmaz** —
-> sabit bir string'in özetini kök olarak kabul eder. Sonuç: testler
-> `executeBatchSettlement`'ın **kendi iç tutarlılığını** (commitment-scheme
-> eşleşmesi, sıfır-kök reddi, anti-collusion, FBA kilidi) doğru doğrular,
-> ama **"kullanıcı emirleri köke gerçekten bağlı mı?" sorusunu
-> test-kanıtlı yapmaz** — çünkü üretici olmadığı için bağlanacak şey yok.
 >
-> **"Test-kanıtlı" satış noktası bu açıdan zayıflar:** batch settlement'in
-> güvenliği test ile doğrulanmıştır, ama **emir taahhüdü zinciri
-> doğrulanmamıştır.** Rozet yanlış anlaşılmasın — bu notu taşıyor.
+> **Kalan dürüst boşluk:** testler `executeBatchSettlement`'ın **üretici
+> solver bağlantısını** (gerçek batch'lerin canlı akışı) kapsamaz — o
+> entegrasyon henüz yok ve **insan kararıdır**. Rust tarafındaki 24 test
+> (`cargo test --features proof`) tam kanıt zincirisini birim seviyede
+> doğrular.
 
 ## Frontend — scUSD Dashboard (`web/`)
 
@@ -291,6 +489,25 @@ arka planda hesaplanır (**HITL minimum**).
 **i18n:** TR + EN (tarayıcı diline göre varsayılan, localStorage kalıcı).
 
 **Mobil:** 390px'e kadar responsive, yatay taşma yok (headless Chrome ile doğrulandı).
+
+## Akademik Araştırma (2025-2026, güncel)
+
+Her iddia güncel akademik literatürle desteklenir. Tüm kaynaklar `web_fetch` ile
+**doğrulanmış**, gerçek arXiv makaleleridir — **uydurma yoktur**.
+
+| Konu | Belge | Öne çıkan bulgu |
+|---|---|---|
+| Piyasa manipülasyonu tespiti | [`docs/arastirma/01`](docs/arastirma/01_piyasa_manipulasyonu_tespiti_2025_2026.md) | "Manipulation-as-a-Service" endüstrisi (CCS'26, pump.fun) |
+| MEV / front-run koruma | [`docs/arastirma/02`](docs/arastirma/02_mev_ve_front_run_koruma_2025_2026.md) | Sandwich için "alt-sınır gizliliği" yeterli (NeurIPS 2026) |
+| Spot borsa güvenliği | [`docs/arastirma/03`](docs/arastirma/03_spot_borsa_guvenligi_2025_2026.md) | Kayıpların kaynağı **off-chain** (Bybit 2025 analizi) |
+| Kontrat denetim standartları | [`docs/arastirma/04`](docs/arastirma/04_akilli_kontrat_denetim_standartlari_2025_2026.md) | On-chain/off-chain tutarsızlık yeni zafiyet sınıfı |
+| Merkle kanıtları (finansal) | [`docs/arastirma/05`](docs/arastirma/05_merkle_kanitlari_finansal_uygulamalar_2025_2026.md) | Kök dürüst kanıt değildir — **kullanıcı imzası gerekir** (AsiaCCS'26) |
+| EIP-191 imza güvenliği | [`docs/arastirma/06`](docs/arastirma/06_eip191_imzali_mesaj_guvenligi_2025_2026.md) | Ethereum'da imza kullanan kontratların **%19.63'ü** replay zafiyetli (ICSE 2026) |
+
+**En doğrudan ilgili bulgu:** "Mitigating Collusion in Proofs of Liabilities"
+(AsiaCCS 2026), **commit edilen vektörün yalnızca kullanıcıların imzaladığı
+değerleri içermesini** bir gereklilik olarak öne sürer — Cleanvest'in imzalı
+yaprakları bu gereksinimi karşılar. Detay: [`docs/arastirma/05`](docs/arastirma/05_merkle_kanitlari_finansal_uygulamalar_2025_2026.md).
 
 ## Lisans
 
