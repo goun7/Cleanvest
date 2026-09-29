@@ -8,6 +8,11 @@ import "./interfaces/ICleanvestSettlement.sol";
 import "./ManipulationDetector.sol";
 import "./MEVShield.sol";
 
+/// @notice REPLAY SALDIRISI: ayni (user, nonce) ikinci kez kullanilmaya calisildi.
+/// @dev DAR gorev (2026-09-29) — durust sinir #2'nin zincir-ustu kapanisi.
+///      Custom error: 64 bayt (address+uint256) — require string'lerinden gaz-verimli.
+error ReplayDetected(address user, uint256 nonce);
+
 /// @title CleanvestSettlement - HEX Spot Borsa Batch Settlement (Faz-3)
 /// @author Cleanvest
 /// @notice Budish FBA: 400ms batch netting + uniform clearing price.
@@ -94,10 +99,11 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     // ============================================================
 
     /// @notice KULLANILMIS NONCE'LAR (replay korumasi) — durust sinir #2 KAPANDI.
-    /// @dev Artik nonce yalnizca yaprakta olmakla kalmaz, ZINCIR-USTU
-    ///      takip edilir: ayni (user, nonce) ikinci kez KULLANILAMAZ.
-    ///      Anahtar = keccak256(abi.encode(user, nonce)).
-    mapping(bytes32 => bool) public nonceConsumed;
+    /// @dev DAR (2026-09-29): nonce artik yalnizca yaprakta olmakla kalmaz,
+    ///      ZINCIR-USTU takip edilir. Gaz-verimli ic-ice mapping (her seferinde
+    ///      keccak256 anahtar hesaplamasi YOK): user => nonce => kullanildi mi.
+    ///      Ayni (user, nonce) ikinci kez -> ReplayDetected revert'u.
+    mapping(address => mapping(uint256 => bool)) private _nonceUsed;
 
     /// @notice Commit-reveal kayitlari (MEV korumasi) — durust sinir #3 KAPANDI.
     mapping(bytes32 => MEVShield.CommitRecord) private _commitRecords;
@@ -260,7 +266,7 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     /// @dev Bir batch icindeki her imzali emrin nonce'u ARTIK TUKETILIR:
     ///      ayni (user, nonce) bir daha KULLANILAMAZ. Bu, yaprak-seviyesinde
     ///      replay saldirisini durdurur (oncesinde yalnizca batch-seviyesinde
-    ///      batchSettled koruyordu).
+    ///      batchSettled koruyordu). Her yaprak `_useNonce` uzerinden gecer.
     /// @param amounts Emir miktarlari (yaprak icin)
     /// @param users Emir kullanici adresleri
     /// @param nonces Emir nonce'lari (replay anahtari)
@@ -279,16 +285,28 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
         require(batchSettled[batchId], "Batch henuzz kesinlesmedi");
 
         for (uint256 i = 0; i < nonces.length; i++) {
-            bytes32 key = keccak256(abi.encode(users[i], nonces[i]));
-            require(!nonceConsumed[key], "Nonce zaten kullanildi (replay)");
-            nonceConsumed[key] = true;
+            _useNonce(users[i], nonces[i]);
             emit NonceConsumed(users[i], nonces[i], batchId);
         }
     }
 
+    /// @notice REPLAY KORUMASI ÇEKİRDEĞİ — bir nonce'yi kullanilmis olarak isaretle.
+    /// @dev DAR (2026-09-29): her imzali yapragin nonce'u buradan gecer.
+    ///      Zaten kullanilmissa REVERT (ReplayDetected) — fail-closed.
+    ///      Gaz maliyeti: 1 SSTORE (yeni anahtar) + 1 SLOAD (varlik kontrolu),
+    ///      ic-ice mapping keccak256 anahtar turetmez.
+    /// @param user Emir sahibi (nonce kullanicisi)
+    /// @param nonce Emir nonce'u (yapraktaki alan)
+    function _useNonce(address user, uint256 nonce) internal {
+        if (_nonceUsed[user][nonce]) {
+            revert ReplayDetected(user, nonce);
+        }
+        _nonceUsed[user][nonce] = true;
+    }
+
     /// @notice Bir nonce kullanildi mi? (kamusal replay sorgusu)
     function isNonceConsumed(address user, uint256 nonce) external view returns (bool) {
-        return nonceConsumed[keccak256(abi.encode(user, nonce))];
+        return _nonceUsed[user][nonce];
     }
 
     /// @notice DURUST SINIR #3 KAPANDI — Batch icin commit-reveal (MEV kalkani).

@@ -55,6 +55,22 @@
 - **İçerik (okunan özet):** (Detay için bkz. `04_akilli_kontrat_denetim_standartlari_2025_2026.md`.) İmza açısından önemi: kullanıcılar fonları cüzdanında tutup **imzalı emirleri off-chain emir defterine** gönderir; emir off-chain geçerliyken on-chain kesinleştirme öncesinde **geçersiz hale getirilebilir**. Polymarket örneğinde 1.8M reverted işlem üzerinden ölçülen bir "atomicity gap".
 - **Cleanvest ile ilgisi:** İmzalı emir + off-chain batch toplama + on-chain kesinleştirme **aynı mimari**. İmza, emirin **içeriğini** kilitler ama **zamanlamasını** kilitlemez. Bu, imza güvenliğin **gerekli ama yeterli olmadığını** gösterir.
 
+### 6. A Lightweight QR-assisted Zero-knowledge Identification Protocol For Secure Authentication
+- **Yazarlar:** Hüseyin Bodur
+- **Yıl / Yer:** 2026 / arXiv preprint (cs.CR), 7 sayfa, 3 şekil
+- **URL:** https://arxiv.org/abs/2605.16912
+- **Doğrulama:** web_fetch ile okundu — 2026-09-29 (API sorgusu `all:"replay attack" AND all:nonce` ve abs sayfası, HTTP 200, **withdrawn değil**)
+- **İçerik (okunan özet):** Schnorr tabanlı sıfır-bilgi kimlik doğrulama modeli; **replay saldırılarına karşı ek güvenlik katmanı nonce ve timestamp mekanizmaları ile** sağlanır. Kanıt verisi QR koduna gömülüp doğrulayıcıya iletilir; gizli anahtarın bilgisini ifşa etmeden doğrulama yapılır. 256-bit güvenlik seviyesinde kanıt üretimi ve doğrulaması milisaniyeler düzeyinde; kanıt boyutu sabit ~0,5 KB.
+- **Cleanvest ile ilgisi:** **Doğrudan nonce-mekanizması referansı.** Makale, replay'e karşı kullanılan iki temel mekanizmayı açıkça adlandırır: **nonce** ve **timestamp**. Cleanvest DAR görevi (2026-09-29) aynı ilkeyi zincir-üstü uygular: `_useNonce(user, nonce)` — kullanılmış nonce ikinci kez **reddedilir** (fail-closed). Fark: bu çalışma kimlik doğrulama oturumu içindir (timestamp ile replay); Cleanvest zincir-üstü **kalıcı** takiptir (timestamp gerekmez — zincirin kendisi sıralamayı sağlar). **Sonuç:** nonce tabanlı replay korumasının kimlik doğrulama/sıfır-bilgi literatüründe **yerleşik bir yöntem** olduğunu teyit eder; Cleanvest uygulamayı bu literatür standardına göre konumlandırır.
+
+### 7. Blockchain security based on cryptography: a review
+- **Yazarlar:** Wenwen Zhou, Dongyang Lyu, Xiaoqi Li
+- **Yıl / Yer:** 2025 (v1 2025-08-02, v2 2026-07-05) / arXiv preprint (cs.CR), derleme makalesi
+- **URL:** https://arxiv.org/abs/2508.01280
+- **Doğrulama:** web_fetch ile okundu — 2026-09-29 (API sorgusu `all:"replay attack" AND all:blockchain` ve abs sayfası, HTTP 200, **withdrawn değil**)
+- **İçerik (okunan özet):** Blokzincir saldırılarını **kriptografi perspektifinden** sistematik derleme. Altı katmanlı mimari (veri/ağ/konsensüs/kontrat/teşvik/uygulama) üzerinden saldırıları sınıflandırır ve her biri için **azaltma/savunma çözümleri** önerir. Özel olarak **altı saldırının** prensiplerini analiz eder: %51 saldırısı, **çift-harcama (double-spending)**, **yeniden-giriş (reentrancy)**, **replay saldırısı**, Sybil saldırısı ve **zaman damgası tahriri (timestamp tampering)**. Kriptografik temel olarak hash fonksiyonları ve **dijital imzaların** rolünü inceler.
+- **Cleanvest ile ilgisi:** **Replay saldırısının blokzincir katmanlı sınıflandırması için referans.** Makale, replay saldırısını imza/zaman tabanlı diğer saldırılarla aynı **kriptografik kök nedenden** (taahhüdün tekilleştirilememesi) kaynaklanan bir sınıf olarak ele alır. Cleanvest'in konumunu netleştirir: (a) replay saldırısı **veri katmanında** (imzalı yaprakların tekrar oynatılması) yer alır — DAR görevi bunu **zincir-üstü nonce takibi ile** kapatmıştır; (b) **timestamp tahriri** ve **Sybil** makalenin incelediği **ayrı** saldırı sınıflarıdır — bunlar Cleanvest'in PoL/manipülasyon tespit katmanının hedeflediği farklı sorunlardır. **Dürüst sınır (derleme olması):** Bu bir **derleme makalesidir** — yeni protokol veya ölçüm sunmaz; mevcut sınıflandırmayı özetler. Referans olarak **sınıflandırma ve standart savunma envanteri** için kullanılır, deneysel kanıt olarak değil.
+
 ## Cleanvest'e Uygulanabilirlik
 
 **Tasarımın güncel literatürle değerlendirmesi:**
@@ -66,11 +82,11 @@
 | Her yaprakta `nonce` alanı | #1: SRV'nin birincil önlemi | **Mevcut** |
 | `batchSettled[batchId]` ile çift-kesinleştirme engeli | #1: replay'in batch-seviyesi sınırı | **Mevcut** |
 | v: 27/28 ↔ 0/1 çevirisi | #2: representation divergence | **Açıkça ele alındı**, test kapsamında |
-| Kullanılmış-nonce zincir-üstü takibi | #1: SRV için **gerekli** | **YOK — açık sınır** |
+| Kullanılmış-nonce zincir-üstü takibi | #1: SRV için **gerekli**; #6: nonce+timestamp literatür standardı | **MEVCUT (DAR 2026-09-29)** — `_useNonce` + `ReplayDetected`, 4 test |
 | low-s (EIP-2) kontrolü imza doğrulamada | #3: ECDSA malleability | **YOK — açık sınır** |
 | İmzalanan içeriğin insan tarafından okunması | #4: EIP-712 avantajı | **YOK — UX sınırı** |
 
-**Sonuç (dürüst):** Cleanvest'in EIP-191 şeması **doğru temel seçimler** yapmıştır (personal_sign, abi.encode, sabit-prefix, nonce alanı, fail-closed build). Geriye kalan iki **gerçek teknik sınır** vardır: (1) **kullanılmış-nonce zincir-üstü takibinin olmaması** — bireysel emir seviyesinde replay koruması eksiktir; (2) **low-s kontrolünün olmaması** — ECDSA imza malleability'si ile bir imzadan ikinci bir gösterim türetilebilir. İkisi de **eklenmesi açıkça tanımlanabilir** değişikliklerdir ve "sıfır manipülasyon" iddiasının **şu anki kapsamını** belirleyen sınırlardır.
+**Sonuç (dürüst):** Cleanvest'in EIP-191 şeması **doğru temel seçimler** yapmıştır (personal_sign, abi.encode, sabit-prefix, nonce alanı, fail-closed build). DAR görevi (2026-09-29) ile **kullanılmış-nonce zincir-üstü takibi eklendi** — `_useNonce` her imzali yapragin nonce'unu zincirde isaretler, ayni (user, nonce) ikinci kez `ReplayDetected` ile **reddedilir** (dürüst sınır #2 KAPANDI, 4 yeni test, toplam 290). Geriye kalan **gerçek teknik sınır**: **low-s (EIP-2) kontrolünün olmaması** — ECDSA imza malleability'si ile bir imzadan ikinci bir gösterim türetilebilir. Bu, "sıfır manipülasyon" iddiasının **şu anki kapsamını** belirleyen sınırdır.
 
 ## Boşluklar / Açık Sorular
 

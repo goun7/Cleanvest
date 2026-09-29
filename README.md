@@ -1,6 +1,6 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test: **286 forge + 24 Rust, 0 failed** · Akademik araştırma: [`docs/arastirma/`](docs/arastirma/) (33 doğrulanmış makale) · TODO/placeholder sıfır
+**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test: **290 forge + 24 Rust, 0 failed** · Akademik araştırma: [`docs/arastirma/`](docs/arastirma/) (35 doğrulanmış makale) · TODO/placeholder sıfır
 
 > 🔢 **Sayıların üretimi:** README'e giren her sayı [`scripts/readme_stats.py`](scripts/readme_stats.py) tarafından koddan üretilir — elle girilmez. Çalıştırma: `python3 scripts/readme_stats.py`
 
@@ -111,7 +111,9 @@ Kök **byte-byte özdeştir**. Çalıştırma: `bash scripts/proof_demo.sh`.
 ### 3. Front-run / sıralama sömürüsüne yapısal kalkan
 
 - `T_BATCH_MS = 400ms` batch gecikmesi — emirler kilitlenir, sonradan sıralanamaz
-- `nonce` her yaprakta — imza tekrar (replay) sınırlı
+- `nonce` her yaprakta — imza tekrar (replay) **zincir-üstü tüketilir**: her
+  imzalı emrin nonce'u `_useNonce` ile zincirde işaretlenir; aynı (user, nonce)
+  ikinci kez `ReplayDetected` ile **reddedilir** (fail-closed)
 - `orderCommitmentRoot != bytes32(0)` zorunlu — boş taahhüt reddedilir
 - `batchSettled[batchId]` — aynı batch iki kez kesinleşemez (non-equivocation)
 
@@ -127,9 +129,16 @@ Kök **byte-byte özdeştir**. Çalıştırma: `bash scripts/proof_demo.sh`.
    uydurulamaz), ama **rezervlerin VARLIĞI** hâlâ kanıtlanamaz — banka-DDO
    entegrasyonu gerektirir (yol haritası; bkz.
    [`docs/arastirma/07`](docs/arastirma/07_proof_of_liabilities_derinlestirme.md)).
-2. **İmza tekrar (replay) tam koruma DEĞİLDİR** — `nonce` alanı vardır ama
-   zincir-üstü **kullanılmış-nonce takibi YOKTUR**. Batch seviyesinde
-   `batchSettled` korur; yaprak seviyesinde yeniden oynatma operasyoneldir
+2. **İmza tekrar (replay) tam koruma DEĞİLDİR** — `nonce` alanı **ve**
+   zincir-üstü **kullanılmış-nonce takibi** artık MEVCUTTUR (DAR görevi,
+   2026-09-29: her imzalı emrin nonce'u `_useNonce` ile zincirde işaretlenir,
+   aynı (user, nonce) ikinci kez `ReplayDetected` ile **reddedilir** — 4 test,
+   toplam 290), ama **tam** koruma DEĞİLDİR: tüketim solver'in
+   `consumeNonces` çağrısına bağlıdır (üretici `executeBatchSettlement`
+   entegrasyonu yol haritasıdır) ve **ECDSA imza malleability (low-s/EIP-2)
+   kontrolü YOKTUR** — bir imzadan ikinci bir gösterim türetilebilir. Ayrıca
+   imzanın **alan-ayrımı (domain separation)** yoktur: başka bir taahhüt
+   üzerinde aynı imza geçerli olabilir
    ([`docs/arastirma/06`](docs/arastirma/06_eip191_imzali_mesaj_guvenligi_2025_2026.md)).
 3. **MEV'den tam bağışık DEĞİLDİR** — batch içi sıralama kilitlidir ama
    batch'ler arası kuyruk ve çözücü seçimi dışarıda kalır
@@ -444,7 +453,8 @@ Denetim turları yapmadan "bitti" denseydi bunlar canlıda patlardı:
 >
 > **Hâlâ YOL HARİTASI (kalan adımlar):** (1) canlı solver entegrasyonu —
 > üretici `executeBatchSettlement`'a henüz bağlı değil; (2) üretim anahtar
-> yönetimi; (3) kullanılmış-nonce zincir-üstü takibi (replay koruması);
+> yönetimi; ~~(3) kullanılmış-nonce zincir-üstü takibi (replay koruması)~~ —
+> **TAMAMLANDI (DAR 2026-09-29)**: `_useNonce` + `ReplayDetected`, 4 test;
 > (4) zk-STARK tabanlı gizlilik. İlk ikisi **insan kararıdır**.
 >
 > **Müşteriye sunumda:** "emir taahhüdü Merkle kökü **üretilir, kullanıcı

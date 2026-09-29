@@ -90,9 +90,9 @@ contract AntiManipulationTest is Test {
         vm.prank(solver);
         settlement.consumeNonces(amounts, users, nonces, BATCH_ID);
 
-        // Replay aynisi
+        // Replay aynisi — DAR 2026-09-29: custom error ReplayDetected(user, nonce)
         vm.prank(solver);
-        vm.expectRevert("Nonce zaten kullanildi (replay)");
+        vm.expectRevert(abi.encodeWithSelector(ReplayDetected.selector, address(0xA11CE), 7));
         settlement.consumeNonces(amounts, users, nonces, BATCH_ID);
     }
 
