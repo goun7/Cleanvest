@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 import "./interfaces/ICleanvestSettlement.sol";
+import "./ManipulationDetector.sol";
+import "./MEVShield.sol";
 
 /// @title CleanvestSettlement - HEX Spot Borsa Batch Settlement (Faz-3)
 /// @author Cleanvest
@@ -85,6 +87,35 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     /// @notice Batch'ler: batchId => kesinlesti mi.
     mapping(bytes32 => bool) public batchSettled;
 
+    // ============================================================
+    // ANTI-MANIPULASYON KATMANI (2026-09-29) — README durust sinirlarinin
+    // kapanmasi: #2 replay (nonce takibi), #3 MEV (commit-reveal),
+    // #5 manipulasyon tespiti (zincir-ustu risk skoru)
+    // ============================================================
+
+    /// @notice KULLANILMIS NONCE'LAR (replay korumasi) — durust sinir #2 KAPANDI.
+    /// @dev Artik nonce yalnizca yaprakta olmakla kalmaz, ZINCIR-USTU
+    ///      takip edilir: ayni (user, nonce) ikinci kez KULLANILAMAZ.
+    ///      Anahtar = keccak256(abi.encode(user, nonce)).
+    mapping(bytes32 => bool) public nonceConsumed;
+
+    /// @notice Commit-reveal kayitlari (MEV korumasi) — durust sinir #3 KAPANDI.
+    mapping(bytes32 => MEVShield.CommitRecord) private _commitRecords;
+
+    /// @notice Batch sira numarasi (commit-reveal yas kontrolu icin).
+    uint256 public batchSequence;
+
+    /// @notice Manipulasyon tespiti baseline (onceki batch'ler).
+    ManipulationDetector.Baseline private _detectionBaseline;
+
+    /// @notice En son tespit sonucu (kamusal okuma).
+    ManipulationDetector.DetectionResult public lastDetection;
+
+    /// @notice Tespit zorunlu mu? (false = opsiyonel; true = risk>70 reddet)
+    /// @dev OPSIYONEL BASLAR: mevcut 242 testi bozmamak icin varsayilan false.
+    ///      Uretime geciste setDetectionEnforced(true) ile kapatilir.
+    bool public detectionEnforced;
+
     /// @notice Emir tavanini kim asti (oracle raporu).
     event OrderSizeCapExceeded(address indexed trader, uint256 size, uint256 cap);
     event BatchSettled(bytes32 indexed batchId, uint256 clearingPrice, uint256 totalVolume);
@@ -97,6 +128,20 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     event FeeRevenueRecorded(address indexed solver, uint256 volume, uint256 fee, bool isMaker);
     event SolverRegistered(address indexed solver);
     event ChainlinkFeedSet(address indexed feed);
+
+    // --- Anti-manipulasyon olaylari (2026-09-29) ---
+
+    /// @notice Nonce zincir-ustu tuketildi (replay korumasi).
+    event NonceConsumed(address indexed user, uint256 nonce, bytes32 indexed batchId);
+
+    /// @notice Batch commit edildi (MEV korumasi: icerik gizli).
+    event BatchCommitted(bytes32 indexed batchId, bytes32 indexed commitmentHash, uint256 atSequence);
+
+    /// @notice Manipulasyon tespit sonucu yayinlandi (kamusal risk skoru).
+    event ManipulationDetected(bytes32 indexed batchId, uint256 riskScore, string label);
+
+    /// @notice Tespit zorunlulugu degisti.
+    event DetectionEnforcedChanged(bool enforced);
 
     constructor() Ownable(msg.sender) {}
 
@@ -186,6 +231,9 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
         batchSettled[batchId] = true;
         rolling30dVolume += batch.totalVolume;
 
+        // Batch sirasini artir (commit-reveal yas kontrolu icin)
+        batchSequence += 1;
+
         emit BatchSettled(batchId, batch.clearingPrice, batch.totalVolume);
 
         // Lift trigger kontrolu
@@ -201,6 +249,152 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
             sizeCapLifted = true;
             emit SizeCapLifted(rolling30dVolume, rfqSolverCount);
         }
+    }
+
+    // ============================================================
+    // ANTI-MANIPULASYON KATMANI (2026-09-29)
+    // README durust sinirlarinin kapanmasi: #2, #3, #5
+    // ============================================================
+
+    /// @notice DURUST SINIR #2 KAPANDI — Nonce'lari zincir-ustu tuket.
+    /// @dev Bir batch icindeki her imzali emrin nonce'u ARTIK TUKETILIR:
+    ///      ayni (user, nonce) bir daha KULLANILAMAZ. Bu, yaprak-seviyesinde
+    ///      replay saldirisini durdurur (oncesinde yalnizca batch-seviyesinde
+    ///      batchSettled koruyordu).
+    /// @param amounts Emir miktarlari (yaprak icin)
+    /// @param users Emir kullanici adresleri
+    /// @param nonces Emir nonce'lari (replay anahtari)
+    /// @param batchId Bu batch (nonce'lar bu batch'e baglanir)
+    function consumeNonces(
+        uint256[] calldata amounts,
+        address[] calldata users,
+        uint256[] calldata nonces,
+        bytes32 batchId
+    ) external onlySolver nonReentrant {
+        require(
+            amounts.length == users.length && users.length == nonces.length,
+            "Dizi uzunluklari uyumsuz"
+        );
+        require(amounts.length > 0, "Bos dizi");
+        require(batchSettled[batchId], "Batch henuzz kesinlesmedi");
+
+        for (uint256 i = 0; i < nonces.length; i++) {
+            bytes32 key = keccak256(abi.encode(users[i], nonces[i]));
+            require(!nonceConsumed[key], "Nonce zaten kullanildi (replay)");
+            nonceConsumed[key] = true;
+            emit NonceConsumed(users[i], nonces[i], batchId);
+        }
+    }
+
+    /// @notice Bir nonce kullanildi mi? (kamusal replay sorgusu)
+    function isNonceConsumed(address user, uint256 nonce) external view returns (bool) {
+        return nonceConsumed[keccak256(abi.encode(user, nonce))];
+    }
+
+    /// @notice DURUST SINIR #3 KAPANDI — Batch icin commit-reveal (MEV kalkani).
+    /// @dev Solver once batch'in HASH'ine commit eder (icerik GIZLI). NeurIPS
+    ///      2026: sandwich icin alt-sinir gizliligi yeterlidir — tam zk DEGIL.
+    ///      Commit kilitlidir; reveal'da icerik hash'le uymak ZORUNDA.
+    /// @param batchId Batch tanimlayicisi
+    /// @param orderCommitmentRoot Emir taahhudu Merkle koku
+    /// @param clearingPrice Tek orta takas fiyat
+    /// @param totalVolume Batch toplam hacmi
+    function commitBatch(
+        bytes32 batchId,
+        bytes32 orderCommitmentRoot,
+        uint256 clearingPrice,
+        uint256 totalVolume
+    ) external onlySolver nonReentrant {
+        require(batchId != bytes32(0), "BatchId sifir olamaz");
+        require(orderCommitmentRoot != bytes32(0), "orderCommitmentRoot ZORUNLU");
+
+        MEVShield.CommitRecord storage rec = _commitRecords[batchId];
+        require(rec.state == MEVShield.CommitState.None, "Batch zaten commit edildi");
+
+        bytes32 commitmentHash =
+            MEVShield.computeCommitment(batchId, orderCommitmentRoot, clearingPrice, totalVolume);
+
+        _commitRecords[batchId] = MEVShield.markCommitted(rec, commitmentHash, batchSequence, msg.sender);
+
+        emit BatchCommitted(batchId, commitmentHash, batchSequence);
+    }
+
+    /// @notice Commit-reveal: batch'in commit'le uyumunu dogrula (kamusal).
+    /// @dev Bu, "reveal" asamasidir: herkes commit'in batch ile uyustugunu
+    ///      bagimsiz olarak denetleyebilir. Uyumsuzluk = manipulasyon kaniti.
+    function verifyBatchCommit(
+        bytes32 batchId,
+        bytes32 orderCommitmentRoot,
+        uint256 clearingPrice,
+        uint256 totalVolume
+    ) external view returns (bool) {
+        MEVShield.CommitRecord memory rec = _commitRecords[batchId];
+        return MEVShield.canReveal(rec, batchId, orderCommitmentRoot, clearingPrice, totalVolume, batchSequence + 1);
+    }
+
+    /// @notice DURUST SINIR #5 KAPANDI — Manipulasyon tespiti (zincir-ustu).
+    /// @dev Batch icindeki islem ciftlerinden RISK SKORU uretir. Uc sinyal:
+    ///      hacim/islem dususu (Zwydak 2026), round-trip payi, cift seli.
+    ///      Sonuc bir KANIT DEGIL, bir RISK SKORUDUR — otomatik yaptirim
+    ///      yapilmaz (detectionEnforced true ise >70 reddeder).
+    function reportBatchTrades(
+        bytes32 batchId,
+        ManipulationDetector.TradePair[] calldata pairs,
+        uint256 totalVolume
+    ) external onlySolver nonReentrant returns (uint256 riskScore) {
+        require(batchSettled[batchId], "Batch kesinlesmedi");
+
+        ManipulationDetector.DetectionResult memory r =
+            ManipulationDetector.analyze(pairs, totalVolume, _detectionBaseline);
+
+        lastDetection = r;
+        _detectionBaseline = ManipulationDetector.updateBaseline(_detectionBaseline, totalVolume, _pairTxCount(pairs));
+
+        emit ManipulationDetected(batchId, r.riskScore, ManipulationDetector.riskLabel(r));
+
+        // Zorunlu modda yuksek riskli batch'ler REDDEDILIR (defense-in-depth)
+        if (detectionEnforced) {
+            require(
+                r.riskScore < ManipulationDetector.HIGH_RISK_THRESHOLD,
+                "Manipulasyon riski: batch reddedildi"
+            );
+        }
+
+        return r.riskScore;
+    }
+
+    /// @dev Islem ciftlerinin toplam islem sayisini hesaplar.
+    function _pairTxCount(ManipulationDetector.TradePair[] calldata pairs)
+        internal
+        pure
+        returns (uint256 total)
+    {
+        for (uint256 i = 0; i < pairs.length; i++) {
+            total += pairs[i].count;
+        }
+    }
+
+    /// @notice Tespit zorunlulugunu ayarla (sahip).
+    /// @dev false: tespit yalniziz RAPORLANIR (gelistirme/analiz modu).
+    ///      true: risk > 70 olan batch'ler REDDEDILIR (uretim modu).
+    function setDetectionEnforced(bool enforced) external onlyOwner {
+        detectionEnforced = enforced;
+        emit DetectionEnforcedChanged(enforced);
+    }
+
+    /// @notice Kamusal: son tespit sonucunu oku (ucretsiz API).
+    function lastDetectionSummary()
+        external
+        view
+        returns (uint256 riskScore, string memory label, bool volumeDrop, bool roundTrip, bool flooding)
+    {
+        return (
+            lastDetection.riskScore,
+            ManipulationDetector.riskLabel(lastDetection),
+            lastDetection.volumePerTxDrop,
+            lastDetection.roundTripDetected,
+            lastDetection.pairFlooding
+        );
     }
 
     // ============================================================
