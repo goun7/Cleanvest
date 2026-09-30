@@ -31,3 +31,5 @@ orders.json
 deploy-out/
 
 Cargo.lock'u TUT (kilitlenmis baqimliliklar guvenlik icin onemli)
+__pycache__/
+*.py[cod]
