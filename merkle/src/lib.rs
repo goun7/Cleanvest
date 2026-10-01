@@ -469,4 +469,133 @@ mod tests {
         }
         assert!(!verify(&orders[0].leaf_hash(), &flipped, &tree.root()));
     }
+
+    // ============================================================
+    // CONSERVATION (ERC-4626 analog) — hicbir yaprak kaybolmaz
+    // ============================================================
+
+    /// Conservation: buyuk agacta TUM yapraklar kanitlanabilir.
+    /// Hicbir emir "kaybolamaz" — her yaprak kok icin inclusion kanitlidir.
+    #[test]
+    fn conservation_every_leaf_provable_in_large_tree() {
+        let n = 100;
+        let orders: Vec<Order> = (0..n)
+            .map(|i| Order::new(100 * (i + 1) as u128, addr((i % 250) as u8 + 1), i as u128))
+            .collect();
+        let tree = MerkleTree::build(&orders).unwrap();
+        for i in 0..n {
+            let proof = tree.prove(i).expect("her yaprak icin kanit olmali");
+            assert!(
+                verify(&orders[i].leaf_hash(), &proof, &tree.root()),
+                "yaprak {i} kok icin kanitlanmali"
+            );
+        }
+    }
+
+    /// Conservation: yaprak sayisi kurulumdan sonra ayni kalmali
+    /// (yaprak eklenmez, cikarilmaz, kaybolmaz).
+    #[test]
+    fn conservation_leaf_count_preserved() {
+        for n in [1usize, 2, 3, 7, 16, 31, 64] {
+            let orders: Vec<Order> = (0..n)
+                .map(|i| Order::new((i + 1) as u128, addr(1), i as u128))
+                .collect();
+            let tree = MerkleTree::build(&orders).unwrap();
+            assert_eq!(tree.leaf_count(), n, "yaprak sayisi {n} korunmali");
+        }
+    }
+
+    // ============================================================
+    // NO-FREEZE (ERC-4626 analog) — kanit her zaman uretilebilir
+    // ============================================================
+
+    /// No-freeze: her index icin kanit vardir, kapı/yumusama yok.
+    /// Ayrica kanit derinligi log2(n) ile uyumludur (agac dengeli buyur).
+    #[test]
+    fn no_freeze_proof_available_and_logarithmic() {
+        for n in [2usize, 3, 5, 17, 64, 129] {
+            let orders: Vec<Order> = (0..n)
+                .map(|i| Order::new((i + 1) as u128, addr((i % 250) as u8 + 1), i as u128))
+                .collect();
+            let tree = MerkleTree::build(&orders).unwrap();
+            for i in 0..n {
+                let proof = tree.prove(i).expect("kanit donmeli (no-freeze)");
+                assert!(proof.siblings.len() <= 32, "derinlik makul olmali");
+            }
+            // Beklenen seviye sayisi = ceil(log2(n)); tek yaprak icin 0
+            let expected = (n as f64).log2().ceil() as usize;
+            assert_eq!(
+                tree.prove(0).unwrap().siblings.len(),
+                expected.max(1).saturating_sub(usize::from(n == 1)),
+                "n={n} icin kanit derinligi {expected} olmali"
+            );
+        }
+    }
+
+    // ============================================================
+    // WASH TRADE TESPITI — ayni (user, amount, nonce) duplicate
+    // ============================================================
+
+    /// Wash trade: ayni emrin IKI kere girilmesi ayni yaprak uretir.
+    /// Settlement katmani bunu duplicate olarak reddetmelidir — bu test,
+    /// duplicate tespiti icin yaprak hash'inin stabil oldugunu kanitlar.
+    #[test]
+    fn wash_trade_duplicate_order_produces_identical_leaf() {
+        let a = Order::new(1_000, addr(5), 42);
+        let b = Order::new(1_000, addr(5), 42); // birebir ayni
+        assert_eq!(
+            a.leaf_hash(),
+            b.leaf_hash(),
+            "ayni emir ayni yaprak (duplicate tespit edilebilir)"
+        );
+        // Iki kere girilen emir agacta iki ornek olarak durur; her ikisi de
+        // ayni yapraktir ve kanitlari ayni yapraka cozulur
+        let twice = MerkleTree::build(&[a.clone(), b]).unwrap();
+        assert_eq!(twice.leaf_count(), 2);
+        let leaf = a.leaf_hash();
+        assert!(verify(&leaf, &twice.prove(0).unwrap(), &twice.root()));
+        assert!(verify(&leaf, &twice.prove(1).unwrap(), &twice.root()));
+    }
+
+    /// Wash trade: ayni user + ayni nonce ama FARKLI miktar → farkli yaprak.
+    /// Bu, settlement'in "her user+nonce tek emir" kuralini uygulamasinin
+    /// yaprak seviyesinde gorulmesini saglar.
+    #[test]
+    fn wash_trade_same_user_nonce_different_amount_diverges() {
+        let o1 = Order::new(1_000, addr(5), 42);
+        let o2 = Order::new(2_000, addr(5), 42); // ayni user+nonce, farkli miktar
+        assert_ne!(o1.leaf_hash(), o2.leaf_hash());
+        let t1 = MerkleTree::build(&[o1]).unwrap();
+        let t2 = MerkleTree::build(&[o2]).unwrap();
+        assert_ne!(t1.root(), t2.root(), "wash-trade varyanti farkli kok");
+    }
+
+    // ============================================================
+    // LAYERING — ayni user'dan coklu katmanli emirler
+    // ============================================================
+
+    /// Layering: ayni user'dan 20 farkli miktarli emir (katmanlama).
+    /// Hepsinin yapragi farklidir ve hepsi kanitlanabilir — settlement
+    /// bunlari tek user'in manipulasyon girisimi olarak denetleyebilir.
+    #[test]
+    fn layering_same_user_many_amounts_all_provable() {
+        let user = addr(7);
+        let orders: Vec<Order> = (0..20)
+            .map(|i| Order::new(100 * (i + 1) as u128, user, i as u128))
+            .collect();
+        let tree = MerkleTree::build(&orders).unwrap();
+        // Her katmanin yapragi farkli
+        let mut leaves: Vec<_> = orders.iter().map(|o| o.leaf_hash()).collect();
+        leaves.sort_unstable();
+        leaves.dedup();
+        assert_eq!(leaves.len(), 20, "her katman farkli yaprak");
+        // Hepsinin kaniti gecerli
+        for i in 0..20 {
+            assert!(verify(
+                &orders[i].leaf_hash(),
+                &tree.prove(i).unwrap(),
+                &tree.root()
+            ));
+        }
+    }
 }
