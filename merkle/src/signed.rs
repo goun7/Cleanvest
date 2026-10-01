@@ -373,4 +373,131 @@ mod tests {
         let tree = MerkleTree::build(&orders).unwrap();
         assert_eq!(tree.leaf_count(), 2);
     }
+
+    // ============================================================
+    // IMZA MANIPULASYONU — spoofing / replay / imza-tasiyici saldirilari
+    // (GOREV: "manipulasyon tespiti" — imza katmani)
+    // ============================================================
+
+    /// Spoofing: A'nin imzasi B'nin emrine tasinmamali
+    /// (signature transplant saldirisi).
+    #[test]
+    fn signature_transplant_between_orders_rejected() {
+        let o0 = Order::new(1_000, ANVIL_ADDR, 1);
+        let o1 = Order::new(2_000, ANVIL_ADDR, 2);
+        let s0 = sign_with_test_key(&o0.leaf_hash(), &ANVIL_KEY);
+        let s1 = sign_with_test_key(&o1.leaf_hash(), &ANVIL_KEY);
+
+        // s0'i o1'e tasi: leaf hash farkli → imza gecersiz
+        let transplanted = SignedLeaf::new(o1.clone(), s0);
+        assert!(!transplanted.verify_signature(), "imza tasima REDDEDILMELI");
+        assert_eq!(
+            SignedMerkleTree::build_signed(&[transplanted]).unwrap_err(),
+            SignedBuildError::InvalidSignature(0)
+        );
+
+        // Gercek imzalar gecerli (kontrol)
+        assert!(SignedLeaf::new(o0, s0).verify_signature());
+        assert!(SignedLeaf::new(o1, s1).verify_signature());
+    }
+
+    /// Replay: ayni nonce ile farkli miktar imzalanirsa
+    /// koke girince farkli leaf → imza gecersiz (nonce tek-seferlik).
+    #[test]
+    fn replay_with_same_nonce_different_amount_rejected() {
+        let original = Order::new(1_000, ANVIL_ADDR, 7);
+        let sig = sign_with_test_key(&original.leaf_hash(), &ANVIL_KEY);
+
+        // Saldirgan ayni nonce ile 10x miktar dener
+        let replayed = Order::new(10_000, ANVIL_ADDR, 7);
+        let forged = SignedLeaf::new(replayed, sig);
+        assert!(!forged.verify_signature(), "replay saldirisi REDDEDILMELI");
+    }
+
+    /// Cok-imzali agac: farkli emirlerin imzalari
+    /// karismadan dogrulanmali (gercek batch senaryosu).
+    #[test]
+    fn multiple_signers_mixed_tree_verifies() {
+        // ANVIL account #0 ile imzala; her emir farkli nonce
+        // (ayni imzalayan, farkli emirler — hepsi gecerli).
+        let orders: Vec<Order> = (1..=4)
+            .map(|i| Order::new(1_000 * i as u128, ANVIL_ADDR, i as u128))
+            .collect();
+        let leaves: Vec<SignedLeaf> = orders
+            .iter()
+            .map(|o| SignedLeaf::new(o.clone(), sign_with_test_key(&o.leaf_hash(), &ANVIL_KEY)))
+            .collect();
+        let tree = SignedMerkleTree::build_signed(&leaves).unwrap();
+        let root = tree.root();
+        for i in 0..leaves.len() {
+            let p = tree.prove_signed(i).unwrap();
+            assert!(verify_signed(
+                &leaves[i].order.leaf_hash(),
+                &p.signature,
+                &leaves[i].order.user,
+                &p.merkle,
+                &root,
+            ), "cok-imzali agac: yaprak {i} dogrulanmali");
+        }
+    }
+
+    /// Fail-closed: cok yaprakli agacta ORTADAKI yaprak bozuksa
+    /// dogru INDEX rapor edilmeli (hangisi kotu oldugu bilinmeli).
+    #[test]
+    fn invalid_leaf_reports_correct_index() {
+        let o0 = Order::new(1_000, ANVIL_ADDR, 1);
+        let o1 = Order::new(2_000, ANVIL_ADDR, 2);
+        let o2 = Order::new(3_000, ANVIL_ADDR, 3);
+        let s0 = sign_with_test_key(&o0.leaf_hash(), &ANVIL_KEY);
+        let s1 = sign_with_test_key(&o1.leaf_hash(), &ANVIL_KEY);
+        let s2 = sign_with_test_key(&o2.leaf_hash(), &ANVIL_KEY);
+
+        // 3 yaprak; ORTADAKI (index 1) imzayi boz
+        let mut broken_s1 = s1;
+        broken_s1[30] ^= 0xff;
+        let leaves = vec![
+            SignedLeaf::new(o0, s0),
+            SignedLeaf::new(o1, broken_s1),
+            SignedLeaf::new(o2, s2),
+        ];
+        assert_eq!(
+            SignedMerkleTree::build_signed(&leaves).unwrap_err(),
+            SignedBuildError::InvalidSignature(1),
+            "bozuk yapragin INDEX'i (1) rapor edilmeli"
+        );
+    }
+
+    /// Imza manipulasyonu: v bayti 27<->28 cevrilirse
+    /// geri kazanilan adres degismeli (ecrecover recovery id).
+    #[test]
+    fn flipped_v_byte_changes_recovered_address() {
+        let order = Order::new(1_000, ANVIL_ADDR, 1);
+        let mut sig = sign_with_test_key(&order.leaf_hash(), &ANVIL_KEY);
+        let v = sig[64];
+        // v'yi tersine cevir (27 <-> 28)
+        sig[64] = if v == 27 { 28 } else { 27 };
+        let flipped = SignedLeaf::new(order, sig);
+        assert!(!flipped.verify_signature(), "cevrilmis v REDDEDILMELI");
+    }
+
+    /// Geversiz v (>28): recovery_id_from_v None donmeli
+    /// (bozuk imza formati).
+    #[test]
+    fn invalid_v_byte_rejected() {
+        let order = Order::new(1_000, ANVIL_ADDR, 1);
+        let mut sig = sign_with_test_key(&order.leaf_hash(), &ANVIL_KEY);
+        sig[64] = 30; // gecersiz
+        assert!(recover_signer(&order.leaf_hash(), &sig).is_none(), "v=30 None olmali");
+    }
+
+    /// EIP-191 on eki: yaprak hash'i dogrudan imzalanmamali
+    /// (personal_sign wrapping'in onemi — prefix olmadan farkli adres).
+    #[test]
+    fn eth_signed_prefix_is_applied() {
+        let leaf = keccak256(b"manipulasyon-test");
+        let digest = eth_signed_message_hash(&leaf);
+        // prefix'siz hash farkli olmali
+        assert_ne!(digest, leaf, "EIP-191 on eki uygulanmali");
+        assert_eq!(digest.len(), 32);
+    }
 }

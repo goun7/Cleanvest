@@ -323,6 +323,7 @@ mod tests {
     use crate::signed::{
         eth_signed_message_hash, SignedLeaf, SignedMerkleTree, SignedProof,
     };
+    use crate::verify;
     use k256::ecdsa::SigningKey;
 
     /// Standart anvil test anahtarı (account #0). MAINNET anahtarı DEĞİL.
@@ -470,5 +471,171 @@ mod tests {
         assert_eq!(o.amount, 1000);
         assert_eq!(o.nonce, 7);
         assert_eq!(o.user, ANVIL_ADDR);
+    }
+
+    // ============================================================
+    // JSON MANIPULASYONU — operator'in kaniti degistirmesi
+    // (GOREV: "manipulasyon tespiti" — bagimsiz dogrulama katmani)
+    // ============================================================
+
+    /// Manipulasyon: operator JSON'daki MIKTARI degistirirse
+    /// yaprak yeniden hesaplanir → imza yaprakla uyusmaz → InvalidSignature.
+    /// Bu DAHA GUZELDIR: Merkle adimina ulasmadan reddeder (fail-early).
+    #[test]
+    fn json_tampered_amount_detected() {
+        let order = Order::new(1_000, ANVIL_ADDR, 1);
+        let sig = sign_with_test_key(&order.leaf_hash(), &ANVIL_KEY);
+        let tree =
+            SignedMerkleTree::build_signed(&[SignedLeaf::new(order, sig)]).unwrap();
+        let real_root = tree.root();
+        let proof_bytes = encode_proof_bytes(&tree.prove_signed(0).unwrap().merkle);
+
+        // Operator JSON'da 1_000 → 9_000 yazar
+        let tampered = ProofJson {
+            order: OrderJson { amount: 9_000, user: ANVIL_ADDR, nonce: 1 },
+            signature: sign_with_test_key(&Order::new(1_000, ANVIL_ADDR, 1).leaf_hash(), &ANVIL_KEY),
+            root: real_root,
+            proof_bytes,
+            chain_id: None,
+            batch_id: None,
+            settlement: None,
+        };
+        // Imza gercek emre ait (1_000); JSON 9_000 → yaprak degisir →
+        // imza yaprakla uyusmaz → InvalidSignature (Merkle'den ONCE reddet)
+        assert!(matches!(tampered.verify(), ProofResult::InvalidSignature { .. }));
+    }
+
+    /// Manipulasyon: operator JSON'daki ADRESI degistirirse
+    /// imza adresi uyusmaz → InvalidSignature.
+    #[test]
+    fn json_tampered_user_detected() {
+        let order = Order::new(1_000, ANVIL_ADDR, 1);
+        let sig = sign_with_test_key(&order.leaf_hash(), &ANVIL_KEY);
+
+        let mut other = [0u8; 20];
+        other[19] = 0x42;
+        let tampered = ProofJson {
+            order: OrderJson { amount: 1_000, user: other, nonce: 1 },
+            signature: sig,
+            root: [0u8; 32],
+            proof_bytes: vec![],
+            chain_id: None,
+            batch_id: None,
+            settlement: None,
+        };
+        assert!(matches!(tampered.verify(), ProofResult::InvalidSignature { .. }));
+    }
+
+    /// Manipulasyon: operator NONCE degistirirse
+    /// yaprak degisir → imza uyusmaz → InvalidSignature (fail-early).
+    #[test]
+    fn json_tampered_nonce_detected() {
+        let order = Order::new(1_000, ANVIL_ADDR, 5);
+        let sig = sign_with_test_key(&order.leaf_hash(), &ANVIL_KEY);
+        let tree =
+            SignedMerkleTree::build_signed(&[SignedLeaf::new(order, sig)]).unwrap();
+
+        let tampered = ProofJson {
+            order: OrderJson { amount: 1_000, user: ANVIL_ADDR, nonce: 99 },
+            signature: sign_with_test_key(&Order::new(1_000, ANVIL_ADDR, 5).leaf_hash(), &ANVIL_KEY),
+            root: tree.root(),
+            proof_bytes: vec![], // tek yaprak: bos kanit gecerli
+            chain_id: None,
+            batch_id: None,
+            settlement: None,
+        };
+        // Imza nonce=5 emrine ait; JSON nonce=99 → farkli yaprak →
+        // imza uyusmaz (Merkle'den ONCE reddet)
+        assert!(matches!(tampered.verify(), ProofResult::InvalidSignature { .. }));
+    }
+
+    /// Invariant: encode → parse roundtrip proof'u korumali
+    /// (on-chain format ile birebiligidin kaniti).
+    #[test]
+    fn proof_bytes_encode_parse_roundtrip() {
+        let orders: Vec<Order> = (0..5)
+            .map(|i| Order::new(500 * (i + 1) as u128, ANVIL_ADDR, i as u128))
+            .collect();
+        let leaves: Vec<SignedLeaf> = orders
+            .iter()
+            .map(|o| SignedLeaf::new(o.clone(), sign_with_test_key(&o.leaf_hash(), &ANVIL_KEY)))
+            .collect();
+        let tree = SignedMerkleTree::build_signed(&leaves).unwrap();
+
+        for i in 0..orders.len() {
+            let proof = tree.prove_signed(i).unwrap().merkle;
+            let bytes = encode_proof_bytes(&proof);
+            let parsed = parse_proof_bytes(&bytes).unwrap();
+            assert_eq!(parsed.siblings.len(), proof.siblings.len());
+            for (a, b) in parsed.siblings.iter().zip(&proof.siblings) {
+                assert_eq!(a.0, b.0, "sibling hash {i} korunmali");
+                assert_eq!(a.1, b.1, "sibling konumu {i} korunmali");
+            }
+            // Roundtrip kaniti hala dogrulamali
+            assert!(verify(&orders[i].leaf_hash(), &parsed, &tree.root()));
+        }
+    }
+
+    /// Sinir: tek yaprakli agac — BOS proof_bytes gecerli
+    /// (leaf dogrudan root'a esit).
+    #[test]
+    fn single_leaf_empty_proof_bytes_valid() {
+        let order = Order::new(1_000, ANVIL_ADDR, 1);
+        let sig = sign_with_test_key(&order.leaf_hash(), &ANVIL_KEY);
+        let tree =
+            SignedMerkleTree::build_signed(&[SignedLeaf::new(order, sig)]).unwrap();
+
+        let pj = ProofJson {
+            order: OrderJson { amount: 1_000, user: ANVIL_ADDR, nonce: 1 },
+            signature: sign_with_test_key(&Order::new(1_000, ANVIL_ADDR, 1).leaf_hash(), &ANVIL_KEY),
+            root: tree.root(),
+            proof_bytes: vec![], // bos = tek yaprak
+            chain_id: None,
+            batch_id: None,
+            settlement: None,
+        };
+        assert!(matches!(pj.verify(), ProofResult::Valid { .. }));
+    }
+
+    /// Manipulasyon: proof_bytes icinde konum biti cevrilirse reddet
+    /// (sibling sirasinin onemi — on-chain ile birebir).
+    #[test]
+    fn proof_bytes_flipped_position_rejected() {
+        let orders = vec![
+            Order::new(1_000, ANVIL_ADDR, 1),
+            Order::new(2_000, ANVIL_ADDR, 2),
+        ];
+        let leaves: Vec<SignedLeaf> = orders
+            .iter()
+            .map(|o| SignedLeaf::new(o.clone(), sign_with_test_key(&o.leaf_hash(), &ANVIL_KEY)))
+            .collect();
+        let tree = SignedMerkleTree::build_signed(&leaves).unwrap();
+        let proof = tree.prove_signed(0).unwrap().merkle;
+        let mut bytes = encode_proof_bytes(&proof);
+        bytes[32] ^= 0x01; // konum bitini cevir
+
+        let ok = verify(&orders[0].leaf_hash(), &parse_proof_bytes(&bytes).unwrap(), &tree.root());
+        assert!(!ok, "cevrilmis konum REDDEDILMELI");
+    }
+
+    /// Buyuk degerler: u128::MAX dizgisi kayipsiz ayristirilmali
+    /// (JSON sayi hassasiyet kaybini onler).
+    #[test]
+    fn u128_max_as_string_roundtrips() {
+        let json = format!(
+            r#"{{"amount":"{}","user":"0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266","nonce":"{}"}}"#,
+            u128::MAX, u64::MAX
+        );
+        let o: OrderJson = serde_json::from_str(&json).unwrap();
+        assert_eq!(o.amount, u128::MAX);
+        assert_eq!(o.nonce, u64::MAX as u128);
+    }
+
+    /// Parse hatasi: gecersiz hex adres reddedilmeli (Malformed degil,
+    /// serde hatasi — guvenli reddir).
+    #[test]
+    fn invalid_hex_address_rejected() {
+        let json = r#"{"amount":"1","user":"0xZZZZ","nonce":"1"}"#;
+        assert!(serde_json::from_str::<OrderJson>(json).is_err());
     }
 }

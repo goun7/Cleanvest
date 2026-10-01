@@ -352,4 +352,121 @@ mod tests {
         let tree = MerkleTree::build(&[Order::new(1, addr(1), 1)]).unwrap();
         assert!(tree.prove(5).is_none());
     }
+
+    // ============================================================
+    // MANIPULASYON TESPITI — emir_degistirme / spoofing / replay
+    // (GOREV: "manipulasyon tespiti" — bu katmanin gercek yuzeyi)
+    // ============================================================
+
+    /// Manipulasyon: operator bir emrin MIKTARINI degistirse kok degismeli.
+    /// Bu, "operator emirleri degistiremez" invariantidir.
+    #[test]
+    fn tampered_amount_changes_root() {
+        let base = Order::new(1_000, addr(1), 1);
+        let tampered = Order::new(1_001, addr(1), 1); // +1 birim
+        let a = MerkleTree::build(&[base]).unwrap();
+        let b = MerkleTree::build(&[tampered]).unwrap();
+        assert_ne!(a.root(), b.root(), "miktar degisimi koku degistirmeli");
+    }
+
+    /// Manipulasyon: operator kullanici ADRESINI degistirse kok degismeli
+    /// (spoofing — "bu kullanici yapmisti" saldirisi).
+    #[test]
+    fn tampered_user_changes_root() {
+        let base = Order::new(1_000, addr(1), 1);
+        let spoofed = Order::new(1_000, addr(2), 1); // ayni miktar, farkli kullanici
+        let a = MerkleTree::build(&[base]).unwrap();
+        let b = MerkleTree::build(&[spoofed]).unwrap();
+        assert_ne!(a.root(), b.root(), "kullanici degisimi koku degistirmeli");
+    }
+
+    /// Manipulasyon: operator NONCE'u degistirse kok degismeli
+    /// (replay korumasi — ayni emir tekrar oynatilamaz).
+    #[test]
+    fn tampered_nonce_changes_root() {
+        let base = Order::new(1_000, addr(1), 1);
+        let replayed = Order::new(1_000, addr(1), 2); // ayni emir, farkli nonce
+        let a = MerkleTree::build(&[base]).unwrap();
+        let b = MerkleTree::build(&[replayed]).unwrap();
+        assert_ne!(a.root(), b.root(), "nonce degisimi koku degistirmeli");
+    }
+
+    /// Manipulasyon: emir SIRASI degisirse kok degismeli
+    /// (batch siralamasi manipulasyonu).
+    #[test]
+    fn reordered_orders_change_root() {
+        let o1 = Order::new(1_000, addr(1), 1);
+        let o2 = Order::new(2_000, addr(2), 2);
+        let forward = MerkleTree::build(&[o1.clone(), o2.clone()]).unwrap();
+        let reversed = MerkleTree::build(&[o2, o1]).unwrap();
+        assert_ne!(forward.root(), reversed.root(), "sira degisimi koku degistirmeli");
+    }
+
+    /// Invariant: yaprak hash'i emir alanlarindan deterministik
+    /// (ayni emir her zaman ayni yaprak — yeniden hesaplanabilirlik).
+    #[test]
+    fn leaf_hash_deterministic_and_order_sensitive() {
+        let o = Order::new(1_000, addr(5), 42);
+        let h1 = o.leaf_hash();
+        let h2 = Order::new(1_000, addr(5), 42).leaf_hash();
+        assert_eq!(h1, h2, "deterministik");
+        // Alanlarin sirasi onemli (amount/user/nonce)
+        assert_ne!(h1, Order::new(42, addr(5), 1_000).leaf_hash());
+    }
+
+    /// Sinir durumu: sifir adres ve sifir miktar gecerli yaprak uretmeli
+    /// (abi.encode sag-hizalama adres icin).
+    #[test]
+    fn zero_address_and_amount_produce_valid_leaf() {
+        let o = Order::new(0, [0u8; 20], 0);
+        let h = o.leaf_hash();
+        // Bos olmamali (keccak hicbir zaman tum sifir olamaz)
+        assert_ne!(h, [0u8; 32]);
+    }
+
+    /// Sinir durumu: maksimum u128 degerleri tasmamali
+    /// (uint256 Solidity'de 32 bayt — u128 her zaman sigar).
+    #[test]
+    fn max_u128_amount_produces_valid_leaf() {
+        let o = Order::new(u128::MAX, [0xff; 20], u128::MAX);
+        let h = o.leaf_hash();
+        assert_ne!(h, [0u8; 32]);
+        // Tekrar uret — deterministik
+        assert_eq!(h, Order::new(u128::MAX, [0xff; 20], u128::MAX).leaf_hash());
+    }
+
+    /// Derinlik: 17 emir (5 seviye) — tum kanitlar dogrulanmali
+    /// (buyuk batch'lerde agac kurulumu ve kanit dogrulama).
+    #[test]
+    fn deep_tree_all_proofs_verify() {
+        let orders: Vec<Order> = (0..17)
+            .map(|i| Order::new(100 * (i + 1) as u128, addr((i % 250) as u8 + 1), i as u128))
+            .collect();
+        let tree = MerkleTree::build(&orders).unwrap();
+        assert_eq!(tree.leaf_count(), 17);
+        for i in 0..orders.len() {
+            let proof = tree.prove(i).unwrap();
+            assert!(
+                verify(&orders[i].leaf_hash(), &proof, &tree.root()),
+                "yaprak {i} kaniti dogrulanmali"
+            );
+        }
+    }
+
+    /// Manipulasyon: kanittan sibling siralamasi bozulursa reddedilmeli
+    /// (sag/sol konumunun onemi).
+    #[test]
+    fn flipped_sibling_position_rejected() {
+        let orders = vec![
+            Order::new(1, addr(1), 1),
+            Order::new(2, addr(2), 2),
+        ];
+        let tree = MerkleTree::build(&orders).unwrap();
+        let proof = tree.prove(0).unwrap();
+        let mut flipped = proof.clone();
+        for (_s, is_right) in &mut flipped.siblings {
+            *is_right = !*is_right;
+        }
+        assert!(!verify(&orders[0].leaf_hash(), &flipped, &tree.root()));
+    }
 }
