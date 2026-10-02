@@ -598,4 +598,162 @@ mod tests {
             ));
         }
     }
+
+    // ============================================================
+    // DONATION ATTACK (ERC-4626 analog — semantic)
+    // vault kodu bu crate'te DEGIL; Merkle kok-commitment uzerinde
+    // ayni saldiri/kalkan semantiğini test ederiz.
+    // ============================================================
+
+    /// Donation analog: agac kurulduktan sonra beklenmedik yaprak
+    /// ("bagis") eklenirse kok degisir. Kullanici onceden commit ettigi
+    /// kok ile korunur — bagisli agacin kaniti eski kole reddedilir
+    /// (depositWithMin'in "min shares out" kalkaninin karsiligi).
+    #[test]
+    fn donation_analog_post_build_leaf_addition_changes_root() {
+        let base = vec![
+            Order::new(1_000, addr(1), 1),
+            Order::new(2_000, addr(2), 2),
+        ];
+        let committed = MerkleTree::build(&base).unwrap();
+        let committed_root = committed.root();
+
+        // "Bagis" — beklenmedik emir eklenirse kok degismeli
+        let mut donated = base.clone();
+        donated.push(Order::new(9_999, addr(9), 9));
+        let donated_tree = MerkleTree::build(&donated).unwrap();
+        assert_ne!(committed_root, donated_tree.root(), "bagis koku degistirmeli");
+
+        // Kullanici commit edilen kole guvenir: bagisli agacin
+        // gecerli kaniti bile eski kole karsi reddedilir
+        let proof = donated_tree.prove(0).unwrap();
+        assert!(
+            !verify(&donated[0].leaf_hash(), &proof, &committed_root),
+            "bagisli kanit commit edilen koke reddedilmeli (kullanici korundu)"
+        );
+        // Ama kendi kokune karsi gecerli (agac tutarli)
+        assert!(verify(&donated[0].leaf_hash(), &proof, &donated_tree.root()));
+    }
+
+    /// Donation analog: kok manipule edilirse TUM gecerli kanitlar reddedilir.
+    /// Saldirdan onceki depositorlarin "min-out" beklentisi gibi — kurtarma
+    /// (slippage) ile degil, katii redd ile korunur.
+    #[test]
+    fn donation_analog_tampered_root_rejects_valid_proofs() {
+        let orders: Vec<Order> = (0..4)
+            .map(|i| Order::new((i + 1) as u128, addr((i + 1) as u8), i as u128))
+            .collect();
+        let tree = MerkleTree::build(&orders).unwrap();
+
+        let mut tampered = tree.root();
+        tampered[31] ^= 0x01; // 1 bit bile degisse
+        for i in 0..orders.len() {
+            let proof = tree.prove(i).unwrap();
+            assert!(
+                !verify(&orders[i].leaf_hash(), &proof, &tampered),
+                "manipule kok {i}. yapragin gecerli kanitini reddetmeli"
+            );
+            assert!(verify(&orders[i].leaf_hash(), &proof, &tree.root()));
+        }
+    }
+
+    // ============================================================
+    // ROUNDING — yaprak eslemede yukari yuvarlama (tek kalan)
+    // ============================================================
+
+    /// Rounding: tek kalan yaprak KENDISIYLE eslesir (ceil(5/2)=3 ebeveyn).
+    /// Bu "yukari yuvarlama"dir; kanit hala gecerlidir ve sibling == leaf.
+    #[test]
+    fn rounding_odd_leaf_self_pairing_proofs_verify() {
+        // 5 yaprak: 5. (index 4) seviye 0'da tek kalir
+        let orders: Vec<Order> = (0..5)
+            .map(|i| Order::new((i + 1) as u128, addr((i + 1) as u8), i as u128))
+            .collect();
+        let tree = MerkleTree::build(&orders).unwrap();
+
+        let last = orders[4].leaf_hash();
+        let proof = tree.prove(4).unwrap();
+        // En alt seviyedeki sibling, yaprak tek kaldigi icin kendisidir
+        assert_eq!(
+            proof.siblings[0].0, last,
+            "tek kalan yapragin sibling'i kendisi olmali (self-pairing)"
+        );
+        assert!(verify(&last, &proof, &tree.root()));
+        // Diger (eslesen) yapraklar da gecerli
+        for i in 0..4 {
+            assert!(verify(&orders[i].leaf_hash(), &tree.prove(i).unwrap(), &tree.root()));
+        }
+    }
+
+    /// Rounding: her seviye oncekinin yarisi yukari yuvarlanir —
+    /// n yaprak -> ceil(n/2) ebeveyn, kok seviyesinde 1.
+    #[test]
+    fn rounding_levels_shrink_by_half_rounded_up() {
+        for n in [1usize, 2, 3, 4, 5, 7, 8, 15, 16, 17, 31] {
+            let orders: Vec<Order> = (0..n)
+                .map(|i| Order::new((i + 1) as u128, addr(1), i as u128))
+                .collect();
+            let tree = MerkleTree::build(&orders).unwrap();
+            assert_eq!(tree.leaf_count(), n);
+            for w in tree.levels.windows(2) {
+                let expected = (w[0].len() + 1) / 2; // ceil(yari)
+                assert_eq!(
+                    w[1].len(), expected,
+                    "n={n}: {} yapraktan {} ebeveyn (ceil) olmali",
+                    w[0].len(), expected
+                );
+            }
+            assert_eq!(tree.levels.last().unwrap().len(), 1, "n={n}: kok 1 olmali");
+        }
+    }
+
+    // ============================================================
+    // WASH TRADE (derinlestirme) — batch duplicate tespiti
+    // ============================================================
+
+    /// Wash trade: ayni emirden N tane iceren batch — leaf set 1, ama
+    /// leaf_count N. Settlement bu "1 uniq emir" bilgisini kullanarak
+    /// wash-trade batch'ini reddedebilir.
+    #[test]
+    fn wash_trade_duplicate_batch_detected_via_leaf_set() {
+        let dupe = Order::new(500, addr(3), 7);
+        let batch = vec![dupe.clone(), dupe.clone(), dupe.clone()];
+        let tree = MerkleTree::build(&batch).unwrap();
+
+        assert_eq!(tree.leaf_count(), 3, "3 emir agacta 3 yaprak");
+        let mut uniq: Vec<_> = batch.iter().map(|o| o.leaf_hash()).collect();
+        uniq.sort_unstable();
+        uniq.dedup();
+        assert_eq!(
+            uniq.len(), 1,
+            "3 duplicate emir -> 1 uniq yaprak (wash trade tespit edilebilir)"
+        );
+    }
+
+    /// Wash trade: karisik batch (A,A,B,B,C) — uniq 3, duplicate 2.
+    /// Duplicate'ler agacin gecerliligini bozmaz; settlement uniq
+    /// sayisindan wash-trade oranini cikarabilir.
+    #[test]
+    fn wash_trade_mixed_batch_duplicate_counts_match() {
+        let a = Order::new(100, addr(1), 1);
+        let b = Order::new(200, addr(2), 2);
+        let c = Order::new(300, addr(3), 3);
+        let batch = vec![a.clone(), a.clone(), b.clone(), b.clone(), c.clone()];
+        let tree = MerkleTree::build(&batch).unwrap();
+
+        assert_eq!(tree.leaf_count(), 5);
+        let mut uniq: Vec<_> = batch.iter().map(|o| o.leaf_hash()).collect();
+        uniq.sort_unstable();
+        uniq.dedup();
+        assert_eq!(uniq.len(), 3, "A,A,B,B,C -> 3 uniq emir (2 duplicate)");
+        assert_eq!(batch.len() - uniq.len(), 2, "duplicate sayisi 2");
+
+        // Duplicate'ler disinda hepsi kanitlanabilir (agac tutarli)
+        for i in 0..batch.len() {
+            assert!(
+                verify(&batch[i].leaf_hash(), &tree.prove(i).unwrap(), &tree.root()),
+                "yaprak {i} kanitlanmali (duplicate'ler dahil)"
+            );
+        }
+    }
 }
