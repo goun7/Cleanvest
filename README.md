@@ -174,6 +174,30 @@ Kök **byte-byte özdeştir**. Çalıştırma: `bash scripts/proof_demo.sh`.
 ve üç bağımsız uygulama tarafından kanıtlanır**" denir. "Para istismar
 edilemez" veya "kanıt her şeyi kapsar" DENMEZ.
 
+### Akademik zemin (2026)
+
+Bu tasarımın yerini literatür netleştiriyor; iki güncel çalışma hem
+mimarinin biçimini doğruluyor hem yukarıdaki dürüst sınırların *nerede*
+kalıcı olduğunu gösteriyor:
+
+- Mancino & Pennella, *"A Systematization of Knowledge on DeFi Vaults:
+  Architectures, Curation Mechanisms, and Strategy Design"*
+  ([arXiv:2610.01300](https://arxiv.org/abs/2610.01300), Eki 2026) —
+  havuz mimarilerini ve varlık-share muhasebesini sınıflandırır; ERC-4626
+  paylaşma/yuvarlama riskleri ve oracle bağımlılığı, yukarıdaki "PoR/PoL
+  DEĞİLDİR" sınırının neden **tasarım hatası değil yapısal** olduğunu
+  gösterir.
+- Xiong, Liu & Li, *"A Lifecycle-Oriented Detection and Defense Framework
+  for Price Manipulation Attacks in DeFi"*
+  ([arXiv:2608.15518](https://arxiv.org/abs/2608.15518), Ağu 2026) —
+  oracle fiyat manipülasyonu için yaşam-döngüsü tabanlı tespit; bu,
+  `ManipulationDetector`'ın ve "tespit **koddan yoktur**" itirafının
+  (madde 5) yerine geçebilecek somut yöntemleri tanımlar.
+
+İkisi de yukarıdaki iddiaları **zayıflatmaz** — sınırların hangilerinin
+yol haritası (kodlanabilir), hangilerinin yapısal (kodlanamaz) olduğunu
+ayırır.
+
 ## Sözleşmeler
 
 | Sözleşme | Açıklama | Test |
