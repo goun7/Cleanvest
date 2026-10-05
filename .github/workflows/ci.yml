@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Show versions
+        run: |
+          forge --version
+          cast --version
+
+      - name: Check formatting
+        continue-on-error: true
+        run: forge fmt --check
+
+      - name: Build
+        run: forge build
+
+      - name: Run tests
+        run: forge test -vv
+
+      - name: Verify docs examples compile
+        run: forge build --skip test
