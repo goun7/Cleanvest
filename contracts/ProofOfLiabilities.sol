@@ -99,10 +99,14 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
     ///              gereksinimini zincir-üstünde KANITLAMAZ.
     mapping(uint256 => bool) public epochSignatureEnforced;
 
-    event LiabilitiesPublished(uint256 indexed epoch, bytes32 indexed root, uint256 totalLiabilities, uint256 leafCount);
+    event LiabilitiesPublished(
+        uint256 indexed epoch, bytes32 indexed root, uint256 totalLiabilities, uint256 leafCount
+    );
     event PublisherAuthorized(address indexed publisher);
     event PublisherRevoked(address indexed publisher);
-    event LiabilityVerified(address indexed user, uint256 epoch, bytes32 indexed root, bool included);
+    event LiabilityVerified(
+        address indexed user, uint256 epoch, bytes32 indexed root, bool included
+    );
 
     // ============================================================
     // EIP-712 ALAN-AYRIMI (DOMAIN SEPARATION) — DÜRÜST SINIR KAPANIYOR
@@ -130,9 +134,8 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
     /// @dev LiabilityLeaf(address user,uint256 balance,uint256 epoch)
     ///      — alan sıralaması legacy Merkle yaprağı ile BİREBİR AYNI;
     ///      böylece ağaç algoritması ve kök hesabı DEĞİŞMEZ.
-    bytes32 private constant LIABILITY_LEAF_TYPEHASH = keccak256(
-        "LiabilityLeaf(address user,uint256 balance,uint256 epoch)"
-    );
+    bytes32 private constant LIABILITY_LEAF_TYPEHASH =
+        keccak256("LiabilityLeaf(address user,uint256 balance,uint256 epoch)");
 
     /// @notice secp256k1 eğri sırası n — EIP-2 low-s eşiğinin kaynağı.
     /// @dev EIP-2: s > n/2 olan imzalar MALLEABLE'dir. n tek sayı olduğundan
@@ -164,7 +167,10 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
     /// @param root Merkle kökü (kullanıcı imzalı yapraklardan üretilmiş)
     /// @param totalLiabilities Tüm yaprakların bakiye toplamı (1e18 = 1 USD)
     /// @param leafCount Yaprak sayısı (denetim için)
-    function publishLiabilities(bytes32 root, uint256 totalLiabilities, uint256 leafCount) external onlyPublisher {
+    function publishLiabilities(bytes32 root, uint256 totalLiabilities, uint256 leafCount)
+        external
+        onlyPublisher
+    {
         require(root != bytes32(0), "Kok sifir olamaz");
         require(leafCount > 0, "Bos agac kabul edilmez");
 
@@ -357,7 +363,9 @@ contract ProofOfLiabilities is Ownable, ReentrancyGuard {
         returns (bytes32)
     {
         return keccak256(
-            abi.encodePacked("\x19\x01", domainSeparator(), liabilityLeafStructHash(user, balance, epoch))
+            abi.encodePacked(
+                "\x19\x01", domainSeparator(), liabilityLeafStructHash(user, balance, epoch)
+            )
         );
     }
 

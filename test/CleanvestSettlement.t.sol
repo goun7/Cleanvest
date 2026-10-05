@@ -49,7 +49,7 @@ contract CleanvestSettlementTest is Test {
     /// @notice Emir tavani enforce edilir
     function testEnforceOrderSizeRejects() public view {
         settlement.enforceOrderSize(5_000 ether); // tam sinir OK
-        settlement.enforceOrderSize(1 ether);     // kucuk OK
+        settlement.enforceOrderSize(1 ether); // kucuk OK
     }
 
     /// @notice Tavani asan emir reddedilir
@@ -103,7 +103,12 @@ contract CleanvestSettlementTest is Test {
         });
 
         vm.prank(solver);
-        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
+        settlement.executeBatchSettlement(
+            batch,
+            _makeProof(
+                batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume
+            )
+        );
 
         assertTrue(settlement.isBatchSettled(BATCH_ID), "Batch kesinlesti");
     }
@@ -120,7 +125,12 @@ contract CleanvestSettlementTest is Test {
 
         vm.prank(solver);
         vm.expectRevert("orderCommitmentRoot ZORUNLU");
-        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
+        settlement.executeBatchSettlement(
+            batch,
+            _makeProof(
+                batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume
+            )
+        );
     }
 
     /// @notice Cift batch kesinlestirme reddedilir
@@ -134,10 +144,20 @@ contract CleanvestSettlementTest is Test {
         });
 
         vm.startPrank(solver);
-        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
+        settlement.executeBatchSettlement(
+            batch,
+            _makeProof(
+                batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume
+            )
+        );
 
         vm.expectRevert("Batch zaten kesinlesti");
-        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
+        settlement.executeBatchSettlement(
+            batch,
+            _makeProof(
+                batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume
+            )
+        );
         vm.stopPrank();
     }
 
@@ -153,7 +173,12 @@ contract CleanvestSettlementTest is Test {
 
         vm.prank(solver);
         vm.expectRevert("Takas fiyat 0 olamaz");
-        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
+        settlement.executeBatchSettlement(
+            batch,
+            _makeProof(
+                batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume
+            )
+        );
     }
 
     /// @notice Kayitsiz solver batch gonderemez
@@ -168,7 +193,12 @@ contract CleanvestSettlementTest is Test {
 
         vm.prank(address(0xBEEF));
         vm.expectRevert("Kayitli RFQ solver degil");
-        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
+        settlement.executeBatchSettlement(
+            batch,
+            _makeProof(
+                batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume
+            )
+        );
     }
 
     /// @notice Lift trigger: hacim > $250k -> tavani kaldirir
@@ -182,7 +212,12 @@ contract CleanvestSettlementTest is Test {
         });
 
         vm.prank(solver);
-        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
+        settlement.executeBatchSettlement(
+            batch,
+            _makeProof(
+                batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume
+            )
+        );
 
         assertTrue(settlement.sizeCapLifted(), "Hacim lift trigger tetikledi");
         assertEq(settlement.orderSizeCap(), type(uint256).max, "Tavan kaldirildi");
@@ -419,7 +454,9 @@ contract CleanvestSettlementTest is Test {
             totalVolume: 3000 ether,
             solverSignature: ""
         });
-        bytes memory batchProof = _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume);
+        bytes memory batchProof = _makeProof(
+            batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume
+        );
 
         vm.prank(solver);
         settlement.executeBatchSettlement(batch, batchProof);

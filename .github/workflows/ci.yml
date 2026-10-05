@@ -25,7 +25,6 @@ jobs:
           cast --version
 
       - name: Check formatting
-        continue-on-error: true
         run: forge fmt --check
 
       - name: Build

@@ -35,18 +35,21 @@ contract AntiManipulationTest is Test {
             solverSignature: ""
         });
         bytes memory p = abi.encode(
-            keccak256(abi.encode(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume))
+            keccak256(
+                abi.encode(
+                    batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume
+                )
+            )
         );
         vm.prank(solver);
         settlement.executeBatchSettlement(batch, p);
     }
 
-    function _makeProof(
-        bytes32 batchId,
-        bytes32 root,
-        uint256 price,
-        uint256 volume
-    ) internal pure returns (bytes memory) {
+    function _makeProof(bytes32 batchId, bytes32 root, uint256 price, uint256 volume)
+        internal
+        pure
+        returns (bytes memory)
+    {
         return abi.encode(keccak256(abi.encode(batchId, root, price, volume)));
     }
 
@@ -170,7 +173,9 @@ contract AntiManipulationTest is Test {
         settlement.commitBatch(BATCH_ID, root, price, volume);
 
         // Commit kilitli: batch hen settle edilmedi ama commit kaydi var
-        assertTrue(settlement.verifyBatchCommit(BATCH_ID, root, price, volume), "commit batch ile uyumlu");
+        assertTrue(
+            settlement.verifyBatchCommit(BATCH_ID, root, price, volume), "commit batch ile uyumlu"
+        );
     }
 
     /// @notice Yanlis icerikli reveal REDDEDILIR (commit kilitli)
@@ -313,7 +318,8 @@ contract AntiManipulationTest is Test {
         _settleBatch(100_000 ether);
         {
             ManipulationDetector.TradePair[] memory pairs = new ManipulationDetector.TradePair[](1);
-            pairs[0] = ManipulationDetector.TradePair(address(0xA1), address(0xB1), 100_000 ether, 10);
+            pairs[0] =
+                ManipulationDetector.TradePair(address(0xA1), address(0xB1), 100_000 ether, 10);
             vm.prank(solver);
             settlement.reportBatchTrades(BATCH_ID, pairs, 100_000 ether);
             // volumePerTx = 10_000
@@ -330,7 +336,9 @@ contract AntiManipulationTest is Test {
                 solverSignature: ""
             });
             bytes memory p = abi.encode(
-                keccak256(abi.encode(b.batchId, b.orderCommitmentRoot, b.clearingPrice, b.totalVolume))
+                keccak256(
+                    abi.encode(b.batchId, b.orderCommitmentRoot, b.clearingPrice, b.totalVolume)
+                )
             );
             vm.prank(solver);
             settlement.executeBatchSettlement(b, p);
@@ -338,7 +346,8 @@ contract AntiManipulationTest is Test {
 
         ManipulationDetector.TradePair[] memory pairs2 = new ManipulationDetector.TradePair[](1);
         // 100_000 hacim / 10_000 islem = 10 per tx (onceki 10_000 idi -> 1000x dusus)
-        pairs2[0] = ManipulationDetector.TradePair(address(0xA1), address(0xB1), 100_000 ether, 10_000);
+        pairs2[0] =
+            ManipulationDetector.TradePair(address(0xA1), address(0xB1), 100_000 ether, 10_000);
 
         vm.prank(solver);
         uint256 score = settlement.reportBatchTrades(batch2, pairs2, 100_000 ether);
@@ -355,7 +364,8 @@ contract AntiManipulationTest is Test {
         _settleBatch(100_000 ether);
         {
             ManipulationDetector.TradePair[] memory pairs0 = new ManipulationDetector.TradePair[](1);
-            pairs0[0] = ManipulationDetector.TradePair(address(0xA1), address(0xB1), 100_000 ether, 10);
+            pairs0[0] =
+                ManipulationDetector.TradePair(address(0xA1), address(0xB1), 100_000 ether, 10);
             vm.prank(solver);
             settlement.reportBatchTrades(BATCH_ID, pairs0, 100_000 ether);
         }
@@ -371,7 +381,9 @@ contract AntiManipulationTest is Test {
                 solverSignature: ""
             });
             bytes memory p = abi.encode(
-                keccak256(abi.encode(b.batchId, b.orderCommitmentRoot, b.clearingPrice, b.totalVolume))
+                keccak256(
+                    abi.encode(b.batchId, b.orderCommitmentRoot, b.clearingPrice, b.totalVolume)
+                )
             );
             vm.prank(solver);
             settlement.executeBatchSettlement(b, p);
@@ -384,7 +396,8 @@ contract AntiManipulationTest is Test {
 
         ManipulationDetector.TradePair[] memory pairs = new ManipulationDetector.TradePair[](2);
         // 70% pay -> round-trip; count 10_000 -> volumePerTx ~10 ether (baseline 3_000 ether) -> dusus
-        pairs[0] = ManipulationDetector.TradePair(address(0xA1), address(0xB1), 70_000 ether, 10_000);
+        pairs[0] =
+            ManipulationDetector.TradePair(address(0xA1), address(0xB1), 70_000 ether, 10_000);
         pairs[1] = ManipulationDetector.TradePair(address(0xA2), address(0xB2), 30_000 ether, 1);
 
         vm.prank(solver);
@@ -513,7 +526,8 @@ contract AntiManipulationTest is Test {
         ManipulationDetector.Baseline memory b;
         b.lastVolumePerTx = 1_000_000 ether;
 
-        ManipulationDetector.DetectionResult memory r = ManipulationDetector.analyze(pairs, 100_000 ether, b);
+        ManipulationDetector.DetectionResult memory r =
+            ManipulationDetector.analyze(pairs, 100_000 ether, b);
         // txCount 0 -> volumePerTx 0 -> dusus sinyali YOK (guvenli dusme)
         assertEq(r.volumePerTx, 0, "sifir bolme korumasi");
         assertFalse(r.volumePerTxDrop, "0 perTx ile dusus sinyali yanlis olmaz");
@@ -539,12 +553,14 @@ contract AntiManipulationTest is Test {
         pairs[0] = ManipulationDetector.TradePair(address(0xA11CE), address(0xB0B), 45_000 ether, 8);
         pairs[1] = ManipulationDetector.TradePair(address(0xB0B), address(0xA11CE), 45_000 ether, 8);
         // Seyrek gercel islemler (inandırıcılık icin)
-        pairs[2] = ManipulationDetector.TradePair(address(0xC0FFEE), address(0xD00D), 10_000 ether, 2);
+        pairs[2] =
+            ManipulationDetector.TradePair(address(0xC0FFEE), address(0xD00D), 10_000 ether, 2);
 
         vm.prank(solver);
         uint256 score = settlement.reportBatchTrades(BATCH_ID, pairs, 100_000 ether);
 
-        (uint256 rs,, bool volDrop, bool roundTrip, bool flooding) = settlement.lastDetectionSummary();
+        (uint256 rs,, bool volDrop, bool roundTrip, bool flooding) =
+            settlement.lastDetectionSummary();
 
         assertEq(score, 60, "wash: roundTrip(35) + flooding(25) = 60");
         assertEq(rs, 60, "kamusal ozet ayni skor");
@@ -579,7 +595,9 @@ contract AntiManipulationTest is Test {
                 solverSignature: ""
             });
             bytes memory p = abi.encode(
-                keccak256(abi.encode(b.batchId, b.orderCommitmentRoot, b.clearingPrice, b.totalVolume))
+                keccak256(
+                    abi.encode(b.batchId, b.orderCommitmentRoot, b.clearingPrice, b.totalVolume)
+                )
             );
             vm.prank(solver);
             settlement.executeBatchSettlement(b, p);
@@ -588,8 +606,9 @@ contract AntiManipulationTest is Test {
         ManipulationDetector.TradePair[] memory pairs = new ManipulationDetector.TradePair[](50);
         for (uint256 i = 0; i < 50; i++) {
             // her cift %2 pay, count 5 (flooding esigi >5'in altinda)
-            pairs[i] =
-                ManipulationDetector.TradePair(address(uint160(0x10000 + i)), address(uint160(0x20000 + i)), 2_000 ether, 5);
+            pairs[i] = ManipulationDetector.TradePair(
+                address(uint160(0x10000 + i)), address(uint160(0x20000 + i)), 2_000 ether, 5
+            );
         }
 
         vm.prank(solver);
@@ -614,21 +633,27 @@ contract AntiManipulationTest is Test {
         ManipulationDetector.TradePair[] memory pairs = new ManipulationDetector.TradePair[](3);
         pairs[0] = ManipulationDetector.TradePair(address(0xA11CE), address(0xB0B), 60_000 ether, 3);
         pairs[1] = ManipulationDetector.TradePair(address(0xB0B), address(0xA11CE), 30_000 ether, 3);
-        pairs[2] = ManipulationDetector.TradePair(address(0xC0FFEE), address(0xD00D), 10_000 ether, 3);
+        pairs[2] =
+            ManipulationDetector.TradePair(address(0xC0FFEE), address(0xD00D), 10_000 ether, 3);
 
         ManipulationDetector.Baseline memory b;
         b.lastVolumePerTx = 10_000 ether; // normal piyasa baseline
 
-        ManipulationDetector.DetectionResult memory r = ManipulationDetector.analyze(pairs, 100_000 ether, b);
+        ManipulationDetector.DetectionResult memory r =
+            ManipulationDetector.analyze(pairs, 100_000 ether, b);
 
         // Saldirganin basarili maskelemesi: volumePerTx ~11_111 ether, baseline 10_000 ether
-        assertGt(r.volumePerTx, 10_000 ether, "tahrir: per-tx hacim baseline'in uzerinde (maskeleme)");
+        assertGt(
+            r.volumePerTx, 10_000 ether, "tahrir: per-tx hacim baseline'in uzerinde (maskeleme)"
+        );
         assertFalse(r.volumePerTxDrop, "tahrir: hacim sinyali maskelendi (basarili)");
         assertFalse(r.pairFlooding, "tahrir: count 3 -> flooding esigi alti");
         // ...ama roundTrip yine de yakalar:
         assertTrue(r.roundTripDetected, "%60 pay -> roundTrip tahriri yakaladi");
         assertEq(r.riskScore, 35, "yalnizca roundTrip(35) skoru");
-        assertFalse(ManipulationDetector.isHighRisk(r), "35 < 70: inceleme sinyali, otomatik red DEGIL");
+        assertFalse(
+            ManipulationDetector.isHighRisk(r), "35 < 70: inceleme sinyali, otomatik red DEGIL"
+        );
     }
 }
 
@@ -669,13 +694,24 @@ contract MEVShieldTest is Test {
 
     function testCanRevealAgeGate() public pure {
         MEVShield.CommitRecord memory rec;
-        rec = MEVShield.markCommitted(rec, MEVShield.computeCommitment(bytes32(uint256(1)), bytes32(uint256(2)), 3, 4), 5, address(0));
+        rec = MEVShield.markCommitted(
+            rec,
+            MEVShield.computeCommitment(bytes32(uint256(1)), bytes32(uint256(2)), 3, 4),
+            5,
+            address(0)
+        );
 
         // Yetersiz yas: currentBatchSeq = 5 (< 5 + 1)
-        assertFalse(MEVShield.canReveal(rec, bytes32(uint256(1)), bytes32(uint256(2)), 3, 4, 5), "yas yetersiz");
+        assertFalse(
+            MEVShield.canReveal(rec, bytes32(uint256(1)), bytes32(uint256(2)), 3, 4, 5),
+            "yas yetersiz"
+        );
 
         // Yeterli yas: 6 >= 5 + 1
-        assertTrue(MEVShield.canReveal(rec, bytes32(uint256(1)), bytes32(uint256(2)), 3, 4, 6), "yas yeterli");
+        assertTrue(
+            MEVShield.canReveal(rec, bytes32(uint256(1)), bytes32(uint256(2)), 3, 4, 6),
+            "yas yeterli"
+        );
     }
 
     function testCanRevealWrongHash() public pure {
@@ -683,7 +719,10 @@ contract MEVShieldTest is Test {
         rec = MEVShield.markCommitted(rec, bytes32(uint256(0x11)), 0, address(0));
 
         // Farkli icerik -> hash uyumsuz
-        assertFalse(MEVShield.canReveal(rec, bytes32(uint256(1)), bytes32(uint256(2)), 3, 4, 100), "hash uyumsuz");
+        assertFalse(
+            MEVShield.canReveal(rec, bytes32(uint256(1)), bytes32(uint256(2)), 3, 4, 100),
+            "hash uyumsuz"
+        );
     }
 
     function testCanRevealRevealedState() public pure {
@@ -693,6 +732,9 @@ contract MEVShieldTest is Test {
         rec = MEVShield.markRevealed(rec);
 
         // Zaten reveal edilmis
-        assertFalse(MEVShield.canReveal(rec, bytes32(uint256(1)), bytes32(uint256(2)), 3, 4, 100), "revealed state");
+        assertFalse(
+            MEVShield.canReveal(rec, bytes32(uint256(1)), bytes32(uint256(2)), 3, 4, 100),
+            "revealed state"
+        );
     }
 }

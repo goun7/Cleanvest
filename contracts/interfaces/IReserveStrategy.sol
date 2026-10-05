@@ -8,18 +8,18 @@ pragma solidity ^0.8.28;
 interface IReserveStrategy {
     /// @notice Reserve kompozisyon kademesi.
     enum ReserveTier {
-        Tier0,      // TVL < $250k: %73 Aave / %12 idle / %15 Prime
-        Tier1,      // $250k-$12.5M: %40 OUSG / %33 Aave / %12 idle / %15 Prime
-        Tier2,      // >= $12.5M: %40 BUIDL / %33 Aave / %12 idle / %15 Prime
+        Tier0, // TVL < $250k: %73 Aave / %12 idle / %15 Prime
+        Tier1, // $250k-$12.5M: %40 OUSG / %33 Aave / %12 idle / %15 Prime
+        Tier2, // >= $12.5M: %40 BUIDL / %33 Aave / %12 idle / %15 Prime
         TierOptimize // OPTIMIZE: %40 OUSG / %42 Aave / %3 float / %15 Prime
     }
 
     /// @notice Bir kadememin hedef dagilimi (bps cinsinden, toplam 10000).
     struct Allocation {
-        uint16 aaveBps;      // Aave V3 USDC Base
-        uint16 rwaBps;       // OUSG (Tier1) veya BUIDL (Tier2), Tier0'da 0
-        uint16 primeBps;     // Aave Prime USDC
-        uint16 idleBps;      // Idle USDC (SAFE modda %12)
+        uint16 aaveBps; // Aave V3 USDC Base
+        uint16 rwaBps; // OUSG (Tier1) veya BUIDL (Tier2), Tier0'da 0
+        uint16 primeBps; // Aave Prime USDC
+        uint16 idleBps; // Idle USDC (SAFE modda %12)
     }
 
     /// @notice TVL'e gore aktif kademe.

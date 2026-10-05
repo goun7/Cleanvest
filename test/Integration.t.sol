@@ -18,7 +18,7 @@ import "../contracts/interfaces/IReserveStrategy.sol";
 contract IntegrationTest is Test {
     // --- Ana sozlesmeler ---
     CleanUSD public cUSD;
-    CleanFXVault public vault;      // asset = cUSD
+    CleanFXVault public vault; // asset = cUSD
     ReserveManager public reserve;
     CleanvestSettlement public settlement;
     ListingGate public gate;
@@ -180,7 +180,12 @@ contract IntegrationTest is Test {
         });
 
         vm.prank(solver);
-        settlement.executeBatchSettlement(batch, _makeProof(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume));
+        settlement.executeBatchSettlement(
+            batch,
+            _makeProof(
+                batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume
+            )
+        );
 
         assertTrue(settlement.isBatchSettled(batchId), "Batch kesinlesti");
 
@@ -214,9 +219,7 @@ contract IntegrationTest is Test {
 
         // CleanAudit audit: 85 skor -> Verified
         vm.startPrank(oracle);
-        gate.recordAuditResultForToken(
-            appId, projectToken, true, 85, 0, 0, 1, 2, 3, false
-        );
+        gate.recordAuditResultForToken(appId, projectToken, true, 85, 0, 0, 1, 2, 3, false);
 
         // PoV taahhudunu muhurla
         bytes32 povHash = keccak256("aegisforge-pov-v1-integration");
@@ -232,8 +235,7 @@ contract IntegrationTest is Test {
 
         // PoV bagimsiz dogrulama
         assertTrue(
-            gate.verifyPovCommitment(appId, povHash, block.timestamp),
-            "PoV taahhudu dogrulandi"
+            gate.verifyPovCommitment(appId, povHash, block.timestamp), "PoV taahhudu dogrulandi"
         );
 
         // Tier upgrade: Scan -> FuzzPatch (ileri yonlu)
@@ -300,18 +302,10 @@ contract IntegrationTest is Test {
         vm.stopPrank();
 
         // INVARIANT: cUSD geri dondu (cikis kilitlenmedi)
-        assertEq(
-            cUSD.balanceOf(alice),
-            cusdBefore,
-            "Full-stack cikis: cUSD geri donmeli"
-        );
+        assertEq(cUSD.balanceOf(alice), cusdBefore, "Full-stack cikis: cUSD geri donmeli");
 
         // INVARIANT: vault balance sifirlandi
-        assertEq(
-            vault.balanceOf(alice),
-            0,
-            "Cikis sonrasi scUSD sifir olmali"
-        );
+        assertEq(vault.balanceOf(alice), 0, "Cikis sonrasi scUSD sifir olmali");
     }
 
     /// @notice Tum fiyatlar seffaf (gizli degil)

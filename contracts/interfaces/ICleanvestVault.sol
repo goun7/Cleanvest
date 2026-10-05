@@ -33,7 +33,10 @@ interface ICleanvestVault {
     /// @dev Günlük arzın %10'una kadar anlık USDC; %10 üstü OUSG/BUIDL banka takası
     ///      için T+2 kuyruğu. Optimize modunda Aave utilization > %92 ise anlık çekimler
     ///      otomatik T+2 kuyruğuna düşer (devre-kesici).
-    function redemptionGate() external view returns (uint256 dailyInstantCapPct, uint256 settleDaysAboveCap);
+    function redemptionGate()
+        external
+        view
+        returns (uint256 dailyInstantCapPct, uint256 settleDaysAboveCap);
 
     /// @notice Slippage-korumalı depozito (ERC-4626 inflation attack kalkanı).
     /// @dev Klasik saldırı: saldırgan ilk depozitörün önüne geçer, 1 wei ile 1 pay

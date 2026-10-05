@@ -53,7 +53,11 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
     ///      _withdraw'ta sinirlanir.
     mapping(address => uint256) public queuedRedemptionAmount;
 
-    constructor(address asset) ERC4626(IERC20(asset)) ERC20("Clean FX Yield", "scUSD") Ownable(msg.sender) {}
+    constructor(address asset)
+        ERC4626(IERC20(asset))
+        ERC20("Clean FX Yield", "scUSD")
+        Ownable(msg.sender)
+    {}
 
     /// @inheritdoc ICleanvestVault
     /// @notice TVL'e gore aktif kademeyi dondurur.
@@ -106,7 +110,11 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
     }
 
     /// @inheritdoc ICleanvestVault
-    function redemptionGate() external pure returns (uint256 dailyInstantCapPct, uint256 settleDaysAboveCap) {
+    function redemptionGate()
+        external
+        pure
+        returns (uint256 dailyInstantCapPct, uint256 settleDaysAboveCap)
+    {
         return (DAILY_INSTANT_CAP_BPS, T2_SETTLE_SECONDS);
     }
 
@@ -114,7 +122,9 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
     /// @dev DERS: feed 0 iken ACILAMAZ (master sartname v1.2 kilidi).
     function setOptimizeMode(bool enabled) external onlyOwner {
         if (enabled) {
-            require(aaveUtilizationFeed != address(0), "Optimize: Aave utilization feed bagli degil");
+            require(
+                aaveUtilizationFeed != address(0), "Optimize: Aave utilization feed bagli degil"
+            );
         }
         optimizeModeEnabled = enabled;
     }
@@ -148,15 +158,18 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
     /// @dev Kotanin altinda: anlik. Uzerinde: once requestRedemption() ile
     ///      kuyruga girilir (ayri transaction - revert state'i geri alir),
     ///      2 gun sonra withdraw() basarili olur.
-    function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
-        internal
-        override
-    {
+    function _withdraw(
+        address caller,
+        address receiver,
+        address owner,
+        uint256 assets,
+        uint256 shares
+    ) internal override {
         uint256 today = block.timestamp / 1 days;
         uint256 usedToday = dailyRedemptions[today];
 
-        bool instantAllowed = assets <= _dailyRemainingInstant(usedToday)
-            && _instantRedemptionAllowed();
+        bool instantAllowed =
+            assets <= _dailyRemainingInstant(usedToday) && _instantRedemptionAllowed();
 
         // GUVENLIK (kuyruk-onceligi): kullanicinin kuyrukta bekleyen miktari
         // varsa anlik cekim ONCE kuyruktan duskurulur. Aksi halde kullanici
@@ -171,10 +184,7 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
             require(block.timestamp >= unlock, "T+2 bekleme suresi dolmadi");
             // GUVENLIK: kuyruga alinan miktari asma. Aksi halde kullanici
             // $1 kuyruga girip $1M cekebilirdi (kota atlama).
-            require(
-                assets <= queuedRedemptionAmount[owner],
-                "Kuyruk miktarindan fazlasi cekilemez"
-            );
+            require(assets <= queuedRedemptionAmount[owner], "Kuyruk miktarindan fazlasi cekilemez");
             // Cekilen miktari duskur; birden fazla cekiste ayni sinic gecer
             queuedRedemptionAmount[owner] -= assets;
             // Tamamen cekildiyse kuyruk kaydini temizle
@@ -228,8 +238,8 @@ contract CleanFXVault is ICleanvestVault, ERC4626, Ownable, ReentrancyGuard {
         uint256 today = block.timestamp / 1 days;
         uint256 usedToday = dailyRedemptions[today];
 
-        bool instantAllowed = assets <= _dailyRemainingInstant(usedToday)
-            && _instantRedemptionAllowed();
+        bool instantAllowed =
+            assets <= _dailyRemainingInstant(usedToday) && _instantRedemptionAllowed();
 
         if (!instantAllowed) {
             queuedRedemptionUnlock[msg.sender] = block.timestamp + T2_SETTLE_SECONDS;

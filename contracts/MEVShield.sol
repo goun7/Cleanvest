@@ -65,7 +65,10 @@ library MEVShield {
         uint256 currentBatchSeq
     ) internal pure returns (bool) {
         if (rec.state != CommitState.Committed) return false;
-        if (rec.commitmentHash != computeCommitment(batchId, orderCommitmentRoot, clearingPrice, totalVolume)) {
+        if (
+            rec.commitmentHash
+                != computeCommitment(batchId, orderCommitmentRoot, clearingPrice, totalVolume)
+        ) {
             return false;
         }
         // Yaş kontrolü: en az MIN_COMMIT_AGE batch geçmeli
@@ -74,11 +77,12 @@ library MEVShield {
     }
 
     /// @notice Commit sonrası state güncellemesi.
-    function markCommitted(CommitRecord memory rec, bytes32 commitmentHash, uint256 batchSeq, address committer)
-        internal
-        pure
-        returns (CommitRecord memory)
-    {
+    function markCommitted(
+        CommitRecord memory rec,
+        bytes32 commitmentHash,
+        uint256 batchSeq,
+        address committer
+    ) internal pure returns (CommitRecord memory) {
         rec.state = CommitState.Committed;
         rec.commitmentHash = commitmentHash;
         rec.committedAtBatch = batchSeq;

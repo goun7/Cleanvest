@@ -23,7 +23,10 @@ interface ICleanvestSettlement {
     /// @dev P_best <= P_oracle * (1 + eps_bound(dQ)) olmalıdır. eps_bound boyut-farklıdır:
     ///      eps_bound(dQ) = eps0 + kappa * (dQ / L_onchain), eps0 = 0.15%.
     ///      Düz 0.15% KULLANILMAZ — kendi büyük emirlerimizi kronik reddeder.
-    function antiCollusionBound(uint256 deltaQ, uint256 liquidityOnchain) external view returns (uint256 epsBound);
+    function antiCollusionBound(uint256 deltaQ, uint256 liquidityOnchain)
+        external
+        view
+        returns (uint256 epsBound);
 
     /// @notice Soğuk başlangıç emir tavanı (Faz 3 açılışında $5.000/emir).
     /// @dev Tahta likiditesi arttıkça tavan otomatik kalkar (lift trigger).
@@ -38,7 +41,10 @@ interface ICleanvestSettlement {
     /// @param cumulativeVolume Kullanıcının toplam hacmi (1e18 = 1 USD)
     /// @param isMaker İşlem maker mı (limit emir) yoksa taker mı
     /// @return feeBps Komisyon oranı (1 bps = %0.01)
-    function tradingFeeBps(uint256 cumulativeVolume, bool isMaker) external view returns (uint256 feeBps);
+    function tradingFeeBps(uint256 cumulativeVolume, bool isMaker)
+        external
+        view
+        returns (uint256 feeBps);
 
     /// @notice Protokol komisyon cüzdanı (fee'ler buraya toplanır).
     function protocolFeeRecipient() external view returns (address);

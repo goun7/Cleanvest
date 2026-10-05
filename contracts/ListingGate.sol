@@ -55,9 +55,9 @@ contract ListingGate is IListingGate, Ownable {
     ///      zincirde okunabilir; gizli degildir. Gizli olan yalnizca PoV
     ///      payload ve tuz'dur.
     struct CleanScoreRecord {
-        uint8 score;            // 0-100
-        bytes1 grade;           // harf notu (A/B/C)
-        uint64 computedAt;      // motor tarafindan hesaplanma timestamp'i
+        uint8 score; // 0-100
+        bytes1 grade; // harf notu (A/B/C)
+        uint64 computedAt; // motor tarafindan hesaplanma timestamp'i
         uint16 findingsCritical;
         uint16 findingsHigh;
         uint16 findingsMedium;
@@ -80,11 +80,11 @@ contract ListingGate is IListingGate, Ownable {
     ///      yukseltme (downgrade YOK). Fiyatlar docs/40 H5 Fiyatlandirma Karari
     ///      (2026-09-27) ile guncellendi: insan triyaj opsiyonel kademeye ayrildi.
     enum AuditTier {
-        None,        // basvuru yapildi, tarama yok
-        Scan,        // $199 - 4 kademe huni + PoV_Hash raporu (otomatik)
-        ScanHuman,   // $399 - Scan + INSAN triyaj (opsiyonel, docs/04:90)
-        FuzzPatch,   // $990 - Scan + 10k metamorfik fuzz + remediation diff
-        Priority     // $4.900 - tumu + formal assurance + 30-gun SLA + oncelik
+        None, // basvuru yapildi, tarama yok
+        Scan, // $199 - 4 kademe huni + PoV_Hash raporu (otomatik)
+        ScanHuman, // $399 - Scan + INSAN triyaj (opsiyonel, docs/04:90)
+        FuzzPatch, // $990 - Scan + 10k metamorfik fuzz + remediation diff
+        Priority // $4.900 - tumu + formal assurance + 30-gun SLA + oncelik
     }
 
     /// @notice Token => mevcut denetim kademesi.
@@ -114,10 +114,16 @@ contract ListingGate is IListingGate, Ownable {
     event TierUpgraded(address indexed projectToken, AuditTier fromTier, AuditTier toTier);
     event CleanScorePublished(address indexed projectToken, uint8 score, bytes1 grade);
 
-    event ApplicationSubmitted(bytes32 indexed applicationId, address indexed projectToken, string projectName);
-    event AuditRecorded(bytes32 indexed applicationId, address indexed projectToken, bool passed, uint256 cleanScore);
+    event ApplicationSubmitted(
+        bytes32 indexed applicationId, address indexed projectToken, string projectName
+    );
+    event AuditRecorded(
+        bytes32 indexed applicationId, address indexed projectToken, bool passed, uint256 cleanScore
+    );
     event OracleUpdated(address indexed oldOracle, address indexed newOracle);
-    event PovCommitmentSealed(bytes32 indexed applicationId, bytes32 indexed povHash, uint256 timestamp);
+    event PovCommitmentSealed(
+        bytes32 indexed applicationId, bytes32 indexed povHash, uint256 timestamp
+    );
 
     constructor() Ownable(msg.sender) {}
 
@@ -131,8 +137,11 @@ contract ListingGate is IListingGate, Ownable {
         external
         returns (bytes32 applicationId)
     {
-        require(listingStatus[projectToken] == ListingStatus.None || listingStatus[projectToken] == ListingStatus.Rejected,
-            "Zaten basvuru var");
+        require(
+            listingStatus[projectToken] == ListingStatus.None
+                || listingStatus[projectToken] == ListingStatus.Rejected,
+            "Zaten basvuru var"
+        );
         require(projectToken != address(0), "Gecersiz token adresi");
 
         applicationCount++;
@@ -147,7 +156,10 @@ contract ListingGate is IListingGate, Ownable {
 
     /// @inheritdoc IListingGate
     /// @dev Yalnizca CleanAudit oracle cagirabilir - merkeziyetsiz доверие.
-    function recordAuditResult(bytes32 applicationId, bool passed, uint256 cleanScore) external onlyCleanAudit {
+    function recordAuditResult(bytes32 applicationId, bool passed, uint256 cleanScore)
+        external
+        onlyCleanAudit
+    {
         applicationScore[applicationId] = cleanScore;
 
         // Token adresini applicationToken eslemesinden coz (TEKNIK BORC KAPANDI:
@@ -247,9 +259,9 @@ contract ListingGate is IListingGate, Ownable {
     /// @notice Harf notu hesapla - CleanAudit grade_for ile ayni bantlar.
     /// @dev Kasitli muhafazakar: AAA kazanmak zordur (cekirdek yorumundan alinti).
     function _gradeFor(uint256 score) internal pure returns (bytes1) {
-        if (score >= 95) return bytes1("S");  // nadir, muhafazakar
+        if (score >= 95) return bytes1("S"); // nadir, muhafazakar
         if (score >= 85) return bytes1("A");
-        if (score >= 70) return bytes1("B");  // Verified esigi
+        if (score >= 70) return bytes1("B"); // Verified esigi
         if (score >= 50) return bytes1("C");
         return bytes1("D");
     }
@@ -313,11 +325,11 @@ contract ListingGate is IListingGate, Ownable {
     ///      SHA256("aegisforge-pov-v1" || canonical || target_hash || salt || ts)
     ///      Solidity'de SHA-256 icin hash // preimage kontrolu yapariz (Rust tarafinda uretilen
     ///      hash ile karsilastirir). Tuz gizli oldugu icin alici onu almadan eslestiremez.
-    function verifyPovCommitment(
-        bytes32 applicationId,
-        bytes32 povHash,
-        uint256 timestamp
-    ) external view returns (bool valid) {
+    function verifyPovCommitment(bytes32 applicationId, bytes32 povHash, uint256 timestamp)
+        external
+        view
+        returns (bool valid)
+    {
         bytes32 stored = povCommitmentHash[applicationId];
         if (stored == bytes32(0)) return false;
         return stored == povHash && commitmentTimestamp[applicationId] == timestamp;

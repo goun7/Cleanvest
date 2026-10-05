@@ -31,7 +31,8 @@ contract UniswapProxyTest is Test {
         vm.startPrank(owner);
         tokenIn.approve(address(proxy), 1_000 ether);
 
-        uint256 out = proxy.routeResidual(address(tokenIn), address(tokenOut), 1_000 ether, 950 ether, 3000);
+        uint256 out =
+            proxy.routeResidual(address(tokenIn), address(tokenOut), 1_000 ether, 950 ether, 3000);
         vm.stopPrank();
 
         assertGt(out, 0, "Cikis miktari pozitif");
@@ -159,6 +160,7 @@ contract MockToken is ERC20 {
         _mint(to, amount);
     }
 }
+
 /// @notice Test router: IUniswapV3Router arayuzunu gercekten implement eder.
 /// @dev Legit mock - arayuz sozlesmesine uyar, sahte deger_atmaz.
 contract MockV3Router is IUniswapV3Router {

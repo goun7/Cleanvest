@@ -28,7 +28,13 @@ contract UniswapProxy is Ownable, ReentrancyGuard {
     ///         ama UI'da KIRMIZI uyarı gosterilir (seffaf).
     uint256 public constant SLIPPAGE_WARN_BPS = 300;
 
-    event VolumeRouted(address indexed tokenIn, address indexed tokenOut, uint256 amountIn, uint256 amountOut, uint256 slippageBps);
+    event VolumeRouted(
+        address indexed tokenIn,
+        address indexed tokenOut,
+        uint256 amountIn,
+        uint256 amountOut,
+        uint256 slippageBps
+    );
     event RouterUpdated(address indexed router);
 
     constructor(address _swapRouter) Ownable(msg.sender) {
@@ -61,8 +67,8 @@ contract UniswapProxy is Ownable, ReentrancyGuard {
 
         // GERCEK Uniswap V3 swap (mock DEGIL)
         IUniswapV3Router router = IUniswapV3Router(swapRouter);
-        IUniswapV3Router.ExactInputSingleParams memory params = IUniswapV3Router
-            .ExactInputSingleParams({
+        IUniswapV3Router.ExactInputSingleParams memory params =
+            IUniswapV3Router.ExactInputSingleParams({
                 tokenIn: tokenIn,
                 tokenOut: tokenOut,
                 fee: poolFee,
@@ -79,9 +85,8 @@ contract UniswapProxy is Ownable, ReentrancyGuard {
         // Kaymayi olc ve raporla (UI'da gosterilir - GIZLENMEZ)
         // Math.mulDiv: 512-bit ara deger - amountIn = type().max olsa bile
         // (amountIn - amountOut) * 10000 tasmaz (overflow korumasi)
-        uint256 slippageBps = amountIn > amountOut
-            ? Math.mulDiv(amountIn - amountOut, 10000, amountIn)
-            : 0;
+        uint256 slippageBps =
+            amountIn > amountOut ? Math.mulDiv(amountIn - amountOut, 10000, amountIn) : 0;
 
         // CEI: once transfer, sonra state (reentrancy en iyi pratik)
         IERC20(tokenOut).transfer(msg.sender, amountOut);

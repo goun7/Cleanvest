@@ -59,8 +59,7 @@ contract SignedMerkleTest is Test {
         sig[10] = bytes1(uint8(uint8(sig[10]) ^ 0xff));
 
         assertFalse(
-            settlement.verifyLeafSignature(leaf, sig, ANVIL_ADDR),
-            "YANLIS imza REDDEDILMELI"
+            settlement.verifyLeafSignature(leaf, sig, ANVIL_ADDR), "YANLIS imza REDDEDILMELI"
         );
     }
 
@@ -71,8 +70,7 @@ contract SignedMerkleTest is Test {
         address impostor = address(0x1234);
 
         assertFalse(
-            settlement.verifyLeafSignature(leaf, sig, impostor),
-            "YANLIS imzalayan REDDEDILMELI"
+            settlement.verifyLeafSignature(leaf, sig, impostor), "YANLIS imzalayan REDDEDILMELI"
         );
     }
 
@@ -90,8 +88,7 @@ contract SignedMerkleTest is Test {
         bytes32 leaf = settlement.leafHash(1000, ANVIL_ADDR, 1);
         bytes memory sig = _signLeaf(leaf);
         assertFalse(
-            settlement.verifyLeafSignature(leaf, sig, address(0)),
-            "Sifir adres reddedilmeli"
+            settlement.verifyLeafSignature(leaf, sig, address(0)), "Sifir adres reddedilmeli"
         );
     }
 
@@ -165,7 +162,8 @@ contract SignedMerkleTest is Test {
     function testRustSignatureVerifiesOnChain() public {
         // Rust ile uretilmis yaprak + imza (cross_check_signed.rs ciktisi)
         bytes32 leaf = 0x93e6b7c07a8739f4fb863563972c03adbb6d6b44f5f7822dd6749699b937baff;
-        bytes memory rustSig = hex"ab122946e29666da8779e79975439f58e30f4335ed4df74df35057e41fae7ce602c73cd6449ee052cfc2bc5ff37958f003b6c88b5610f2b02934bbca12a216bd1c";
+        bytes memory rustSig =
+            hex"ab122946e29666da8779e79975439f58e30f4335ed4df74df35057e41fae7ce602c73cd6449ee052cfc2bc5ff37958f003b6c88b5610f2b02934bbca12a216bd1c";
         address recovered = settlement.recoverSigner(leaf, rustSig);
         assertEq(recovered, ANVIL_ADDR, "Rust imzasi Solidity'de AYNI adresi vermeli");
     }
@@ -174,7 +172,8 @@ contract SignedMerkleTest is Test {
     function testRustSignedOrderFullChainOnChain() public {
         // Rust cross_check_signed.rs ciktisi (ayni emir: amount=1000, ANVIL_ADDR, nonce=1)
         bytes32 leaf = 0x93e6b7c07a8739f4fb863563972c03adbb6d6b44f5f7822dd6749699b937baff;
-        bytes memory rustSig = hex"ab122946e29666da8779e79975439f58e30f4335ed4df74df35057e41fae7ce602c73cd6449ee052cfc2bc5ff37958f003b6c88b5610f2b02934bbca12a216bd1c";
+        bytes memory rustSig =
+            hex"ab122946e29666da8779e79975439f58e30f4335ed4df74df35057e41fae7ce602c73cd6449ee052cfc2bc5ff37958f003b6c88b5610f2b02934bbca12a216bd1c";
         // Tek yaprakli agac: root = leaf
         bytes32 root = leaf;
 
@@ -201,18 +200,21 @@ contract SignedMerkleTest is Test {
 
         // Her yaprak: imza + tam Merkle kaniti
         assertTrue(
-            settlement.verifySignedOrder(l0, _signLeaf(l0), ANVIL_ADDR,
-                abi.encodePacked(l1, uint8(1), p1, uint8(1)), root),
+            settlement.verifySignedOrder(
+                l0, _signLeaf(l0), ANVIL_ADDR, abi.encodePacked(l1, uint8(1), p1, uint8(1)), root
+            ),
             "l0 tam kanit gecerli"
         );
         assertTrue(
-            settlement.verifySignedOrder(l1, _signLeaf(l1), ANVIL_ADDR,
-                abi.encodePacked(l0, uint8(0), p1, uint8(1)), root),
+            settlement.verifySignedOrder(
+                l1, _signLeaf(l1), ANVIL_ADDR, abi.encodePacked(l0, uint8(0), p1, uint8(1)), root
+            ),
             "l1 tam kanit gecerli"
         );
         assertTrue(
-            settlement.verifySignedOrder(l2, _signLeaf(l2), ANVIL_ADDR,
-                abi.encodePacked(l2, uint8(1), p0, uint8(0)), root),
+            settlement.verifySignedOrder(
+                l2, _signLeaf(l2), ANVIL_ADDR, abi.encodePacked(l2, uint8(1), p0, uint8(0)), root
+            ),
             "l2 tam kanit gecerli"
         );
     }
@@ -247,11 +249,13 @@ contract SignedMerkleTest is Test {
     function testCliProofBytesVerifyOnChain() public {
         // Rust verify_cli ile dogrulanmis gercek kanit (proof.json ciktisi)
         bytes32 leaf = 0xf9d9fd57e8c71d4c4af6bc9669b4ad74180dc9b61e2868e548b22bb4a2c0aca3;
-        bytes memory sig = hex"d081bb6fd0f9d54e6cf94141719cbdaa62629f9e46376067febc079c74d315cf54e672a13513c7a05c07e4b7381bad93a713160eed15c6b16b92025b56b6a5df1b";
+        bytes memory sig =
+            hex"d081bb6fd0f9d54e6cf94141719cbdaa62629f9e46376067febc079c74d315cf54e672a13513c7a05c07e4b7381bad93a713160eed15c6b16b92025b56b6a5df1b";
         // proof_bytes: sibling(32) + konum(1) basina 33 bayt, 2 seviye
         //   seviye 1: sibling = l0 (1000/1), konum 0x00 (solda)
         //   seviye 2: sibling = hash(l2,l2), konum 0x01 (sagda)
-        bytes memory proofBytes = hex"93e6b7c07a8739f4fb863563972c03adbb6d6b44f5f7822dd6749699b937baff004f0d212823590b6b90317e7128f5bfc5aa5a727b0e925aaf215d7f25a8519c5e01";
+        bytes memory proofBytes =
+            hex"93e6b7c07a8739f4fb863563972c03adbb6d6b44f5f7822dd6749699b937baff004f0d212823590b6b90317e7128f5bfc5aa5a727b0e925aaf215d7f25a8519c5e01";
         bytes32 root = 0x5c040168e9a86021da45500a7a60a06ba8619e5ddd0841f23a179b3f8888127d;
 
         // 1. Imza (cast ile uretilen) Solidity'de gecerli
@@ -271,7 +275,8 @@ contract SignedMerkleTest is Test {
     function testCliProofBytesWrongPositionRejected() public {
         bytes32 leaf = 0xf9d9fd57e8c71d4c4af6bc9669b4ad74180dc9b61e2868e548b22bb4a2c0aca3;
         // Ayni sibling'ler ama konum bitleri TERS (0x00 -> 0x01, 0x01 -> 0x00)
-        bytes memory badProof = hex"93e6b7c07a8739f4fb863563972c03adbb6d6b44f5f7822dd6749699b937baff014f0d212823590b6b90317e7128f5bfc5aa5a727b0e925aaf215d7f25a8519c5e00";
+        bytes memory badProof =
+            hex"93e6b7c07a8739f4fb863563972c03adbb6d6b44f5f7822dd6749699b937baff014f0d212823590b6b90317e7128f5bfc5aa5a727b0e925aaf215d7f25a8519c5e00";
         bytes32 root = 0x5c040168e9a86021da45500a7a60a06ba8619e5ddd0841f23a179b3f8888127d;
         assertFalse(
             settlement.verifyMerkleProof(leaf, badProof, root),

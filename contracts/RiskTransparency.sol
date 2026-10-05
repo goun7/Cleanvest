@@ -22,14 +22,14 @@ library RiskTransparency {
     /// @dev Tum alanlar BPS cinsinden (1e18 = %100 DEGIL, 10000 = %100).
     ///      Bu, UI'nin ve 3. parti analistlerin tek noktadan okumasini saglar.
     struct RiskProfile {
-        uint256 juniorBufferBps;    // juniorReserve / TVL (makale: "capital buffer")
+        uint256 juniorBufferBps; // juniorReserve / TVL (makale: "capital buffer")
         uint256 juniorBufferMinBps; // SABIT %3 (JUNIOR_MIN_BPS)
-        bool juniorBufferAdequate;  // makale: "existing capital buffers"
+        bool juniorBufferAdequate; // makale: "existing capital buffers"
         uint256 dailyInstantCapBps; // %10 (makale: likidite aciklamasi)
-        uint256 t2SettleSeconds;    // T+2 (makale: "tail coverage" zamani)
+        uint256 t2SettleSeconds; // T+2 (makale: "tail coverage" zamani)
         uint256 utilizationCircuitBreakerBps; // %92 esigi
-        bool optimizeModeEnabled;   // risk ayarlamasi acik mi
-        uint256 operationalRiskBps;  // makale Lending VaR99.9 = %18 (ORNEKLEM, iddia DEGIL)
+        bool optimizeModeEnabled; // risk ayarlamasi acik mi
+        uint256 operationalRiskBps; // makale Lending VaR99.9 = %18 (ORNEKLEM, iddia DEGIL)
     }
 
     /// @notice Standart risk profilini olusturur (view-only, yeni state YOK).
@@ -67,12 +67,20 @@ library RiskTransparency {
     ///         entegrasyon ve UI icin). String uretimi view-only'dir.
     function describe(RiskProfile memory p) internal pure returns (string memory) {
         // Kisa ozet: "junior %3.0/%3.0 | anlik %10 | T+2 | CB %92"
-        return string(abi.encodePacked(
-            "junior %", _pct(p.juniorBufferBps), " / %", _pct(p.juniorBufferMinBps),
-            " | anlik %", _pct(p.dailyInstantCapBps),
-            " | T+", _days(p.t2SettleSeconds),
-            " | CB %", _pct(p.utilizationCircuitBreakerBps)
-        ));
+        return string(
+            abi.encodePacked(
+                "junior %",
+                _pct(p.juniorBufferBps),
+                " / %",
+                _pct(p.juniorBufferMinBps),
+                " | anlik %",
+                _pct(p.dailyInstantCapBps),
+                " | T+",
+                _days(p.t2SettleSeconds),
+                " | CB %",
+                _pct(p.utilizationCircuitBreakerBps)
+            )
+        );
     }
 
     /// @notice BPS -> "3.0" format (10000 = %100)
@@ -93,10 +101,17 @@ library RiskTransparency {
         if (n == 0) return "0";
         uint256 j = n;
         uint256 len;
-        while (j != 0) { len++; j /= 10; }
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
         bytes memory b = new bytes(len);
         uint256 k = len;
-        while (n != 0) { k = k - 1; b[k] = bytes1(uint8(48 + n % 10)); n /= 10; }
+        while (n != 0) {
+            k = k - 1;
+            b[k] = bytes1(uint8(48 + n % 10));
+            n /= 10;
+        }
         return string(b);
     }
 }

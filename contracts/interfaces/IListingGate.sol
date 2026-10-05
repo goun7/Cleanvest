@@ -16,14 +16,19 @@ interface IListingGate {
 
     /// @notice Bir proje icin listeleme basvurusu yapar.
     /// @dev CleanAudit denetimini tetikler. Basvuru UCRETSIZDIR (haraç YOK).
-    function applyForListing(address projectToken, string calldata projectName) external returns (bytes32 applicationId);
+    function applyForListing(address projectToken, string calldata projectName)
+        external
+        returns (bytes32 applicationId);
 
     /// @notice CleanAudit motoru tarafindan cagrilir - denetim sonucunu kaydeder.
     /// @dev Yalnizca yetkili CleanAudit oracle cagirabilir.
     function recordAuditResult(bytes32 applicationId, bool passed, uint256 cleanScore) external;
 
     /// @notice Proje listeleme durumunu sorgular (kamusal, ucretsiz).
-    function getListingStatus(address projectToken) external view returns (ListingStatus status, uint256 cleanScore);
+    function getListingStatus(address projectToken)
+        external
+        view
+        returns (ListingStatus status, uint256 cleanScore);
 
     /// @notice Verified rozet gecerliligini kontrol eder.
     function isVerified(address projectToken) external view returns (bool);
@@ -36,7 +41,10 @@ interface IListingGate {
     /// @return scanHuman Scan + insan triyaj kademesi ($399)
     /// @return fuzzPatch FuzzPatch kademesi ($990)
     /// @return priority Priority kademesi ($4.900)
-    function getPriceCard() external view returns (uint256 scan, uint256 scanHuman, uint256 fuzzPatch, uint256 priority);
+    function getPriceCard()
+        external
+        view
+        returns (uint256 scan, uint256 scanHuman, uint256 fuzzPatch, uint256 priority);
 
     /// @notice CleanAudit oracle yetkisini gunceller.
     function setCleanAuditOracle(address oracle) external;

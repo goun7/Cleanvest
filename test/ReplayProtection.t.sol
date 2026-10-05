@@ -35,7 +35,11 @@ contract ReplayProtectionTest is Test {
             solverSignature: ""
         });
         bytes memory p = abi.encode(
-            keccak256(abi.encode(batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume))
+            keccak256(
+                abi.encode(
+                    batch.batchId, batch.orderCommitmentRoot, batch.clearingPrice, batch.totalVolume
+                )
+            )
         );
         vm.prank(solver);
         settlement.executeBatchSettlement(batch, p);
@@ -140,6 +144,8 @@ contract ReplayProtectionTest is Test {
 
         // Atlanan nonce hâlâ kullanılabilir (geç gelen batch)
         _consume(address(0xA11CE), 2);
-        assertTrue(settlement.isNonceConsumed(address(0xA11CE), 2), "geciken nonce 2 artik tuketildi");
+        assertTrue(
+            settlement.isNonceConsumed(address(0xA11CE), 2), "geciken nonce 2 artik tuketildi"
+        );
     }
 }

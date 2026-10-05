@@ -46,7 +46,9 @@ contract ReferralLedger is Ownable {
     uint256 public totalRewardDistributed;
 
     event ReferralRegistered(address indexed referrer, address indexed referee);
-    event ReferralRewardDistributed(address indexed referrer, address indexed referee, uint256 volume, uint256 reward);
+    event ReferralRewardDistributed(
+        address indexed referrer, address indexed referee, uint256 volume, uint256 reward
+    );
 
     constructor() Ownable(msg.sender) {}
 

@@ -32,8 +32,7 @@ contract RiskTransparencyTest is Test {
 
     /// @notice Junior tampon profili dogru olmali (makale: "capital buffer")
     function testProfileJuniorBuffer() public view {
-        RiskTransparency.RiskProfile memory p =
-            RiskTransparency.profile(address(vault), address(0));
+        RiskTransparency.RiskProfile memory p = RiskTransparency.profile(address(vault), address(0));
 
         // $3.000 junior / $100.000 TVL = %3.0 = 300 bps
         assertEq(p.juniorBufferBps, 300, "Junior tampon %3 olmali");
@@ -43,8 +42,7 @@ contract RiskTransparencyTest is Test {
 
     /// @notice Likidite aciklamasi (makale: redemption terms)
     function testProfileLiquidityTerms() public view {
-        RiskTransparency.RiskProfile memory p =
-            RiskTransparency.profile(address(vault), address(0));
+        RiskTransparency.RiskProfile memory p = RiskTransparency.profile(address(vault), address(0));
 
         assertEq(p.dailyInstantCapBps, 1000, "Anlik cikis %10");
         assertEq(p.t2SettleSeconds, 2 days, "T+2 bekleme");
@@ -55,8 +53,7 @@ contract RiskTransparencyTest is Test {
         CleanUSD c2 = new CleanUSD();
         CleanFXVault v2 = new CleanFXVault(address(c2));
 
-        RiskTransparency.RiskProfile memory p =
-            RiskTransparency.profile(address(v2), address(0));
+        RiskTransparency.RiskProfile memory p = RiskTransparency.profile(address(v2), address(0));
 
         assertEq(p.juniorBufferBps, type(uint256).max, "Sifir TVL -> max (guvenli)");
         assertTrue(p.juniorBufferAdequate, "Max tampon yeterli");
@@ -64,8 +61,7 @@ contract RiskTransparencyTest is Test {
 
     /// @notice Reserve bagli degilse optimize ve CB gosterilmez
     function testProfileNoReserve() public {
-        RiskTransparency.RiskProfile memory p =
-            RiskTransparency.profile(address(vault), address(0));
+        RiskTransparency.RiskProfile memory p = RiskTransparency.profile(address(vault), address(0));
         assertFalse(p.optimizeModeEnabled, "Reserve yoksa optimize false");
         assertEq(p.utilizationCircuitBreakerBps, 0, "Reserve yoksa CB gosterilmez");
     }
@@ -101,8 +97,7 @@ contract RiskTransparencyTest is Test {
 
     /// @notice Insan-okur aciklama dogru format vermeli
     function testDescribeFormat() public view {
-        RiskTransparency.RiskProfile memory p =
-            RiskTransparency.profile(address(vault), address(0));
+        RiskTransparency.RiskProfile memory p = RiskTransparency.profile(address(vault), address(0));
         string memory desc = RiskTransparency.describe(p);
 
         // "junior %3.0 / %3.0 | anlik %10.0 | T+2 | CB %0.0"
@@ -121,7 +116,10 @@ contract RiskTransparencyTest is Test {
         for (uint256 i = 0; i <= h.length - n.length; i++) {
             bool match_ = true;
             for (uint256 j = 0; j < n.length; j++) {
-                if (h[i + j] != n[j]) { match_ = false; break; }
+                if (h[i + j] != n[j]) {
+                    match_ = false;
+                    break;
+                }
             }
             if (match_) return true;
         }
@@ -132,6 +130,12 @@ contract RiskTransparencyTest is Test {
 /// @notice Yerel test feed'i (IUtilizationFeed'a uygun)
 contract RTMockFeed is IUtilizationFeed {
     uint256 private _util;
-    constructor(uint256 u) { _util = u; }
-    function utilizationBps() external view returns (uint256) { return _util; }
+
+    constructor(uint256 u) {
+        _util = u;
+    }
+
+    function utilizationBps() external view returns (uint256) {
+        return _util;
+    }
 }

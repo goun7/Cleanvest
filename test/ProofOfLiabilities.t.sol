@@ -37,11 +37,7 @@ contract ProofOfLiabilitiesTest is Test {
     // ============================================================
 
     /// @dev leaf = keccak256(abi.encode(user, balance, epoch)) — kontrat ile aynı.
-    function _leaf(address user, uint256 balance, uint256 epoch)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function _leaf(address user, uint256 balance, uint256 epoch) internal pure returns (bytes32) {
         return keccak256(abi.encode(user, balance, epoch));
     }
 
@@ -94,11 +90,7 @@ contract ProofOfLiabilitiesTest is Test {
     }
 
     /// @dev 4 kullanıcının imzalı yapraklarını ve kökünü kurar (epoch=1).
-    function _fourSignedLeaves()
-        internal
-        view
-        returns (bytes32[] memory leaves, bytes32 root)
-    {
+    function _fourSignedLeaves() internal view returns (bytes32[] memory leaves, bytes32 root) {
         leaves = new bytes32[](4);
         leaves[0] = _leaf(u0.addr, 1000 ether, 1);
         leaves[1] = _leaf(u1.addr, 2000 ether, 1);

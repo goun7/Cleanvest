@@ -95,7 +95,7 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     bool public sizeCapLifted;
 
     /// @notice 30-gun toplam hacim (epok-bazli birikmeli; kayan pencere
-///         duzeltmesi epoch-basi sifirlama ile deployment sonrasi eklenir).
+    ///         duzeltmesi epoch-basi sifirlama ile deployment sonrasi eklenir).
     uint256 public rolling30dVolume;
 
     /// @notice Kayitli RFQ solver'lar.
@@ -160,9 +160,8 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
 
     /// @dev Order(uint256 amount,address user,uint256 nonce) — alan sıralaması
     ///      legacy Merkle yaprağı (leafHash) ile BİREBİR AYNI; ağaç değişmez.
-    bytes32 private constant ORDER_TYPEHASH = keccak256(
-        "Order(uint256 amount,address user,uint256 nonce)"
-    );
+    bytes32 private constant ORDER_TYPEHASH =
+        keccak256("Order(uint256 amount,address user,uint256 nonce)");
 
     /// @notice secp256k1 eğri sırası n — EIP-2 low-s eşiğinin kaynağı.
     /// @dev EIP-2: s > n/2 olan imzalar MALLEABLE'dir. n tek sayı olduğundan
@@ -250,7 +249,9 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     event NonceConsumed(address indexed user, uint256 nonce, bytes32 indexed batchId);
 
     /// @notice Batch commit edildi (MEV korumasi: icerik gizli).
-    event BatchCommitted(bytes32 indexed batchId, bytes32 indexed commitmentHash, uint256 atSequence);
+    event BatchCommitted(
+        bytes32 indexed batchId, bytes32 indexed commitmentHash, uint256 atSequence
+    );
 
     /// @notice Manipulasyon tespit sonucu yayinlandi (kamusal risk skoru).
     event ManipulationDetected(bytes32 indexed batchId, uint256 riskScore, string label);
@@ -441,7 +442,8 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
         bytes32 commitmentHash =
             MEVShield.computeCommitment(batchId, orderCommitmentRoot, clearingPrice, totalVolume);
 
-        _commitRecords[batchId] = MEVShield.markCommitted(rec, commitmentHash, batchSequence, msg.sender);
+        _commitRecords[batchId] =
+            MEVShield.markCommitted(rec, commitmentHash, batchSequence, msg.sender);
 
         emit BatchCommitted(batchId, commitmentHash, batchSequence);
     }
@@ -456,7 +458,9 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
         uint256 totalVolume
     ) external view returns (bool) {
         MEVShield.CommitRecord memory rec = _commitRecords[batchId];
-        return MEVShield.canReveal(rec, batchId, orderCommitmentRoot, clearingPrice, totalVolume, batchSequence + 1);
+        return MEVShield.canReveal(
+            rec, batchId, orderCommitmentRoot, clearingPrice, totalVolume, batchSequence + 1
+        );
     }
 
     /// @notice DURUST SINIR #5 KAPANDI — Manipulasyon tespiti (zincir-ustu).
@@ -475,7 +479,9 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
             ManipulationDetector.analyze(pairs, totalVolume, _detectionBaseline);
 
         lastDetection = r;
-        _detectionBaseline = ManipulationDetector.updateBaseline(_detectionBaseline, totalVolume, _pairTxCount(pairs));
+        _detectionBaseline = ManipulationDetector.updateBaseline(
+            _detectionBaseline, totalVolume, _pairTxCount(pairs)
+        );
 
         emit ManipulationDetected(batchId, r.riskScore, ManipulationDetector.riskLabel(r));
 
@@ -513,7 +519,13 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     function lastDetectionSummary()
         external
         view
-        returns (uint256 riskScore, string memory label, bool volumeDrop, bool roundTrip, bool flooding)
+        returns (
+            uint256 riskScore,
+            string memory label,
+            bool volumeDrop,
+            bool roundTrip,
+            bool flooding
+        )
     {
         return (
             lastDetection.riskScore,
@@ -547,20 +559,20 @@ contract CleanvestSettlement is ICleanvestSettlement, Ownable, ReentrancyGuard {
     ///              biti: 1 = sibling sagda, 0 = sibling solda)
     /// @param root Dogrulanacak Merkle koku (orderCommitmentRoot)
     /// @return true Kanit gecerli (leaf root icinde)
-    function verifyMerkleProof(
-        bytes32 leaf,
-        bytes calldata proof,
-        bytes32 root
-    ) public pure returns (bool) {
+    function verifyMerkleProof(bytes32 leaf, bytes calldata proof, bytes32 root)
+        public
+        pure
+        returns (bool)
+    {
         return _verifyMerkleProof(leaf, proof, root);
     }
 
     /// @dev Memory/calldata ayrimi: verifySignedOrder memory kullanir.
-    function _verifyMerkleProof(
-        bytes32 leaf,
-        bytes memory proof,
-        bytes32 root
-    ) internal pure returns (bool) {
+    function _verifyMerkleProof(bytes32 leaf, bytes memory proof, bytes32 root)
+        internal
+        pure
+        returns (bool)
+    {
         // Kanit: her seviye icin 32 bayt sibling + 1 bayt konum
         // (Toplam seviye sayisi = proof.length / 33)
         if (proof.length % 33 != 0) return false;

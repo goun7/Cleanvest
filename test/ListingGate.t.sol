@@ -45,7 +45,9 @@ contract ListingGateTest is Test {
         gate.applyForListing(projectToken, "TestToken");
 
         vm.prank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 1, 2, 3, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 85, 0, 0, 1, 2, 3, false
+        );
 
         assertTrue(gate.isVerified(projectToken), "85 skoru Verified olmali");
     }
@@ -55,10 +57,14 @@ contract ListingGateTest is Test {
         gate.applyForListing(projectToken, "TestToken");
 
         vm.prank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 50, 0, 1, 2, 3, 4, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 50, 0, 1, 2, 3, 4, false
+        );
 
         (IListingGate.ListingStatus status,) = gate.getListingStatus(projectToken);
-        assertTrue(uint256(status) == uint256(IListingGate.ListingStatus.Rejected), "50 skoru Reddedilmeli");
+        assertTrue(
+            uint256(status) == uint256(IListingGate.ListingStatus.Rejected), "50 skoru Reddedilmeli"
+        );
         assertFalse(gate.isVerified(projectToken));
     }
 
@@ -67,7 +73,9 @@ contract ListingGateTest is Test {
         gate.applyForListing(projectToken, "TestToken");
 
         vm.expectRevert("Yalnizca CleanAudit oracle");
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 90, 0, 0, 0, 1, 2, true);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 90, 0, 0, 0, 1, 2, true
+        );
     }
 
     /// @notice Ayni token icin ikinci basvuru reddedilmeli (Rejected haric)
@@ -83,7 +91,9 @@ contract ListingGateTest is Test {
         gate.applyForListing(projectToken, "TestToken");
 
         vm.prank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, false, 30, 2, 1, 0, 0, 0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, false, 30, 2, 1, 0, 0, 0, false
+        );
 
         // Rejected durumda yeniden basvuru yapilabilmeli
         bytes32 appId2 = gate.applyForListing(projectToken, "TestToken v2");
@@ -164,7 +174,9 @@ contract ListingGateTest is Test {
         gate.sealPovCommitment(appId, povHash, ts, 2, 45);
 
         // Ayni hash, farkli timestamp -> gecersiz (yeniden tarama farkli taahhut)
-        assertFalse(gate.verifyPovCommitment(appId, povHash, ts + 1), "Yanlis timestamp reddedilmeli");
+        assertFalse(
+            gate.verifyPovCommitment(appId, povHash, ts + 1), "Yanlis timestamp reddedilmeli"
+        );
     }
 
     /// @notice Muhursuz basvuru dogrulanamaz
@@ -195,7 +207,9 @@ contract ListingGateTest is Test {
     /// @notice Kamusal CleanScore kaydi dogru yayimlanmali
     function testCleanScorePublished() public {
         vm.prank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 1, 2, 3, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 85, 0, 0, 1, 2, 3, false
+        );
 
         ListingGate.CleanScoreRecord memory rec = gate.getCleanScore(projectToken);
         assertEq(rec.score, 85, "Skor 85");
@@ -211,7 +225,9 @@ contract ListingGateTest is Test {
     /// @notice Yuksek kademe tam audit sunmali
     function testFullAuditAvailable() public {
         vm.prank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 90, 0, 0, 0, 1, 2, true);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 90, 0, 0, 0, 1, 2, true
+        );
 
         ListingGate.CleanScoreRecord memory rec = gate.getCleanScore(projectToken);
         assertTrue(rec.fullAuditAvailable, "Tam audit VAR ($1.490+ kademe)");
@@ -222,53 +238,79 @@ contract ListingGateTest is Test {
     function testRevertScoreAbove100() public {
         vm.prank(oracle);
         vm.expectRevert("Skor 0-100 arasinda olmali");
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 101, 0, 0, 0, 0, 0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 101, 0, 0, 0, 0, 0, false
+        );
     }
 
     /// @notice Harf notu bantlari dogru olmali
     function testGradeBands() public {
         vm.startPrank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 95, 0,0,0,0,0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 95, 0, 0, 0, 0, 0, false
+        );
         assertEq(uint8(gate.getCleanScore(projectToken).grade), uint8(bytes1("S")), "95 = S");
-        gate.recordAuditResultForToken(bytes32(uint256(2)), projectToken, true, 85, 0,0,0,0,0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(2)), projectToken, true, 85, 0, 0, 0, 0, 0, false
+        );
         assertEq(uint8(gate.getCleanScore(projectToken).grade), uint8(bytes1("A")), "85 = A");
-        gate.recordAuditResultForToken(bytes32(uint256(3)), projectToken, true, 70, 0,0,0,0,0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(3)), projectToken, true, 70, 0, 0, 0, 0, 0, false
+        );
         assertEq(uint8(gate.getCleanScore(projectToken).grade), uint8(bytes1("B")), "70 = B");
-        gate.recordAuditResultForToken(bytes32(uint256(4)), projectToken, false, 50, 0,0,0,0,0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(4)), projectToken, false, 50, 0, 0, 0, 0, 0, false
+        );
         assertEq(uint8(gate.getCleanScore(projectToken).grade), uint8(bytes1("C")), "50 = C");
-        gate.recordAuditResultForToken(bytes32(uint256(5)), projectToken, false, 30, 0,0,0,0,0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(5)), projectToken, false, 30, 0, 0, 0, 0, 0, false
+        );
         assertEq(uint8(gate.getCleanScore(projectToken).grade), uint8(bytes1("D")), "30 = D");
         vm.stopPrank();
     }
 
-
     /// @notice Ilk tarama Scan ($299) kademesi atar
     function testFirstAuditSetsScanTier() public {
         vm.prank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 1, 2, 3, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 85, 0, 0, 1, 2, 3, false
+        );
 
-        assertTrue(uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.Scan), "Ilk tarama = Scan");
+        assertTrue(
+            uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.Scan),
+            "Ilk tarama = Scan"
+        );
     }
 
     /// @notice Kademeyi FuzzPatch'e yukselt -> tam audit acilir
     function testUpgradeToFuzzPatch() public {
         vm.startPrank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 1, 2, 3, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 85, 0, 0, 1, 2, 3, false
+        );
         gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.FuzzPatch);
         vm.stopPrank();
 
-        assertTrue(uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.FuzzPatch), "Kademe FuzzPatch");
+        assertTrue(
+            uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.FuzzPatch),
+            "Kademe FuzzPatch"
+        );
         assertTrue(gate.fullAuditAvailable(projectToken), "Tam audit ACILDI");
     }
 
     /// @notice Priority kademesi tam audit sunar
     function testUpgradeToPriority() public {
         vm.startPrank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false
+        );
         gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.Priority);
         vm.stopPrank();
 
-        assertTrue(uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.Priority), "Kademe Priority");
+        assertTrue(
+            uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.Priority),
+            "Kademe Priority"
+        );
         assertTrue(gate.fullAuditAvailable(projectToken), "Priority tam audit");
     }
 
@@ -282,20 +324,19 @@ contract ListingGateTest is Test {
     ///      L214 yine korur. Bu test decoder katmanini dogrular.
     function testRevertInvalidTierOutOfRange() public {
         // Raw calldata: uint8=99 enum disinda -> ABI dekoderi reddeder
-        bytes memory cd = abi.encodeWithSignature(
-            "upgradeAuditTier(address,uint8)",
-            projectToken,
-            uint8(99)
-        );
+        bytes memory cd =
+            abi.encodeWithSignature("upgradeAuditTier(address,uint8)", projectToken, uint8(99));
         vm.prank(oracle);
-        (bool ok, ) = address(gate).call(cd);
+        (bool ok,) = address(gate).call(cd);
         assertFalse(ok, "enum disi raw calldata reddedilmeli (ABI decoder katmani)");
     }
 
     /// @notice Downgrade reddedilmeli
     function testRevertDowngrade() public {
         vm.startPrank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false
+        );
         gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.FuzzPatch);
 
         vm.expectRevert("Yalnizca ileri yonlu yukseltme");
@@ -306,7 +347,9 @@ contract ListingGateTest is Test {
     /// @notice Ayni kademe yeniden yukseltme reddedilmeli
     function testRevertSameTier() public {
         vm.startPrank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false
+        );
 
         vm.expectRevert("Yalnizca ileri yonlu yukseltme");
         gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.Scan);
@@ -317,7 +360,9 @@ contract ListingGateTest is Test {
     function testUpgradeFromNoneTier() public {
         vm.startPrank(oracle);
         // once None durumdan Scan'e
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false
+        );
         gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.FuzzPatch);
         vm.stopPrank();
         assertEq(uint256(gate.getAuditTier(projectToken)), uint256(ListingGate.AuditTier.FuzzPatch));
@@ -326,7 +371,9 @@ contract ListingGateTest is Test {
     /// @notice Oracle disinda kademe yukseltemez
     function testRevertNonOracleUpgrade() public {
         vm.prank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false
+        );
 
         vm.expectRevert("Yalnizca CleanAudit oracle");
         gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.FuzzPatch);
@@ -348,7 +395,8 @@ contract ListingGateTest is Test {
     ///      bagimsiz calismasini saglar (ARTAK-1 kapandi)
     function testPriceCardViaInterface() public {
         IListingGate asInterface = IListingGate(address(gate));
-        (uint256 scan, uint256 scanHuman, uint256 fuzzPatch, uint256 priority) = asInterface.getPriceCard();
+        (uint256 scan, uint256 scanHuman, uint256 fuzzPatch, uint256 priority) =
+            asInterface.getPriceCard();
         assertEq(scan, 199, "Interface: Scan $199");
         assertEq(scanHuman, 399, "Interface: ScanHuman $399");
         assertEq(fuzzPatch, 990, "Interface: FuzzPatch $990");
@@ -359,11 +407,19 @@ contract ListingGateTest is Test {
     function testScanHumanTierUpgradeable() public {
         // Basvuru -> ilk tarama Scan atar (recordAuditResultForToken ile)
         vm.startPrank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
-        assertTrue(uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.Scan), "Ilk tarama Scan");
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false
+        );
+        assertTrue(
+            uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.Scan),
+            "Ilk tarama Scan"
+        );
         // Scan -> ScanHuman ileri yonlu (izinli)
         gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.ScanHuman);
-        assertTrue(uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.ScanHuman), "ScanHuman'a yukseltildi");
+        assertTrue(
+            uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.ScanHuman),
+            "ScanHuman'a yukseltildi"
+        );
         // ScanHuman hala tam audit DEGIL (fullAuditAvailable false kalmali)
         assertFalse(gate.fullAuditAvailable(projectToken), "ScanHuman tam audit vermez");
         vm.stopPrank();
@@ -372,16 +428,20 @@ contract ListingGateTest is Test {
     /// @notice ScanHuman'a Scan atlandiktan sonra direkt gidilebilir ( downgrade YOK )
     function testScanHumanSkippableButNotDowngrade() public {
         vm.startPrank(oracle);
-        gate.recordAuditResultForToken(bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false);
+        gate.recordAuditResultForToken(
+            bytes32(uint256(1)), projectToken, true, 85, 0, 0, 0, 0, 0, false
+        );
         // Scan -> FuzzPatch atlayabilir (ScanHuman'i atlamak serbest)
         gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.FuzzPatch);
-        assertTrue(uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.FuzzPatch), "FuzzPatch'a atlandi");
+        assertTrue(
+            uint256(gate.getAuditTier(projectToken)) == uint256(ListingGate.AuditTier.FuzzPatch),
+            "FuzzPatch'a atlandi"
+        );
         // FuzzPatch -> ScanHuman geri DONULEMEZ (downgrade YOK)
         vm.expectRevert("Yalnizca ileri yonlu yukseltme");
         gate.upgradeAuditTier(projectToken, ListingGate.AuditTier.ScanHuman);
         vm.stopPrank();
     }
-
 
     /// @notice getListingStatus dogru applicationId'den score alir (timestamp icerir)
     function testGetListingStatusScoreLookup() public {

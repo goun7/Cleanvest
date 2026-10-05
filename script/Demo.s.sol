@@ -185,10 +185,17 @@ contract Demo is Script {
         if (n == 0) return "0";
         uint256 j = n;
         uint256 len;
-        while (j != 0) { len++; j /= 10; }
+        while (j != 0) {
+            len++;
+            j /= 10;
+        }
         bytes memory b = new bytes(len);
         uint256 k = len;
-        while (n != 0) { k = k - 1; b[k] = bytes1(uint8(48 + n % 10)); n /= 10; }
+        while (n != 0) {
+            k = k - 1;
+            b[k] = bytes1(uint8(48 + n % 10));
+            n /= 10;
+        }
         return string(b);
     }
 

@@ -150,7 +150,11 @@ contract CleanFXVaultTest is Test {
         vault.withdraw(20_000 ether, alice, alice);
         vm.stopPrank();
 
-        assertEq(usdc.balanceOf(alice), 19_920_000 ether, "T+2 sonrasi fonlar serbest (20M - 100k deposit + 20k cekim)");
+        assertEq(
+            usdc.balanceOf(alice),
+            19_920_000 ether,
+            "T+2 sonrasi fonlar serbest (20M - 100k deposit + 20k cekim)"
+        );
         assertEq(vault.queuedUnlockTime(alice), 0, "Kuyruk temizlendi");
     }
 
@@ -433,6 +437,7 @@ contract CleanFXVaultTest is Test {
         vm.stopPrank();
         assertEq(vault.currentSeniorYield(), 0.0292e18, "Tier2 = %2.92 (KAGIDI L99)");
     }
+
     /// @notice ERC-4626 INFLATION ATTACK regresyon testi (Cream/Sonne/Resupply tipi)
     /// @dev Saldirdi: onyuz minShares hesaplar -> saldiri durumunda revert -> fon korunur
     function testInflationAttackBlockedByMinShares() public {
@@ -519,7 +524,7 @@ contract CleanFXVaultTest is Test {
 
         // --- A: bagis pay fiyatini siseirir (zarar kaniti) ---
         uint256 fairShares = vault.convertToShares(1_000 ether);
-        usdc.mint(address(vault), 10 ether);                     // 10x siseirme
+        usdc.mint(address(vault), 10 ether); // 10x siseirme
         uint256 inflatedShares = vault.convertToShares(1_000 ether);
         // 1 wei share + 10 ether bagis -> 1000 ether icin ~199 wei pay
         // (OZ ERC4626 rounding: neredeyse tam sifira coker)
@@ -562,7 +567,9 @@ contract CleanFXVaultTest is Test {
         vault.deposit(1_000 ether, alice);
         vm.stopPrank();
         // alice tek depositor: fiyat 1:1 sabit (pay siseirmek icin donation gerek)
-        assertApproxEqAbs(vault.convertToShares(1_000 ether), p1, 1e3, "tek depositor 1:1 fiyat sabit");
+        assertApproxEqAbs(
+            vault.convertToShares(1_000 ether), p1, 1e3, "tek depositor 1:1 fiyat sabit"
+        );
     }
 
     /// @notice VEKTOR 3: FIRST-DEPOSITOR INFLATION — 1-wei onceden yerlesme
@@ -626,17 +633,19 @@ contract CleanFXVaultTest is Test {
         assertEq(usdc.allowance(alice, address(vault)), 0, "allowance tam harcandi");
         vm.stopPrank();
     }
-
 }
-
-
 
 /// @notice Aave utilization feed mock (devre-kesici testleri icin).
 contract MockUtilizationFeed {
     uint256 public utilizationBps;
-    constructor(uint256 _bps) { utilizationBps = _bps; }
-    function setUtilization(uint256 _bps) external { utilizationBps = _bps; }
+
+    constructor(uint256 _bps) {
+        utilizationBps = _bps;
+    }
+
+    function setUtilization(uint256 _bps) external {
+        utilizationBps = _bps;
+    }
 
     /// @notice OPTIMIZE modda utilization >%92 -> anlik cekim T+2'ye duser
-
 }

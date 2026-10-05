@@ -88,7 +88,9 @@ contract PQHavenBridgeAnvil is Script {
         // --- 3 METRIK ---
         console.log("");
         console.log("=== 3 METRIK (supplyToAave sonrasi) ===");
-        console.log("(b) idleBalance delta (deposit'ten, yukarida):", idleAfterDeposit - 10_000 ether);
+        console.log(
+            "(b) idleBalance delta (deposit'ten, yukarida):", idleAfterDeposit - 10_000 ether
+        );
         console.log("(c) owner USDC kalan:", usdc.balanceOf(owner));
         console.log("(c2) aavePool USDC (reserve'e gecti):", usdc.balanceOf(aavePool));
 

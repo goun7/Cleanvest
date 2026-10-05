@@ -41,12 +41,12 @@ library DeploymentConfig {
     /// @notice Production adresleri. Deployment sirasinda ENV'den alinir.
     /// @dev Bunlar ORNEKLEME amacllidir; gercek deploy'da .env dogrulanmali.
     struct Config {
-        address usdc;              // Base USDC
-        address aavePool;          // Aave V3 Pool (Base)
-        address aavePrimePool;     // Aave Prime Pool
-        address chainlinkFeed;     // Chainlink USDC/USD feed
-        address uniswapRouter;     // Uniswap V3 SwapRouter
-        address cleanAuditOracle;  // CleanAudit motor adresi (off-chain imzaci)
+        address usdc; // Base USDC
+        address aavePool; // Aave V3 Pool (Base)
+        address aavePrimePool; // Aave Prime Pool
+        address chainlinkFeed; // Chainlink USDC/USD feed
+        address uniswapRouter; // Uniswap V3 SwapRouter
+        address cleanAuditOracle; // CleanAudit motor adresi (off-chain imzaci)
     }
 }
 
@@ -82,7 +82,7 @@ contract Deploy is Script {
 
         // Tum adresler ENV'den okunur - UYDURMA ADRES KULLANILMAZ
         cfg = DeploymentConfig.Config({
-            usdc: vm.envOr("USDC", 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913),  // Base USDC
+            usdc: vm.envOr("USDC", 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913), // Base USDC
             aavePool: vm.envOr("AAVE_POOL", address(0)),
             aavePrimePool: vm.envOr("AAVE_PRIME_POOL", address(0)),
             chainlinkFeed: vm.envOr("CHAINLINK_FEED", address(0)),
@@ -203,15 +203,23 @@ contract Deploy is Script {
             "deploy-out/addresses.json",
             string.concat(
                 "{\n",
-                string.concat('  "comment": "DEPLOY OUTPUT - chainId ', vm.toString(chainId), '",\n'),
+                string.concat(
+                    '  "comment": "DEPLOY OUTPUT - chainId ', vm.toString(chainId), '",\n'
+                ),
                 string.concat('  "chainId": ', vm.toString(chainId), ",\n"),
                 string.concat('  "CleanUSD": "', vm.toString(address(deployed.cUSD)), '",\n'),
                 string.concat('  "CleanFXVault": "', vm.toString(address(deployed.vault)), '",\n'),
-                string.concat('  "ReserveManager": "', vm.toString(address(deployed.reserve)), '",\n'),
-                string.concat('  "CleanvestSettlement": "', vm.toString(address(deployed.settlement)), '",\n'),
+                string.concat(
+                    '  "ReserveManager": "', vm.toString(address(deployed.reserve)), '",\n'
+                ),
+                string.concat(
+                    '  "CleanvestSettlement": "', vm.toString(address(deployed.settlement)), '",\n'
+                ),
                 string.concat('  "ListingGate": "', vm.toString(address(deployed.gate)), '",\n'),
                 string.concat('  "UniswapProxy": "', vm.toString(address(deployed.proxy)), '",\n'),
-                string.concat('  "ReferralLedger": "', vm.toString(address(deployed.referral)), '"\n'),
+                string.concat(
+                    '  "ReferralLedger": "', vm.toString(address(deployed.referral)), '"\n'
+                ),
                 "}"
             )
         ) {

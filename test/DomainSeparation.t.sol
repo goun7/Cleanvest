@@ -87,8 +87,13 @@ contract DomainSeparationTest is Test {
 
         // domain-aware doğrulama: imza geçerli + Merkle inclusion geçerli
         assertTrue(
-            pol.verifyLiabilityWithDomain(ANVIL_ADDR, BALANCE, epoch, _signDigest(
-                pol.liabilityDomainDigest(ANVIL_ADDR, BALANCE, epoch)), ""),
+            pol.verifyLiabilityWithDomain(
+                ANVIL_ADDR,
+                BALANCE,
+                epoch,
+                _signDigest(pol.liabilityDomainDigest(ANVIL_ADDR, BALANCE, epoch)),
+                ""
+            ),
             "PoL: dogru domain imzasi gecerli olmali"
         );
 
@@ -205,7 +210,9 @@ contract DomainSeparationTest is Test {
         bytes32 tamperedDomain = keccak256(
             abi.encode(
                 // EIP712Domain typehash (ProofOfLiabilities ile aynı sabit)
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
                 keccak256(bytes("Cleanvest-ProofOfLiabilities")),
                 keccak256(bytes("2")), // <-- TAHRİR: sürüm 2
                 block.chainid,
@@ -222,16 +229,16 @@ contract DomainSeparationTest is Test {
         // Name tahriri de reddedilir
         bytes32 nameTampered = keccak256(
             abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
                 keccak256(bytes("Cleanvest-Evil")), // <-- TAHRİR: name
                 keccak256(bytes("1")),
                 block.chainid,
                 address(pol)
             )
         );
-        bytes32 evilDigest = keccak256(
-            abi.encodePacked("\x19\x01", nameTampered, structHash)
-        );
+        bytes32 evilDigest = keccak256(abi.encodePacked("\x19\x01", nameTampered, structHash));
         vm.expectRevert("EIP-712 domain imzasi gecersiz");
         pol.verifyLiabilityWithDomain(ANVIL_ADDR, BALANCE, epoch, _signDigest(evilDigest), "");
     }
@@ -270,7 +277,9 @@ contract DomainSeparationTest is Test {
         leaves[0] = leaf;
 
         assertTrue(
-            settlement.verifySignedOrder(leaf, _signEip191(leaf), ANVIL_ADDR, "", settlement.computeRoot(leaves)),
+            settlement.verifySignedOrder(
+                leaf, _signEip191(leaf), ANVIL_ADDR, "", settlement.computeRoot(leaves)
+            ),
             "Settlement legacy EIP-191 dogrulama hala gecerli"
         );
 
@@ -278,15 +287,19 @@ contract DomainSeparationTest is Test {
         // (alan-ayrımı olmayan legacy özet, domain özetiyle uyuşmaz) ve
         // legacy EIP-191 imzası domain-aware yolda GEÇERSİZDİR.
         assertFalse(
-            settlement.verifySignedOrder(leaf, _signDigest(
-                settlement.orderDomainDigest(AMOUNT, ANVIL_ADDR, NONCE)), ANVIL_ADDR, "",
-                settlement.computeRoot(leaves)),
+            settlement.verifySignedOrder(
+                leaf,
+                _signDigest(settlement.orderDomainDigest(AMOUNT, ANVIL_ADDR, NONCE)),
+                ANVIL_ADDR,
+                "",
+                settlement.computeRoot(leaves)
+            ),
             "EIP-712 imzasi legacy EIP-191 yolunda GECERSIZ olmali"
         );
         assertFalse(
             settlement.verifySignedOrderWithDomain(
-                AMOUNT, ANVIL_ADDR, NONCE, _signEip191(leaf), "",
-                settlement.computeRoot(leaves)),
+                AMOUNT, ANVIL_ADDR, NONCE, _signEip191(leaf), "", settlement.computeRoot(leaves)
+            ),
             "legacy EIP-191 imzasi domain-aware yolda GECERSIZ olmali"
         );
     }

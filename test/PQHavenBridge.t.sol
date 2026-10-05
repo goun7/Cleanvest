@@ -211,11 +211,10 @@ contract PQHavenBridgeTest is Test {
 
     /// @notice Guard simülasyonu: son bloklarda Transfer event arar.
     ///         mainnet_verify.py find_transfer'in Solidity aynasi.
-    function _simulateGuardFind(
-        address from,
-        address to,
-        uint256 amountMinor
-    ) internal returns (bool) {
+    function _simulateGuardFind(address from, address to, uint256 amountMinor)
+        internal
+        returns (bool)
+    {
         // Guard eth_getLogs ile Transfer event'ini arar; biz vm logs ile.
         // Pratik: transfer yapilmissa from->to bakiyelerinden biliriz.
         // (Tam log tarama test'te gereksiz; anahtar kanit yukaridaki event testi)

@@ -104,9 +104,8 @@ contract EIP2MalleabilityTest is Test {
         view
         returns (address)
     {
-        (bool ok, bytes memory out) = address(1).staticcall(
-            abi.encodePacked(digest, bytes32(uint256(v)), r, s)
-        );
+        (bool ok, bytes memory out) =
+            address(1).staticcall(abi.encodePacked(digest, bytes32(uint256(v)), r, s));
         require(ok, "ecrecover precompile cagrisi basarisiz");
         // Precompile 32 bayt döner; adres sağa-hizalı (alt 20 bayt).
         return address(uint160(uint256(bytes32(out))));
@@ -116,13 +115,16 @@ contract EIP2MalleabilityTest is Test {
     ///      ecrecover'da AYNI adresi geri kazanır — yani EIP-2 kontrolü
     ///      OLMADAN ikinci bir gösterim replay için kullanılabilirdi.
     ///      Yerel değişken sayısını test fonksiyonundan çıkartır (stack).
-    function _assertMalleablePairSameAddress(bytes32 digest, bytes memory orig, bytes memory flipped)
-        internal
-        view
-    {
+    function _assertMalleablePairSameAddress(
+        bytes32 digest,
+        bytes memory orig,
+        bytes memory flipped
+    ) internal view {
         (bytes32 rO, bytes32 sO, uint8 vO) = _split(orig);
         (bytes32 rF, bytes32 sF, uint8 vF) = _split(flipped);
-        assertEq(_rawEcrecover(digest, vO, rO, sO), ANVIL_ADDR, "orijinal imza ANVIL_ADDR'i vermeli");
+        assertEq(
+            _rawEcrecover(digest, vO, rO, sO), ANVIL_ADDR, "orijinal imza ANVIL_ADDR'i vermeli"
+        );
         assertEq(
             _rawEcrecover(digest, vF, rF, sF),
             ANVIL_ADDR,
@@ -200,7 +202,9 @@ contract EIP2MalleabilityTest is Test {
         );
         // malleable domain imzası RED
         vm.expectRevert(InvalidSignatureS.selector);
-        settlement.verifySignedOrderWithDomain(AMOUNT, ANVIL_ADDR, NONCE, _flipToHighS(dSig), "", root);
+        settlement.verifySignedOrderWithDomain(
+            AMOUNT, ANVIL_ADDR, NONCE, _flipToHighS(dSig), "", root
+        );
     }
 
     // ============================================================
@@ -227,8 +231,7 @@ contract EIP2MalleabilityTest is Test {
 
         // --- B) domain publishLiabilitiesFromSignedLeavesWithDomain ---
         bytes[] memory domainSigs = new bytes[](1);
-        domainSigs[0] =
-            _flipToHighS(_signDigest(pol.liabilityDomainDigest(ANVIL_ADDR, BALANCE, 1)));
+        domainSigs[0] = _flipToHighS(_signDigest(pol.liabilityDomainDigest(ANVIL_ADDR, BALANCE, 1)));
 
         vm.expectRevert(InvalidSignatureS.selector);
         pol.publishLiabilitiesFromSignedLeavesWithDomain(users, balances, domainSigs);
@@ -337,7 +340,9 @@ contract EIP2MalleabilityTest is Test {
         leaves[0] = leaf;
 
         assertTrue(
-            settlement.verifySignedOrder(leaf, _signEip191(leaf), ANVIL_ADDR, "", settlement.computeRoot(leaves)),
+            settlement.verifySignedOrder(
+                leaf, _signEip191(leaf), ANVIL_ADDR, "", settlement.computeRoot(leaves)
+            ),
             "Settlement legacy EIP-191 dogrulama hala gecerli"
         );
 
@@ -378,7 +383,9 @@ contract EIP2MalleabilityTest is Test {
         // 2) Tahrif edilmiş domain (sürüm "2") + düşük-s imza → domain RED
         bytes32 tamperedDomain = keccak256(
             abi.encode(
-                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+                keccak256(
+                    "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+                ),
                 keccak256(bytes("Cleanvest-ProofOfLiabilities")),
                 keccak256(bytes("2")), // <-- TAHRİR: sürüm 2
                 block.chainid,
@@ -392,10 +399,14 @@ contract EIP2MalleabilityTest is Test {
         // 3) Bileşik saldırı: tahrif edilmiş domain + malleable (high-s) →
         //    InvalidSignatureS (low-s kontrolü domain kontrolünden ÖNCE fişeğini atar)
         vm.expectRevert(InvalidSignatureS.selector);
-        pol.verifyLiabilityWithDomain(ANVIL_ADDR, BALANCE, epoch, _flipToHighS(_signDigest(evilDigest)), "");
+        pol.verifyLiabilityWithDomain(
+            ANVIL_ADDR, BALANCE, epoch, _flipToHighS(_signDigest(evilDigest)), ""
+        );
 
         // 4) Doğru domain + malleable → InvalidSignatureS (low-s kalkanı)
         vm.expectRevert(InvalidSignatureS.selector);
-        pol.verifyLiabilityWithDomain(ANVIL_ADDR, BALANCE, epoch, _flipToHighS(_signDigest(realDigest)), "");
+        pol.verifyLiabilityWithDomain(
+            ANVIL_ADDR, BALANCE, epoch, _flipToHighS(_signDigest(realDigest)), ""
+        );
     }
 }

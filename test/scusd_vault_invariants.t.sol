@@ -40,19 +40,13 @@ contract InvariantTest is Test {
         uint256 tvl = cUSD.totalSupply();
         uint256 required = (tvl * 300) / 10000;
         assertGe(
-            cUSD.juniorReserve(),
-            required,
-            "INVARIANT: juniorReserve >= TVL * 3% (mint sonrasi)"
+            cUSD.juniorReserve(), required, "INVARIANT: juniorReserve >= TVL * 3% (mint sonrasi)"
         );
     }
 
     /// @notice cUSD supply >= vault icindeki asset (vault cUSD tutar)
     function invariantVaultAssetsCovered() public {
-        assertLe(
-            vault.totalAssets(),
-            cUSD.totalSupply(),
-            "INVARIANT: vault assets <= cUSD supply"
-        );
+        assertLe(vault.totalAssets(), cUSD.totalSupply(), "INVARIANT: vault assets <= cUSD supply");
     }
 
     /// @notice T+2 kuyrugu ASLA kalici kilitlenemez: unlock suresi gectiginde
@@ -187,7 +181,6 @@ contract Handler is Test {
         if (!cUSD.canMint()) return; // gate dogal davranis
         if (cUSD.totalSupply() + amount > cUSD.tvlCap()) return;
         cUSD.mint(actor, amount);
-
     }
 
     function burn(uint256 amount) external {
@@ -205,7 +198,6 @@ contract Handler is Test {
         cUSD.approve(address(vault), amount);
         vault.deposit(amount, actor);
         vm.stopPrank();
-
     }
 
     function withdrawFromVault(uint256 assets) external {

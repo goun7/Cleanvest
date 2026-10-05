@@ -143,7 +143,9 @@ contract FuzzTest is Test {
         } else {
             cUSD.mint(address(1), mintAmount);
             // Invariant: junior * 10000 >= tvl * 300
-            assertGe(cUSD.juniorReserve() * 10000, cUSD.totalSupply() * 300, "Junior invariant korundu");
+            assertGe(
+                cUSD.juniorReserve() * 10000, cUSD.totalSupply() * 300, "Junior invariant korundu"
+            );
         }
     }
 

@@ -36,7 +36,7 @@ contract ReserveManager is IReserveStrategy, Ownable, ReentrancyGuard {
     address public buidl;
 
     /// @notice TVL esikleri.
-    uint256 public constant TIER1_THRESHOLD = 250_000 ether;  // OUSG $100k = %40 x $250k
+    uint256 public constant TIER1_THRESHOLD = 250_000 ether; // OUSG $100k = %40 x $250k
     uint256 public constant TIER2_THRESHOLD = 12_500_000 ether; // BUIDL $5M = %40 x $12.5M
 
     /// @notice Aave utilization devre-kesici esigi (%92).
@@ -75,12 +75,7 @@ contract ReserveManager is IReserveStrategy, Ownable, ReentrancyGuard {
 
     /// @inheritdoc IReserveStrategy
     /// @notice Kademelerin hedef dagilimi (bps, toplam 10000).
-    function targetAllocation(ReserveTier tier)
-        public
-        pure
-        override
-        returns (Allocation memory)
-    {
+    function targetAllocation(ReserveTier tier) public pure override returns (Allocation memory) {
         if (tier == ReserveTier.Tier0) {
             // %73 Aave / %0 RWA / %15 Prime / %12 idle
             return Allocation(7300, 0, 1500, 1200);

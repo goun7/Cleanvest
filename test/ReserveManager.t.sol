@@ -54,9 +54,8 @@ contract ReserveManagerTest is Test {
 
     /// @notice Tier0 hedef dagilimi: %73/0/%15/%12
     function testTier0Allocation() public view {
-        IReserveStrategy.Allocation memory a = reserve.targetAllocation(
-            IReserveStrategy.ReserveTier.Tier0
-        );
+        IReserveStrategy.Allocation memory a =
+            reserve.targetAllocation(IReserveStrategy.ReserveTier.Tier0);
         assertEq(a.aaveBps, 7300, "Tier0 Aave %73");
         assertEq(a.rwaBps, 0, "Tier0 RWA 0 (OUSG min $100k)");
         assertEq(a.primeBps, 1500, "Tier0 Prime %15");
@@ -65,9 +64,8 @@ contract ReserveManagerTest is Test {
 
     /// @notice Tier1 hedef dagilimi: %33/40/%15/%12
     function testTier1Allocation() public view {
-        IReserveStrategy.Allocation memory a = reserve.targetAllocation(
-            IReserveStrategy.ReserveTier.Tier1
-        );
+        IReserveStrategy.Allocation memory a =
+            reserve.targetAllocation(IReserveStrategy.ReserveTier.Tier1);
         assertEq(a.aaveBps, 3300, "Tier1 Aave %33");
         assertEq(a.rwaBps, 4000, "Tier1 OUSG %40");
         assertEq(a.primeBps, 1500, "Tier1 Prime %15");
@@ -77,9 +75,8 @@ contract ReserveManagerTest is Test {
     /// @notice Tum kademelerin bps toplami 10000 olmali
     function testAllocationsSumTo10000() public view {
         for (uint256 t = 0; t <= 3; t++) {
-            IReserveStrategy.Allocation memory a = reserve.targetAllocation(
-                IReserveStrategy.ReserveTier(t)
-            );
+            IReserveStrategy.Allocation memory a =
+                reserve.targetAllocation(IReserveStrategy.ReserveTier(t));
             assertEq(a.aaveBps + a.rwaBps + a.primeBps + a.idleBps, 10000, "Toplam 10000");
         }
     }
@@ -169,7 +166,9 @@ contract ReserveManagerTest is Test {
         vm.startPrank(owner);
         reserve.setOptimizeMode(false);
         vm.stopPrank();
-        assertFalse(reserve.utilizationCircuitBreakerActive(), "Optimize kapaliyken devre-kesici false");
+        assertFalse(
+            reserve.utilizationCircuitBreakerActive(), "Optimize kapaliyken devre-kesici false"
+        );
     }
 
     /// @notice Devre-kesici: utilization > %92 (9200 bps) ise true (L165-166)
@@ -180,7 +179,9 @@ contract ReserveManagerTest is Test {
         reserve.setOptimizeMode(true);
         vm.stopPrank();
 
-        assertTrue(reserve.utilizationCircuitBreakerActive(), "%95 utilization'da devre-kesici AKTIF");
+        assertTrue(
+            reserve.utilizationCircuitBreakerActive(), "%95 utilization'da devre-kesici AKTIF"
+        );
     }
 
     /// @notice Devre-kesici: utilization <= %92 ise false
@@ -191,7 +192,9 @@ contract ReserveManagerTest is Test {
         reserve.setOptimizeMode(true);
         vm.stopPrank();
 
-        assertFalse(reserve.utilizationCircuitBreakerActive(), "%70 utilization'da devre-kesici KAPALI");
+        assertFalse(
+            reserve.utilizationCircuitBreakerActive(), "%70 utilization'da devre-kesici KAPALI"
+        );
     }
 
     /// @notice Setter'lar dogru adresleri kaydeder (L170-202)
