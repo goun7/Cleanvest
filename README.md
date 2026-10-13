@@ -17,8 +17,8 @@ git submodule update --init --recursive
 
 # 2. Testler — 0 failed olmali (300 forge + 24 Rust)
 export PATH="$HOME/.foundry/bin:$PATH"
-forge test                              # Solidity: 300 passed, 0 failed
-cargo test --manifest-path merkle/Cargo.toml --features proof   # Rust Merkle: 24 passed
+forge test                              # Solidity: 300 passed, 0 failed (foundry kurulu degilse LEED-dogrulanamaz)
+cargo test --manifest-path merkle/Cargo.toml --features proof   # Rust Merkle: 61 passed, 0 failed rc=0 (LEED-ölçümü 2026-10-14)
 
 # 3. Yerel ag (anvil, anahtar GEREKMEZ)
 make anvil                              # ayri terminalde
