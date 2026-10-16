@@ -1,6 +1,6 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test: **300 forge + 24 Rust, 0 failed** · Akademik araştırma: [`docs/arastirma/`](docs/arastirma/) (35 doğrulanmış makale) · TODO/placeholder sıfır
+**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test: **319 forge + 61 Rust, 0 failed** (LEED-ölçümü 2026-10-17) · Akademik araştırma: [`docs/arastirma/`](docs/arastirma/) (35 doğrulanmış makale) · TODO/placeholder sıfır
 
 > 🔢 **Sayıların üretimi:** README'e giren her sayı [`scripts/readme_stats.py`](scripts/readme_stats.py) tarafından koddan üretilir — elle girilmez. Çalıştırma: `python3 scripts/readme_stats.py`
 
@@ -15,10 +15,10 @@ Cleanvest, %100 spot (kaldıraç yok), bot-geçirmez FBA eşleştirme ve getiril
 # 1. Araclar (https://getfoundry.sh) + alt moduller
 git submodule update --init --recursive
 
-# 2. Testler — 0 failed olmali (300 forge + 24 Rust)
+# 2. Testler — 0 failed olmali (319 forge + 61 Rust)
 export PATH="$HOME/.foundry/bin:$PATH"
-forge test                              # Solidity: 300 passed, 0 failed (foundry kurulu degilse LEED-dogrulanamaz)
-cargo test --manifest-path merkle/Cargo.toml --features proof   # Rust Merkle: 61 passed, 0 failed rc=0 (LEED-ölçümü 2026-10-14)
+forge test                              # Solidity: 319 passed, 0 failed rc=0 (LEED-ölçümü 2026-10-17)
+cargo test --manifest-path merkle/Cargo.toml --features proof   # Rust Merkle: 61 passed, 0 failed rc=0 (LEED-ölçümü 2026-10-17)
 
 # 3. Yerel ag (anvil, anahtar GEREKMEZ)
 make anvil                              # ayri terminalde
@@ -160,7 +160,7 @@ Kök **byte-byte özdeştir**. Çalıştırma: `bash scripts/proof_demo.sh`.
    saldırısı için ikinci gösterim üretilemez. Geriye dönük uyumludur:
    `vm.sign` / Rust `k256` / `cast wallet sign` hep DÜŞÜK-S üretir, yani
    mevcut off-chain imzalayanlar ve eski testler bozulmadan çalışır
-   (5 test, toplam 300).
+   (5 test, toplam 319).
 3. **MEV'den tam bağışık DEĞİLDİR** — batch içi sıralama kilitlidir ama
    batch'ler arası kuyruk ve çözücü seçimi dışarıda kalır
    ([`docs/arastirma/02`](docs/arastirma/02_mev_ve_front_run_koruma_2025_2026.md)).
@@ -236,7 +236,7 @@ forge script script/Demo.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --unl
 #    Cikti "=== ONCHAIN EXECUTION COMPLETE & SUCCESSFUL ===" ile biter
 
 # 5. Dogrulama — testler + kapsamislik
-~/.foundry/bin/forge test                          # 300/300 Foundry
+~/.foundry/bin/forge test                          # 319/319 Foundry
 cd web && npx vitest run && cd ..                  # 28/28 vitest (erisilebilirlik dahil)
 ~/.foundry/bin/forge coverage --report lcov        # 7 sozlesme (sayilar scripts/readme_stats.py ile taze)
 #    Sayilar elle YAZILMAZ: python3 scripts/readme_stats.py ile koddan uretilir
