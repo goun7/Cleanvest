@@ -237,7 +237,7 @@ forge script script/Demo.s.sol --rpc-url http://127.0.0.1:8545 --broadcast --unl
 
 # 5. Dogrulama — testler + kapsamislik
 ~/.foundry/bin/forge test                          # 319/319 Foundry
-cd web && npx vitest run && cd ..                  # 28/28 vitest (erisilebilirlik dahil)
+cd web && npx vitest run && cd ..                  # 31/31 vitest (erisilebilirlik dahil)
 ~/.foundry/bin/forge coverage --report lcov        # 7 sozlesme (sayilar scripts/readme_stats.py ile taze)
 #    Sayilar elle YAZILMAZ: python3 scripts/readme_stats.py ile koddan uretilir
 ```
