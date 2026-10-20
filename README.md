@@ -1,6 +1,6 @@
 # Cleanvest — Sıfır Manipülasyonlu Spot Borsa + CleanFX
 
-**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru YOL HARİTASI** (üretici kod yok — bkz. kapsam notu) · Test: **319 forge + 61 Rust, 0 failed** (LEED-ölçümü 2026-10-17) · Akademik araştırma: [`docs/arastirma/`](docs/arastirma/) (35 doğrulanmış makale) · TODO/placeholder sıfır
+**EVM sözleşme + frontend katmanı tamamlandı** · **imzalı Merkle emir taahhüdü + bağımsız kanıt CLI'ı MEVCUT** · CleanAudit **denetim motoru AegisForge deposunda mevcut** (bkz. kapsam notu) · Test: **319 forge + 61 Rust, 0 failed** (LEED-ölçümü 2026-10-17) · Akademik araştırma: [`docs/arastirma/`](docs/arastirma/) (35 doğrulanmış makale) · TODO/placeholder sıfır
 
 > 🔢 **Sayıların üretimi:** README'e giren her sayı [`scripts/readme_stats.py`](scripts/readme_stats.py) tarafından koddan üretilir — elle girilmez. Çalıştırma: `python3 scripts/readme_stats.py`
 
@@ -37,16 +37,24 @@ deploy için bkz. [Deploy](#deploy-canlı-için-insan-kararı-gerekir).
 > **Kapsam notu (DÜRÜST):** CleanAudit denetim motorunun Rust çekirdeği
 > **bu deponun parçası DEĞİLDİR** — ayrı bir projede olması amaçlanmıştır:
 > [`07_Temporit_.../`](../07_Temporit_DeFi_Metamorfik_Yaris_Durumu_Avcısı/).
-> **Ancak kanıtlanmıştır ki o proje de bu motoru içermiyor:** tarama
-> (2026-09-28) o depada yalnızca **tek bir Rust dosyası** bulmuştur
-> (`crates/aegisforge/examples/probe.rs`, 42 satır) — `lib.rs`, `src/`
-> ve `Cargo.toml` YOK, yani o dosya **derlenemez bile**.
+> **Motorun yazıldığı yer: AegisForge.** Önceki sürümü bu notta "o projede
+> yalnızca tek bir Rust dosyası var, derlenemez bile" yazıyordu — bu
+> **GÜNCEL DEĞİLDİR** (2026-09-28 tarihli bir taramadan kalma). 2026-10-20
+> ölçümü: AegisForge çalışma alanı 7 crate içerir (`fuzz-core`, `fork-lab`,
+> `poc-forge`, `temporitd`, `aegisforge`, `autoverus`, `e2e`), 59 Rust
+> dosyası, ~22.200 satır üretici kod, `cargo test --workspace --exclude
+> temporit-e2e` ile **594 test geçti, 0 başarısız**. `probe.rs` (42 satır,
+> örnek) hâlâ oradadır ama artık tek başına değildir.
 >
-> **Sonuç:** CleanAudit Rust çekirdeği **henüz mevcut DEĞİLDİR**. Bu depo
+> **Sonuç:** CleanAudit'in motoru **AegisForge olarak mevcuttur**; bu depo
 > yalnızca EVM sözleşmelerini, deployment altyapısını ve **zincir üzerinde
 > çalışan** CleanAudit etkileşim noktalarını (`ListingGate` oracle ABI,
-> `PoV_Hash` şeması) barındırır. "Denetim motoru" ifadesi satışta
-> kullanılırsa **üretici kodun olmadığı** belirtilmelidir.
+> `PoV_Hash` şeması) barındırır. Arabirim uyumu ölçüldü: her iki taraf da
+> aynı etki-alanı ayrımı etiketini (`aegisforge-pov-v1`) ve aynı
+> sıralamayı (`canonical || target_hash || salt || ts`, big-endian ts)
+> kullanır — Rust `mint_commitment` ve Solidity `sealPovCommitment`.
+> "Denetim motoru" ifadesi satışta kullanılırsa alıcının **bu deponun
+> dışındaki** AegisForge deposuna başvurması belirtilmelidir.
 
 ---
 
